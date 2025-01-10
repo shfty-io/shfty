@@ -1,0 +1,102 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+
+const images = [
+  '/monster1.png',
+  '/monster2.png',
+  '/monster3.png',
+];
+
+const categories = ['All', 'Free', 'Aliens', 'Animals', 'Monsters'];
+
+export default function Hero() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === images.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Content */}
+        <div className="space-y-8">
+          <div>
+            <p className="text-sm text-gray-500 uppercase tracking-wider mb-2">
+              MEMBERSHIP TEMPLATE
+            </p>
+            <h1 className="text-5xl font-bold leading-tight mb-4">
+              Meet the new home<br />
+              for your digital goods
+            </h1>
+            <p className="text-xl text-gray-600">
+              Sell exclusive access to your digital goods<br />
+              all in your Framer CMS site
+            </p>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search 3D assets..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Categories */}
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={`px-4 py-2 rounded-full text-sm font-medium
+                  ${category === 'All' 
+                    ? 'bg-gray-900 text-white' 
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Content - Image Carousel */}
+        <div className="relative h-[500px] w-full">
+          {images.map((src, index) => (
+            <div
+              key={src}
+              className={`absolute inset-0 transition-opacity duration-500 ease-in-out
+                ${index === currentImageIndex ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <div className="relative h-full w-full bg-gray-100 rounded-lg overflow-hidden">
+                <Image
+                  src={src}
+                  alt={`Monster ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  priority={index === 0}
+                />
+                <div className="absolute bottom-4 left-4 bg-white px-3 py-1 rounded-full text-sm">
+                  All Tickles
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+} 
