@@ -1,4 +1,7 @@
+"use client"
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,27 +13,38 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { User as UserIcon } from 'lucide-react'
+import { createClient } from '@/lib/client'
+import { useEffect, useState } from 'react'
+import { User } from '@supabase/supabase-js'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  image?: string
+interface UserNavProps {
+  initialUser: User | null
 }
 
-export function UserNav() {
-  // TODO: Implement auth state
-  const user = {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    image: '/avatar.png'
-  } as User | null
+export function UserNav({ initialUser }: UserNavProps) {
+  const [user, setUser] = useState<User | null>(initialUser)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase.auth])
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.refresh()
+  }
 
   if (!user) {
     return (
       <Button variant="ghost" asChild>
-        <Link href="/signin">
+        <Link href="/auth/login">
           <UserIcon className="h-5 w-5" />
           <span className="sr-only">Sign in</span>
         </Link>
@@ -43,15 +57,15 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.image} alt={user.name} />
-            <AvatarFallback>{user.name[0].toUpperCase()}</AvatarFallback>
+            <AvatarImage src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name} />
+            <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-sm font-medium leading-none">{user.user_metadata.full_name}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -70,9 +84,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"
-          onSelect={() => {
-            // TODO: Implement sign out
-          }}
+          onSelect={handleSignOut}
         >
           Sign out
         </DropdownMenuItem>

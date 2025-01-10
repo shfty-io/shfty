@@ -2,9 +2,12 @@ import Link from 'next/link'
 import { Search } from '@/components/root/Search'
 import { CartButton } from '@/components/global/CartButton'
 import { UserNav } from '@/components/global/UserNav'
-import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/server'
 
-export function Navbar() {
+export async function Navbar() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -30,7 +33,7 @@ export function Navbar() {
           </div>
           <nav className="flex items-center space-x-2">
             <CartButton />
-            <UserNav />
+            <UserNav initialUser={user} />
           </nav>
         </div>
       </div>
