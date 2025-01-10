@@ -1,9 +1,11 @@
-import Hero from '../components/Hero';
+import Hero from '@/components/root/Hero'
+import { ProductList } from '@/components/root/ProductList'
 
 export default function Home() {
   return (
-    <main>
+    <div className="flex flex-col gap-12">
       <Hero />
-    </main>
-  );
+      <ProductList />
+    </div>
+  )
 }
