@@ -2,27 +2,74 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const images = [
-  '/monster1.png',
-  '/monster2.png',
-  '/monster3.png',
+  '/hero1.png',
+  '/hero2.png',
+  '/hero3.png',
 ];
 
-const categories = ['All', 'Free', 'Aliens', 'Animals', 'Monsters'];
+const categories = [
+  'All',
+  '3D',
+  'AI',
+  'Agency',
+  'Animated',
+  'App',
+  'Blog',
+  'Brand Guidelines',
+  'Business',
+  'Changelog',
+  'Documentation',
+  'Ecommerce',
+  'Education',
+  'Entertainment',
+  'Food',
+  'Free',
+  'Health',
+  'Landing Page',
+  'Membership',
+  'Minimal',
+  'Modern',
+  'New',
+  'News',
+  'Personal',
+  'Photography',
+  'Podcast',
+  'Portfolio',
+  'Real Estate',
+  'Restaurant',
+  'Resume',
+  'SaaS',
+  'Sidebar',
+  'Splash',
+  'Startup',
+  'Tech',
+  'Web3'
+];
 
 export default function Hero() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImageIndex((prevIndex) => 
         prevIndex === images.length - 1 ? 0 : prevIndex + 1
       );
-    }, 3000); // Change image every 3 seconds
+    }, 3000);
 
     return () => clearInterval(timer);
   }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -60,15 +107,16 @@ export default function Hero() {
           {/* Categories */}
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
-              <button
+              <Link
                 key={category}
+                href={category === 'All' ? '/' : `/category/${category.toLowerCase().replace(/ /g, '-')}`}
                 className={`px-4 py-2 rounded-full text-sm font-medium
                   ${category === 'All' 
                     ? 'bg-gray-900 text-white' 
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
               >
                 {category}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
