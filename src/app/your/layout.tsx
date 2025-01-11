@@ -1,23 +1,28 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/server";
-import { Sidebar } from "@/components/your/sidebar";
+'use client';
 
-export default async function YourLayout({
+import { Header } from "@/components/your/header"
+import { Sidebar } from "@/components/your/sidebar"
+import { useState } from "react"
+
+export default function YourLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const supabase = createClient();
-  const { data: { session }, error } = await supabase.auth.getSession();
-
-  if (error || !session) {
-    return redirect('/auth/login');
-  }
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-6">{children}</main>
+    <div className="min-h-screen flex">
+      <Sidebar isOpen={isSidebarOpen} />
+      <div className="flex-1 flex flex-col">
+        <Header 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+          isOpen={isSidebarOpen}
+        />
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
     </div>
-  );
+  )
 }
