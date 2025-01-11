@@ -26,7 +26,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
     )}>
       <div className="w-64 flex flex-col min-h-screen">
         {/* Header */}
-        <div className="p-4 border-b">
+        <div className="h-16 px-4 border-b flex items-center">
           <Link href="/" className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded bg-gray-900 flex items-center justify-center">
               <span className="text-white text-xs font-medium">AI</span>

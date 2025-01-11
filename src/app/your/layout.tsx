@@ -9,7 +9,7 @@ export default function YourLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
     <div className="min-h-screen flex">
