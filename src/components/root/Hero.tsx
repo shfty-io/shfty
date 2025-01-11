@@ -67,12 +67,20 @@ export default function Hero() {
     return () => clearInterval(timer);
   }, []);
 
+  const getPrevIndex = (current: number) => {
+    return current === 0 ? images.length - 1 : current - 1;
+  };
+
+  const getNextIndex = (current: number) => {
+    return current === images.length - 1 ? 0 : current + 1;
+  };
+
   if (!mounted) {
     return null;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Left Content */}
         <div className="space-y-8">
@@ -108,27 +116,67 @@ export default function Hero() {
         </div>
 
         {/* Right Content - Image Carousel */}
-        <div className="relative h-[500px] w-full">
-          {images.map((src, index) => (
-            <div
-              key={src}
-              className={`absolute inset-0 transition-opacity duration-500 ease-in-out
-                ${index === currentImageIndex ? 'opacity-100' : 'opacity-0'}`}
+        <div className="relative h-[500px] w-full overflow-visible perspective-[1200px]">
+          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Previous Image */}
+            <div 
+              className="absolute transform transition-all duration-700 ease-in-out"
+              style={{
+                transform: `rotateY(30deg) translateX(-60%) scale(0.85)`,
+                opacity: 0.5,
+                filter: 'blur(2px)',
+                transformOrigin: 'right center'
+              }}
+            >
+              <div className="relative h-[500px] w-[400px] bg-gray-100 rounded-lg overflow-hidden">
+                <Image
+                  src={images[getPrevIndex(currentImageIndex)]}
+                  alt="Previous"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Current Image */}
+            <div 
+              className="relative h-[500px] w-[400px] z-10 transform transition-all duration-700 ease-in-out"
+              style={{
+                transform: 'scale(1)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              }}
             >
               <div className="relative h-full w-full bg-gray-100 rounded-lg overflow-hidden">
                 <Image
-                  src={src}
-                  alt={`Monster ${index + 1}`}
+                  src={images[currentImageIndex]}
+                  alt="Current"
                   fill
                   className="object-cover"
-                  priority={index === 0}
+                  priority
                 />
-                <div className="absolute bottom-4 left-4 bg-white px-3 py-1 rounded-full text-sm">
-                  All Tickles
-                </div>
               </div>
             </div>
-          ))}
+
+            {/* Next Image */}
+            <div 
+              className="absolute transform transition-all duration-700 ease-in-out"
+              style={{
+                transform: `rotateY(-30deg) translateX(60%) scale(0.85)`,
+                opacity: 0.5,
+                filter: 'blur(2px)',
+                transformOrigin: 'left center'
+              }}
+            >
+              <div className="relative h-[500px] w-[400px] bg-gray-100 rounded-lg overflow-hidden">
+                <Image
+                  src={images[getNextIndex(currentImageIndex)]}
+                  alt="Next"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
