@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/server'
 import { ProductCard } from '@/components/product/ProductCard'
-
 interface SearchPageProps {
   searchParams: { q?: string }
 }

@@ -44,9 +44,9 @@ export function UserNav({ initialUser }: UserNavProps) {
   if (!user) {
     return (
       <Button variant="ghost" asChild>
-        <Link href="/auth/login">
+        <Link href="/auth/login" className="flex items-center gap-2">
           <UserIcon className="h-5 w-5" />
-          <span className="sr-only">Sign in</span>
+          <span>Sign in</span>
         </Link>
       </Button>
     )
@@ -73,20 +73,17 @@ export function UserNav({ initialUser }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/sell">Sell</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings">Settings</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/products/new">New Product</Link>
+          <Link href="/profile">Profile</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"
           onSelect={handleSignOut}
         >
-          Sign out
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
