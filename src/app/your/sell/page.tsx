@@ -39,7 +39,6 @@ export default function SellerDashboard() {
 
   const handlePaymentSubmit = async (data: PaymentSetupData) => {
     try {
-      // TODO: Send payment data to API
       setPaymentData(data);
       toast({
         title: "Payment information saved",
@@ -148,16 +147,16 @@ export default function SellerDashboard() {
                   <h3 className="font-medium mb-2">Payment Information</h3>
                   <dl className="space-y-1">
                     <div className="text-sm">
-                      <dt className="inline font-medium">Account Type:</dt>
-                      <dd className="inline ml-2">{paymentData?.accountType}</dd>
+                      <dt className="inline font-medium">Stripe Account:</dt>
+                      <dd className="inline ml-2">
+                        {paymentData?.stripeAccountId ? 'Connected' : 'Not Connected'}
+                      </dd>
                     </div>
                     <div className="text-sm">
-                      <dt className="inline font-medium">Account Holder:</dt>
-                      <dd className="inline ml-2">{paymentData?.accountHolderName}</dd>
-                    </div>
-                    <div className="text-sm">
-                      <dt className="inline font-medium">Country:</dt>
-                      <dd className="inline ml-2">{paymentData?.country}</dd>
+                      <dt className="inline font-medium">Status:</dt>
+                      <dd className="inline ml-2">
+                        {paymentData?.isOnboarded ? 'Onboarded' : 'Pending Onboarding'}
+                      </dd>
                     </div>
                   </dl>
                 </div>
@@ -166,7 +165,10 @@ export default function SellerDashboard() {
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     Back to Payment Setup
                   </Button>
-                  <Button onClick={handleFinalSubmit}>
+                  <Button 
+                    onClick={handleFinalSubmit}
+                    disabled={!paymentData?.isOnboarded}
+                  >
                     Submit for Review
                   </Button>
                 </div>
