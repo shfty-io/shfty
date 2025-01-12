@@ -12,15 +12,17 @@ export default function YourLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden">
       <Sidebar isOpen={isSidebarOpen} />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
           isOpen={isSidebarOpen}
         />
-        <main className="flex-1 p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -9,6 +9,7 @@ const navigation = [
   { name: "Profile", href: "/your/profile" },
   { name: "Account", href: "/your/account" },
   { name: "Payment", href: "/your/payment" },
+  { name: "Sell", href: "/your/sell" },
 ];
 
 interface SidebarProps {
@@ -20,13 +21,17 @@ export function Sidebar({ isOpen }: SidebarProps) {
 
   return (
     <div className={cn(
-      "min-h-screen bg-gray-50 border-r overflow-hidden flex flex-col",
-      "transition-[width] duration-300 ease-in-out",
+      "h-screen bg-gray-50 border-r flex",
+      "transition-all duration-300 ease-in-out",
       isOpen ? "w-64" : "w-0"
     )}>
-      <div className="w-64 flex flex-col min-h-screen">
+      <div className={cn(
+        "flex flex-col min-w-[256px]",
+        "transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
         {/* Header */}
-        <div className="h-16 px-4 border-b flex items-center">
+        <div className="h-16 shrink-0 px-4 border-b flex items-center">
           <Link href="/" className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded bg-gray-900 flex items-center justify-center">
               <span className="text-white text-xs font-medium">AI</span>
@@ -38,8 +43,8 @@ export function Sidebar({ isOpen }: SidebarProps) {
           </Link>
         </div>
 
-        {/* Main Navigation */}
-        <div className="flex-1 p-3">
+        {/* Main Navigation - Make it scrollable */}
+        <div className="flex-1 overflow-y-auto p-3">
           <div className="text-xs font-medium text-gray-500 mb-2">Settings</div>
           <nav>
             <ul className="space-y-1">
@@ -63,7 +68,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
         </div>
 
         {/* Footer */}
-        <div className="border-t p-3 mt-auto">
+        <div className="shrink-0 border-t p-3">
           <Link
             href="/feedback"
             className="flex items-center px-3 py-2 text-sm rounded-md text-gray-600 hover:bg-gray-100"
