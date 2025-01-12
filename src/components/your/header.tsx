@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar, isOpen }: HeaderProps) {
   return (
-    <header className="w-full border-b bg-white sticky top-0 z-30">
+    <header className="w-full border-b bg-white sticky top-0">
       <div className="flex h-16 items-center px-4">
         <Button 
           variant="ghost" 

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -25,10 +26,9 @@ export interface ProductFormData {
   description: string;
   price: number;
   category: string;
-  demoUrl?: string;
-  githubUrl?: string;
   imageUrls: string[];
   videoUrl?: string;
+  codebaseUrl?: string;
 }
 
 interface MediaFile {
@@ -85,16 +85,16 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
     description: "",
     price: 0,
     category: "",
-    demoUrl: "",
-    githubUrl: "",
     imageUrls: [],
   });
 
   const [images, setImages] = useState<MediaFile[]>([]);
   const [video, setVideo] = useState<MediaFile | null>(null);
+  const [codebase, setCodebase] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const codebaseInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -177,6 +177,59 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
     return publicUrl;
   };
 
+  const handleCodebaseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a ZIP file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) { // 100MB
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 100MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCodebase(file);
+  };
+
+  const removeCodebase = () => {
+    setCodebase(null);
+    if (codebaseInputRef.current) {
+      codebaseInputRef.current.value = '';
+    }
+  };
+
+  const uploadCodebase = async (file: File): Promise<string> => {
+    const supabase = createClient();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('codebases')
+      .upload(filePath, file);
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('codebases')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
@@ -193,9 +246,20 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
         videoUrl = await uploadMedia(video.file, 'video');
       }
 
-      onSubmit({ ...formData, imageUrls, videoUrl });
+      // Upload codebase if exists
+      let codebaseUrl;
+      if (codebase) {
+        codebaseUrl = await uploadCodebase(codebase);
+      }
+
+      onSubmit({ ...formData, imageUrls, videoUrl, codebaseUrl });
     } catch (error) {
       console.error('Error uploading media:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload files. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -285,6 +349,53 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
         </div>
       </div>
 
+      {/* Codebase Upload */}
+      <div>
+        <Label className="mb-2 block">Product Codebase (Required)</Label>
+        <div className="mb-4">
+          {codebase ? (
+            <div className="relative border rounded-lg p-4 bg-muted">
+              <div className="flex items-center space-x-4">
+                <div className="flex-1">
+                  <p className="font-medium">{codebase.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(codebase.size / 1024 / 1024).toFixed(2)}MB
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeCodebase}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => codebaseInputRef.current?.click()}
+              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+            >
+              <Upload size={24} className="text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Upload your codebase as a ZIP file
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Maximum file size: 100MB
+              </p>
+            </div>
+          )}
+          <input
+            ref={codebaseInputRef}
+            type="file"
+            accept=".zip,application/zip,application/x-zip-compressed"
+            onChange={handleCodebaseChange}
+            className="hidden"
+            required
+          />
+        </div>
+      </div>
+
       <div className="grid gap-6">
         <div>
           <Label htmlFor="name">Product Name</Label>
@@ -342,28 +453,6 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        <div>
-          <Label htmlFor="demoUrl">Demo URL (Optional)</Label>
-          <Input
-            id="demoUrl"
-            type="url"
-            value={formData.demoUrl}
-            onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
-            placeholder="https://demo.yourproduct.com"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="githubUrl">GitHub URL (Optional)</Label>
-          <Input
-            id="githubUrl"
-            type="url"
-            value={formData.githubUrl}
-            onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
-            placeholder="https://github.com/yourusername/yourrepo"
-          />
         </div>
       </div>
 
