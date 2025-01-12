@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import { toast } from "@/components/ui/use-toast";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
+  initialData?: ProductFormData | null;
 }
 
 export interface ProductFormData {
@@ -79,8 +80,8 @@ const categories = [
   "web3"
 ];
 
-export function ProductForm({ onSubmit }: ProductFormProps) {
-  const [formData, setFormData] = useState<ProductFormData>({
+export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
+  const [formData, setFormData] = useState<ProductFormData>(initialData || {
     name: "",
     description: "",
     price: 0,
@@ -95,6 +96,16 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const codebaseInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialData?.imageUrls) {
+      const initialImages: MediaFile[] = initialData.imageUrls.map(url => ({
+        file: new File([], "placeholder"),
+        preview: url
+      }));
+      setImages(initialImages);
+    }
+  }, [initialData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

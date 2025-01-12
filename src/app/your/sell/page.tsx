@@ -1,33 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ProductForm, type ProductFormData } from "@/components/seller/ProductForm";
 import { PaymentSetupForm, type PaymentSetupData } from "@/components/seller/PaymentSetupForm";
 import { toast } from "@/components/ui/use-toast";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/client";
 
 const steps = [
-  { id: 1, name: "Create Product" },
-  { id: 2, name: "Payment Setup" },
+  { id: 1, name: "Payment Setup" },
+  { id: 2, name: "Create Product" },
   { id: 3, name: "Submit Product" },
 ];
 
 export default function SellerDashboard() {
+  const searchParams = useSearchParams();
+  const setupStatus = searchParams.get('setup');
   const [currentStep, setCurrentStep] = useState(1);
   const [productData, setProductData] = useState<ProductFormData | null>(null);
   const [paymentData, setPaymentData] = useState<PaymentSetupData | null>(null);
 
+  // Check payment setup status on load
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      const supabase = createClient();
+      const { data: sellerAccount } = await supabase
+        .from('seller_accounts')
+        .select('stripe_account_id, is_onboarded, account_status')
+        .single();
+
+      if (sellerAccount?.is_onboarded) {
+        setPaymentData({
+          stripeAccountId: sellerAccount.stripe_account_id,
+          isOnboarded: true,
+          accountStatus: sellerAccount.account_status
+        });
+        setCurrentStep(2); // Move to product creation if payment is set up
+      }
+    };
+
+    checkPaymentStatus();
+  }, []);
+
+  useEffect(() => {
+    if (setupStatus === 'complete') {
+      // Update Stripe account status
+      fetch('/api/stripe/connect', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accountId: paymentData?.stripeAccountId }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'complete') {
+          setPaymentData(prev => ({
+            ...prev!,
+            isOnboarded: true,
+            accountStatus: 'complete'
+          }));
+          toast({
+            title: "Payment setup complete",
+            description: "Your Stripe account has been connected successfully.",
+          });
+          setCurrentStep(2);
+        } else {
+          toast({
+            title: "Setup incomplete",
+            description: "Please complete your Stripe account setup to continue.",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error updating status:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update payment status. Please try again.",
+          variant: "destructive",
+        });
+      });
+    } else if (setupStatus === 'refresh') {
+      toast({
+        title: "Setup incomplete",
+        description: "Please complete your Stripe account setup to continue.",
+        variant: "destructive",
+      });
+    }
+  }, [setupStatus, paymentData?.stripeAccountId]);
+
   const handleProductSubmit = async (data: ProductFormData) => {
     try {
-      // TODO: Send product data to API
       setProductData(data);
+      // Save to localStorage for persistence
+      localStorage.setItem('productData', JSON.stringify(data));
       toast({
         title: "Product details saved",
         description: "Your product information has been saved successfully.",
       });
-      setCurrentStep(2);
+      setCurrentStep(3);
     } catch (error) {
       toast({
         title: "Error",
@@ -40,11 +115,14 @@ export default function SellerDashboard() {
   const handlePaymentSubmit = async (data: PaymentSetupData) => {
     try {
       setPaymentData(data);
-      toast({
-        title: "Payment information saved",
-        description: "Your payment information has been saved successfully.",
-      });
-      setCurrentStep(3);
+      if (data.isOnboarded) {
+        setCurrentStep(2);
+        // Try to restore product data if it exists
+        const savedProduct = localStorage.getItem('productData');
+        if (savedProduct) {
+          setProductData(JSON.parse(savedProduct));
+        }
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -56,20 +134,46 @@ export default function SellerDashboard() {
 
   const handleFinalSubmit = async () => {
     try {
-      // TODO: Send final submission to API
+      const response = await fetch('/api/products/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productData }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit product');
+      }
+
       toast({
         title: "Product submitted",
         description: "Your product has been submitted for review.",
       });
-      // Redirect to seller dashboard or product list
-    } catch (error) {
+
+      // Clear saved data after successful submission
+      localStorage.removeItem('productData');
+      
+      // Redirect to listings page
+      window.location.href = '/your/listings';
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to submit product. Please try again.",
+        description: error.message || "Failed to submit product. Please try again.",
         variant: "destructive",
       });
     }
   };
+
+  // Try to restore product data on initial load
+  useEffect(() => {
+    const savedProduct = localStorage.getItem('productData');
+    if (savedProduct) {
+      setProductData(JSON.parse(savedProduct));
+    }
+  }, []);
 
   return (
     <div className="container mx-auto p-6">
@@ -97,23 +201,23 @@ export default function SellerDashboard() {
         <div className="space-y-6">
           {currentStep === 1 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Create Your Product</h2>
-              <p className="text-muted-foreground mb-4">
-                Start by providing details about your software product.
-              </p>
-              <ProductForm onSubmit={handleProductSubmit} />
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div>
               <h2 className="text-2xl font-semibold mb-4">Payment Setup</h2>
               <p className="text-muted-foreground mb-4">
                 Set up your payment information to receive payments from customers.
               </p>
               <PaymentSetupForm onSubmit={handlePaymentSubmit} />
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Create Your Product</h2>
+              <p className="text-muted-foreground mb-4">
+                Start by providing details about your software product.
+              </p>
+              <ProductForm onSubmit={handleProductSubmit} initialData={productData} />
               <div className="mt-4">
-                <Button variant="outline" onClick={() => setCurrentStep(1)}>Back to Product Details</Button>
+                <Button variant="outline" onClick={() => setCurrentStep(1)}>Back to Payment Setup</Button>
               </div>
             </div>
           )}
@@ -163,7 +267,7 @@ export default function SellerDashboard() {
 
                 <div className="flex gap-4">
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                    Back to Payment Setup
+                    Back to Product Details
                   </Button>
                   <Button 
                     onClick={handleFinalSubmit}

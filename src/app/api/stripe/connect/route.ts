@@ -21,16 +21,35 @@ export async function POST(request: Request) {
     // Check if user already has a Stripe Connect account
     const { data: sellerAccount } = await supabase
       .from('seller_accounts')
-      .select('stripe_account_id')
+      .select('stripe_account_id, is_onboarded')
       .eq('user_id', user.id)
       .single();
 
     if (sellerAccount?.stripe_account_id) {
-      // Get the account link for existing account
+      // Check current account status
+      const account = await stripe.accounts.retrieve(sellerAccount.stripe_account_id);
+      
+      // If account is already complete, just return the dashboard URL
+      if (account.details_submitted && account.charges_enabled) {
+        await supabase
+          .from('seller_accounts')
+          .update({
+            is_onboarded: true,
+            account_status: 'complete'
+          })
+          .eq('stripe_account_id', sellerAccount.stripe_account_id);
+
+        return NextResponse.json({ 
+          url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell`,
+          status: 'complete'
+        });
+      }
+
+      // If not complete, create new link for completion
       const accountLink = await stripe.accountLinks.create({
         account: sellerAccount.stripe_account_id,
-        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell`,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell`,
+        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell?setup=refresh`,
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell?setup=complete`,
         type: 'account_onboarding',
       });
 
@@ -40,10 +59,14 @@ export async function POST(request: Request) {
     // Create a new Stripe Connect account
     const account = await stripe.accounts.create({
       type: 'express',
-      country: 'US', // You might want to make this dynamic based on user input
+      country: 'US',
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
+      },
+      business_type: 'individual',
+      business_profile: {
+        product_description: 'Digital products and software',
       },
     });
 
@@ -54,13 +77,14 @@ export async function POST(request: Request) {
         user_id: user.id,
         stripe_account_id: account.id,
         is_onboarded: false,
+        account_status: 'pending'
       });
 
     // Create an account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell`,
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell?setup=refresh`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/your/sell?setup=complete`,
       type: 'account_onboarding',
     });
 
@@ -69,6 +93,42 @@ export async function POST(request: Request) {
     console.error('Error creating Stripe Connect account:', error);
     return NextResponse.json(
       { error: "Failed to create Stripe Connect account" },
+      { status: 500 }
+    );
+  }
+}
+
+// Handle webhook to update onboarding status
+export async function PUT(request: Request) {
+  try {
+    const { accountId } = await request.json();
+    const supabase = createClient();
+
+    // Get account details from Stripe
+    const account = await stripe.accounts.retrieve(accountId);
+    
+    // Check if the account is fully set up
+    const isComplete = account.details_submitted && account.charges_enabled;
+    
+    // Update onboarding status
+    const { error } = await supabase
+      .from('seller_accounts')
+      .update({
+        is_onboarded: isComplete,
+        account_status: isComplete ? 'complete' : 'pending'
+      })
+      .eq('stripe_account_id', accountId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ 
+      status: isComplete ? 'complete' : 'pending',
+      isOnboarded: isComplete
+    });
+  } catch (error) {
+    console.error('Error updating account status:', error);
+    return NextResponse.json(
+      { error: "Failed to update account status" },
       { status: 500 }
     );
   }
