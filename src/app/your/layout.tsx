@@ -12,17 +12,20 @@ export default function YourLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <Sidebar isOpen={isSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="min-h-screen flex">
+      {/* Fixed sidebar */}
+      <div className="fixed inset-y-0">
+        <Sidebar isOpen={isSidebarOpen} />
+      </div>
+      
+      {/* Main content that scrolls */}
+      <div className={`flex-1 flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <Header 
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
           isOpen={isSidebarOpen}
         />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {children}
-          </div>
+        <main className="flex-1">
+          {children}
         </main>
       </div>
     </div>

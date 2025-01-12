@@ -202,13 +202,13 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-6">
       {/* Image Upload */}
-      <div className="space-y-2">
-        <Label>Product Images ({images.length}/{MAX_IMAGES})</Label>
-        <div className="grid grid-cols-3 gap-4">
+      <div>
+        <Label className="mb-2 block">Product Images ({images.length}/{MAX_IMAGES})</Label>
+        <div className="grid grid-cols-3 gap-4 mb-4">
           {images.map((image, index) => (
-            <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+            <div key={index} className="relative aspect-square rounded-lg overflow-hidden border bg-muted">
               <Image
                 src={image.preview}
                 alt={`Preview ${index + 1}`}
@@ -228,10 +228,10 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
-              className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 hover:border-gray-400"
+              className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-2 hover:border-muted-foreground/50 transition-colors"
             >
-              <Upload size={24} className="text-gray-400" />
-              <span className="text-sm text-gray-500">Add Image</span>
+              <Upload size={24} className="text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Add Image</span>
             </button>
           )}
         </div>
@@ -246,11 +246,11 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
       </div>
 
       {/* Video Upload */}
-      <div className="space-y-2">
-        <Label>Product Video (Optional)</Label>
-        <div className="flex flex-col gap-4">
+      <div>
+        <Label className="mb-2 block">Product Video (Optional)</Label>
+        <div className="mb-4">
           {video ? (
-            <div className="relative aspect-video rounded-lg overflow-hidden">
+            <div className="relative aspect-video rounded-lg overflow-hidden border bg-muted">
               <video
                 src={video.preview}
                 controls
@@ -268,11 +268,11 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
             <button
               type="button"
               onClick={() => videoInputRef.current?.click()}
-              className="aspect-video rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 hover:border-gray-400"
+              className="w-full aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-2 hover:border-muted-foreground/50 transition-colors"
             >
-              <Video size={24} className="text-gray-400" />
-              <span className="text-sm text-gray-500">Add Video</span>
-              <span className="text-xs text-gray-400">MP4, WebM, or OGG (max {MAX_VIDEO_SIZE_MB}MB)</span>
+              <Video size={24} className="text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Add Video</span>
+              <span className="text-xs text-muted-foreground">MP4, WebM, or OGG (max {MAX_VIDEO_SIZE_MB}MB)</span>
             </button>
           )}
           <input
@@ -285,85 +285,89 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="name">Product Name</Label>
-        <Input
-          id="name"
-          required
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Enter your product name"
-        />
+      <div className="grid gap-6">
+        <div>
+          <Label htmlFor="name">Product Name</Label>
+          <Input
+            id="name"
+            required
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Enter your product name"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            required
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Describe your product"
+            className="min-h-[120px]"
+          />
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="price">Price (USD)</Label>
+            <Input
+              id="price"
+              type="number"
+              required
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+              placeholder="0.00"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="demoUrl">Demo URL (Optional)</Label>
+          <Input
+            id="demoUrl"
+            type="url"
+            value={formData.demoUrl}
+            onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
+            placeholder="https://demo.yourproduct.com"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="githubUrl">GitHub URL (Optional)</Label>
+          <Input
+            id="githubUrl"
+            type="url"
+            value={formData.githubUrl}
+            onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+            placeholder="https://github.com/yourusername/yourrepo"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          required
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Describe your product"
-          className="min-h-[100px]"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="price">Price (USD)</Label>
-        <Input
-          id="price"
-          type="number"
-          required
-          min="0"
-          step="0.01"
-          value={formData.price}
-          onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-          placeholder="0.00"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
-        <Select
-          value={formData.category}
-          onValueChange={(value) => setFormData({ ...formData, category: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select a category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="demoUrl">Demo URL (Optional)</Label>
-        <Input
-          id="demoUrl"
-          type="url"
-          value={formData.demoUrl}
-          onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
-          placeholder="https://demo.yourproduct.com"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="githubUrl">GitHub URL (Optional)</Label>
-        <Input
-          id="githubUrl"
-          type="url"
-          value={formData.githubUrl}
-          onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
-          placeholder="https://github.com/yourusername/yourrepo"
-        />
-      </div>
-
-      <Button type="submit" className="w-full" disabled={isUploading}>
+      <Button type="submit" className="w-full mt-6" disabled={isUploading}>
         {isUploading ? 'Uploading...' : 'Save Product Details'}
       </Button>
     </form>
