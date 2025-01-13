@@ -15,11 +15,40 @@ export async function POST(request: Request) {
 
     const { productData } = await request.json();
 
-    // Validate required fields
+    // Validate required fields and constraints
     if (!productData.name || !productData.description || !productData.price || 
-        !productData.category || !productData.imageUrls || !productData.codebaseUrl) {
+        !productData.categories || !productData.imageUrls || !productData.codebaseUrl ||
+        !productData.byline || !productData.shortDescription) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Validate field lengths
+    if (productData.name.length > 12 || 
+        productData.byline.length > 34 || 
+        productData.shortDescription.length > 260) {
+      return NextResponse.json(
+        { error: "One or more fields exceed maximum length" },
+        { status: 400 }
+      );
+    }
+
+    // Validate price minimum
+    if (productData.price < 10) {
+      return NextResponse.json(
+        { error: "Minimum price is $10" },
+        { status: 400 }
+      );
+    }
+
+    // Validate categories
+    if (!Array.isArray(productData.categories) || 
+        productData.categories.length === 0 || 
+        productData.categories.length > 5) {
+      return NextResponse.json(
+        { error: "Please select between 1 and 5 categories" },
         { status: 400 }
       );
     }
@@ -44,12 +73,15 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         name: productData.name,
-        description: productData.description,
+        byline: productData.byline,
+        short_description: productData.shortDescription,
+        description: productData.description, // This will store HTML content
         price: productData.price,
-        category: productData.category,
+        categories: productData.categories,
         image_urls: productData.imageUrls,
         video_url: productData.videoUrl,
         codebase_url: productData.codebaseUrl,
+        faq: productData.faq || null,
         status: 'in_review',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

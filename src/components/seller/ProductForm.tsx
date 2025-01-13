@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/client";
 import Image from "next/image";
-import { X, Upload, Video } from "lucide-react";
+import { X, Upload, Video, Bold, Italic, List, ListOrdered } from "lucide-react";
 import { 
   Select,
   SelectContent,
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -24,17 +25,25 @@ interface ProductFormProps {
 
 export interface ProductFormData {
   name: string;
+  byline: string;
+  shortDescription: string;
   description: string;
   price: number;
-  category: string;
+  categories: string[];
   imageUrls: string[];
   videoUrl?: string;
   codebaseUrl?: string;
+  faq?: FAQItem[];
 }
 
 interface MediaFile {
   file: File;
   preview: string;
+}
+
+interface FAQItem {
+  question: string;
+  answer: string;
 }
 
 const MAX_IMAGES = 9;
@@ -81,12 +90,15 @@ const categories = [
 ];
 
 export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
-  const [formData, setFormData] = useState<ProductFormData>(initialData || {
+  const [formData, setFormData] = useState<ProductFormData>({
     name: "",
+    byline: "",
+    shortDescription: "",
     description: "",
-    price: 0,
-    category: "",
+    price: 10,
+    categories: [],
     imageUrls: [],
+    faq: []
   });
 
   const [images, setImages] = useState<MediaFile[]>([]);
@@ -96,6 +108,8 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const codebaseInputRef = useRef<HTMLInputElement>(null);
+
+  const [faqItems, setFaqItems] = useState<FAQItem[]>(initialData?.faq || []);
 
   useEffect(() => {
     if (initialData?.imageUrls) {
@@ -241,8 +255,41 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     return publicUrl;
   };
 
+  const addFaqItem = () => {
+    setFaqItems([...faqItems, { question: '', answer: '' }]);
+  };
+
+  const removeFaqItem = (index: number) => {
+    setFaqItems(faqItems.filter((_, i) => i !== index));
+  };
+
+  const updateFaqItem = (index: number, field: 'question' | 'answer', value: string) => {
+    const newFaqItems = [...faqItems];
+    newFaqItems[index][field] = value;
+    setFaqItems(newFaqItems);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.price < 10) {
+      toast({
+        title: "Invalid price",
+        description: "Minimum price is $10",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.categories.length === 0 || formData.categories.length > 5) {
+      toast({
+        title: "Invalid categories",
+        description: "Please select between 1 and 5 categories",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -263,12 +310,20 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         codebaseUrl = await uploadCodebase(codebase);
       }
 
-      onSubmit({ ...formData, imageUrls, videoUrl, codebaseUrl });
+      const finalFormData = {
+        ...formData,
+        faq: faqItems.length > 0 ? faqItems : undefined,
+        imageUrls,
+        videoUrl,
+        codebaseUrl
+      };
+
+      await onSubmit(finalFormData);
     } catch (error) {
-      console.error('Error uploading media:', error);
+      console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Failed to upload files. Please try again.",
+        description: "Failed to submit product",
         variant: "destructive",
       });
     } finally {
@@ -277,7 +332,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Image Upload */}
       <div>
         <Label className="mb-2 block">Product Images ({images.length}/{MAX_IMAGES})</Label>
@@ -410,24 +465,54 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       <div className="grid gap-6">
         <div>
           <Label htmlFor="name">Product Name</Label>
+          <div className="text-sm text-muted-foreground mb-2">A unique, catchy name.</div>
           <Input
             id="name"
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter your product name"
+            maxLength={12}
           />
+          <div className="text-sm text-muted-foreground mt-1 text-right">{formData.name.length}/12</div>
         </div>
 
         <div>
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
+          <Label htmlFor="byline">Byline</Label>
+          <div className="text-sm text-muted-foreground mb-2">Describe your template in just a few words.</div>
+          <Input
+            id="byline"
             required
+            value={formData.byline}
+            onChange={(e) => setFormData({ ...formData, byline: e.target.value })}
+            placeholder="Enter a short, catchy byline"
+            maxLength={34}
+          />
+          <div className="text-sm text-muted-foreground mt-1 text-right">{formData.byline.length}/34</div>
+        </div>
+
+        <div>
+          <Label htmlFor="shortDescription">Short Description</Label>
+          <div className="text-sm text-muted-foreground mb-2">Used in search results and as an intro at the top of your template's page.</div>
+          <Textarea
+            id="shortDescription"
+            required
+            value={formData.shortDescription}
+            onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+            placeholder="Write a brief overview of your product"
+            className="min-h-[80px]"
+            maxLength={260}
+          />
+          <div className="text-sm text-muted-foreground mt-1 text-right">{formData.shortDescription.length}/260</div>
+        </div>
+
+        <div>
+          <Label htmlFor="description">Full Description</Label>
+          <div className="text-sm text-muted-foreground mb-2">Provide as much detail as possible to significantly increase sales.</div>
+          <RichTextEditor
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Describe your product"
-            className="min-h-[120px]"
+            onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+            placeholder="Write a detailed description of your product..."
           />
         </div>
 
@@ -438,33 +523,90 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               id="price"
               type="number"
               required
-              min="0"
+              min="10"
               step="0.01"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
               placeholder="0.00"
             />
           </div>
-
-          <div>
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Categories (Select up to 5)</Label>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <Button
+              key={category}
+              type="button"
+              variant={formData.categories.includes(category) ? "default" : "outline"}
+              onClick={() => {
+                const newCategories = formData.categories.includes(category)
+                  ? formData.categories.filter(c => c !== category)
+                  : formData.categories.length < 5
+                  ? [...formData.categories, category]
+                  : formData.categories;
+                setFormData({ ...formData, categories: newCategories });
+              }}
+              className="h-8"
+            >
+              {category}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Price (Minimum $10)</Label>
+        <Input
+          type="number"
+          min="10"
+          step="0.01"
+          value={formData.price}
+          onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+          required
+        />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label>FAQ (Optional)</Label>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={addFaqItem}
+          >
+            Add FAQ Item
+          </Button>
+        </div>
+        
+        {faqItems.map((item, index) => (
+          <div key={index} className="space-y-2 p-4 border rounded-lg">
+            <div className="flex justify-between items-center">
+              <Label>Question {index + 1}</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeFaqItem(index)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <Input
+              value={item.question}
+              onChange={(e) => updateFaqItem(index, 'question', e.target.value)}
+              placeholder="Enter question"
+            />
+            <Label>Answer</Label>
+            <Textarea
+              value={item.answer}
+              onChange={(e) => updateFaqItem(index, 'answer', e.target.value)}
+              placeholder="Enter answer"
+            />
+          </div>
+        ))}
       </div>
 
       <Button type="submit" className="w-full mt-6" disabled={isUploading}>

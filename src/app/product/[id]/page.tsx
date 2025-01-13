@@ -19,11 +19,12 @@ async function getProduct(id: string) {
   return product
 }
 
-export default async function ProductPage({
-  params: { id },
-}: {
-  params: { id: string }
-}) {
+type PageProps = {
+  params: Promise<{ id: string }> | { id: string }
+}
+
+export default async function ProductPage(props: PageProps) {
+  const { id } = await props.params;
   const product = await getProduct(id)
 
   if (!product) {
@@ -73,13 +74,19 @@ export default async function ProductPage({
 
             <div className="prose max-w-none">
               <h2 className="text-lg font-semibold">Description</h2>
-              <p className="mt-2 text-gray-600">{product.description}</p>
+              <div 
+                className="mt-2 text-gray-600"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
             </div>
 
             {product.faq && (
               <div className="prose max-w-none">
                 <h2 className="text-lg font-semibold">FAQ</h2>
-                <p className="mt-2 text-gray-600">{product.faq}</p>
+                <div 
+                  className="mt-2 text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: product.faq }}
+                />
               </div>
             )}
 

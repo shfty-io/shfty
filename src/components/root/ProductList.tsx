@@ -3,13 +3,21 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+function stripHtml(html: string) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 interface Product {
   id: string
   name: string
   description: string
   price: number
-  category: string
+  categories: string[]
   image_urls: string[] | null
+  short_description: string
+  byline: string
 }
 
 interface ProductListProps {
@@ -48,10 +56,10 @@ export default function ProductList({ products, category }: ProductListProps) {
             </div>
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.name}</h3>
-              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
+              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.short_description || stripHtml(product.description)}</p>
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold text-gray-900">${product.price}</span>
-                <span className="text-sm text-gray-500">{product.category}</span>
+                <span className="text-sm text-gray-500">{product.categories[0]}</span>
               </div>
             </div>
           </div>

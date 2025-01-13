@@ -17,7 +17,8 @@ async function getProductsByCategory(category: string) {
   const { data: products, error } = await supabase
     .from('products')
     .select('*')
-    .eq('category', category)
+    .contains('categories', [category])
+    .eq('status', 'approved')
     .order('created_at', { ascending: false });
 
   if (error) {

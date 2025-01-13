@@ -22,7 +22,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/product/${product.id}`} className="group">
-      <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+      <div className="aspect-square overflow-hidden border border-gray-200 bg-gray-100">
         <Image
           src={imageUrl}
           alt={product.title}
