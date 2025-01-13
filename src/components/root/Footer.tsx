@@ -2,16 +2,26 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useSidebar } from '@/contexts/SidebarContext';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function Footer() {
   const [year, setYear] = useState('');
+  const { isSidebarOpen } = useSidebar();
+  const pathname = usePathname();
+  const isYourPage = pathname?.startsWith('/your');
 
   useEffect(() => {
     setYear(new Date().getFullYear().toString());
   }, []);
 
   return (
-    <footer className="bg-gray-100 border-t w-full">
+    <footer className={cn(
+      "bg-gray-100 border-t",
+      "transition-[margin] duration-300 ease-in-out",
+      isYourPage && isSidebarOpen ? "ml-64" : "ml-0"
+    )}>
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>

@@ -21,13 +21,13 @@ export function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <div className={cn(
-      "h-screen bg-gray-50 border-r flex",
-      "transition-all duration-300 ease-in-out",
+    <div data-sidebar className={cn(
+      "fixed left-0 top-0 h-screen bg-gray-50 border-r z-30",
+      "transition-[width] duration-300 ease-in-out overflow-hidden",
       isOpen ? "w-64" : "w-0"
     )}>
       <div className={cn(
-        "flex flex-col min-w-[256px]",
+        "flex flex-col h-full w-64",
         "transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
