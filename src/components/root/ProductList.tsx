@@ -9,7 +9,7 @@ interface Product {
   description: string
   price: number
   category: string
-  image?: string
+  image_urls: string[] | null
 }
 
 interface ProductListProps {
@@ -33,9 +33,9 @@ export default function ProductList({ products, category }: ProductListProps) {
         <Link key={product.id} href={`/product/${product.id}`}>
           <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
             <div className="relative h-48 w-full rounded-t-lg overflow-hidden">
-              {product.image ? (
+              {product.image_urls?.[0] ? (
                 <Image
-                  src={product.image}
+                  src={product.image_urls[0]}
                   alt={product.name}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
