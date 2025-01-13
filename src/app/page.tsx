@@ -5,12 +5,27 @@ import { createClient } from '@/lib/server'
 
 async function getProducts() {
   const supabase = createClient()
-  const { data: products } = await supabase
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, name, description, price, categories, image_urls, short_description, byline')
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      categories,
+      image_urls,
+      short_description,
+      byline,
+      status
+    `)
     .eq('status', 'approved')
     .order('created_at', { ascending: false })
     .limit(12)
+
+  if (error) {
+    console.error('Error fetching products:', error)
+    return []
+  }
 
   return products || []
 }

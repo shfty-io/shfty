@@ -20,10 +20,11 @@ export default async function ListingsPage() {
       name,
       description,
       price,
-      category,
+      categories,
       created_at,
       updated_at,
-      status
+      status,
+      short_description
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
@@ -49,14 +50,14 @@ export default async function ListingsPage() {
               <div className="flex-1">
                 <h2 className="text-lg font-semibold mb-2">{product.name}</h2>
                 <p className="text-muted-foreground line-clamp-2 mb-2">
-                  {product.description}
+                  {product.short_description}
                 </p>
                 <div className="flex flex-wrap gap-4 text-sm">
                   <span className="text-muted-foreground">
                     Price: ${product.price}
                   </span>
                   <span className="text-muted-foreground">
-                    Category: {product.category}
+                    Categories: {product.categories?.join(', ')}
                   </span>
                   <span className="text-muted-foreground">
                     Status: {product.status}

@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
+const MAX_CODEBASE_SIZE = 100 * 1024 * 1024; // 100MB
+
 export async function POST(
   request: Request,
-  { params: { id } }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = createClient();
@@ -16,15 +18,15 @@ export async function POST(
       );
     }
 
-    // Check if user owns the product
-    const { data: product, error: productError } = await supabase
+    // Verify product ownership
+    const { data: product } = await supabase
       .from('products')
-      .select('*')
-      .eq('id', id)
+      .select('codebase_url')
+      .eq('id', params.id)
       .eq('user_id', user.id)
       .single();
 
-    if (productError || !product) {
+    if (!product) {
       return NextResponse.json(
         { error: "Product not found" },
         { status: 404 }
@@ -41,7 +43,7 @@ export async function POST(
       );
     }
 
-    // Validate file type and size
+    // Validate file type
     if (file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
       return NextResponse.json(
         { error: "Invalid file type. Please upload a ZIP file" },
@@ -49,34 +51,33 @@ export async function POST(
       );
     }
 
-    if (file.size > 100 * 1024 * 1024) { // 100MB
+    // Validate file size
+    if (file.size > MAX_CODEBASE_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 100MB" },
+        { error: "File is too large. Maximum size is 100MB" },
         { status: 400 }
       );
     }
 
-    // Delete old codebase if exists
-    if (product.codebaseUrl) {
-      const oldFileName = product.codebaseUrl.split('/').pop();
-      if (oldFileName) {
-        await supabase.storage
-          .from('codebases')
-          .remove([oldFileName]);
-      }
+    // If there's an existing codebase, delete it first
+    if (product.codebase_url) {
+      const existingFileName = product.codebase_url.split('/').pop();
+      await supabase.storage
+        .from('codebases')
+        .remove([existingFileName]);
     }
 
-    // Upload new codebase
+    // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-    const { data, error: uploadError } = await supabase.storage
+    const fileName = `${params.id}-${Date.now()}.${fileExt}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('codebases')
       .upload(fileName, file);
 
     if (uploadError) {
+      console.error('Upload error:', uploadError);
       return NextResponse.json(
-        { error: "Failed to upload file" },
+        { error: "Failed to upload codebase" },
         { status: 500 }
       );
     }
@@ -89,10 +90,11 @@ export async function POST(
     // Update product with new codebase URL
     const { error: updateError } = await supabase
       .from('products')
-      .update({ codebaseUrl: publicUrl })
-      .eq('id', id);
+      .update({ codebase_url: publicUrl })
+      .eq('id', params.id);
 
     if (updateError) {
+      console.error('Update error:', updateError);
       return NextResponse.json(
         { error: "Failed to update product" },
         { status: 500 }
@@ -100,10 +102,10 @@ export async function POST(
     }
 
     return NextResponse.json({ url: publicUrl });
-  } catch (error: any) {
-    console.error('Error updating codebase:', error);
+  } catch (error) {
+    console.error('Error:', error);
     return NextResponse.json(
-      { error: error.message || "Failed to update codebase" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/server';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Upload, X } from 'lucide-react';
+import Image from 'next/image';
 
 export default async function ProductFilesPage({
   params: { id }
@@ -36,7 +37,7 @@ export default async function ProductFilesPage({
         {/* Codebase Section */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Codebase</h2>
-          {product.codebaseUrl ? (
+          {product.codebase_url ? (
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -79,13 +80,18 @@ export default async function ProductFilesPage({
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Product Images</h2>
           <div className="grid grid-cols-3 gap-4">
-            {product.imageUrls?.map((url: string, index: number) => (
-              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
-                <img src={url} alt={`Product ${index + 1}`} className="object-cover w-full h-full" />
+            {product.image_urls?.map((url: string, index: number) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border bg-gray-100">
+                <Image
+                  src={url}
+                  alt={`Product ${index + 1}`}
+                  fill
+                  className="object-cover"
+                />
                 <form 
                   action={`/api/products/${id}/images/${index}/delete`} 
                   method="POST"
-                  className="absolute top-2 right-2"
+                  className="absolute top-2 right-2 z-10"
                 >
                   <Button variant="destructive" size="sm">
                     <X className="w-4 h-4" />
@@ -93,9 +99,9 @@ export default async function ProductFilesPage({
                 </form>
               </div>
             ))}
-            {product.imageUrls?.length < 9 && (
+            {(!product.image_urls || product.image_urls.length < 9) && (
               <form action={`/api/products/${id}/images`} method="POST">
-                <div className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex flex-col items-center justify-center">
+                <div className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/40 transition-colors">
                   <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                   <span className="text-sm text-muted-foreground">Add Image</span>
                 </div>
@@ -107,13 +113,13 @@ export default async function ProductFilesPage({
         {/* Video Section */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Product Video</h2>
-          {product.videoUrl ? (
+          {product.video_url ? (
             <div className="relative aspect-video rounded-lg overflow-hidden border">
-              <video src={product.videoUrl} controls className="w-full h-full object-cover" />
+              <video src={product.video_url} controls className="w-full h-full object-cover" />
               <form 
                 action={`/api/products/${id}/video/delete`} 
                 method="POST"
-                className="absolute top-2 right-2"
+                className="absolute top-2 right-2 z-10"
               >
                 <Button variant="destructive" size="sm">
                   <X className="w-4 h-4" />
@@ -122,7 +128,7 @@ export default async function ProductFilesPage({
             </div>
           ) : (
             <form action={`/api/products/${id}/video`} method="POST">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 cursor-pointer hover:border-muted-foreground/40 transition-colors">
                 <div className="text-center">
                   <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No Video Uploaded</h3>

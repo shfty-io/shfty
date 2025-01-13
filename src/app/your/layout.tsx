@@ -19,7 +19,7 @@ export default function YourLayout({
       </div>
       
       {/* Main content that scrolls */}
-      <div className={`flex-1 flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className={`flex-1 flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <Header 
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
           isOpen={isSidebarOpen}
