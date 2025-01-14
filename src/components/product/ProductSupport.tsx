@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { Mail, Flag } from "lucide-react"
+import { Mail } from "lucide-react"
+import { ReportDialog } from "./ReportDialog"
 
 interface ProductSupportProps {
   productId: string
@@ -26,12 +27,7 @@ export function ProductSupport({ productId, productName, sellerEmail }: ProductS
       
       {/* Report Button */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" className="text-red-600 hover:text-red-700" asChild>
-          <a href={`mailto:support@yourplatform.com?subject=Report Product: ${productName}&body=Product ID: ${productId}`} className="flex items-center gap-2">
-            <Flag className="h-4 w-4" />
-            Report this product
-          </a>
-        </Button>
+        <ReportDialog productId={productId} productName={productName} />
       </div>
     </div>
   )
