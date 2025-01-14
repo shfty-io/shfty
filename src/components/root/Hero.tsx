@@ -86,15 +86,15 @@ export default function Hero() {
         <div className="space-y-8">
           <div>
             <p className="text-sm text-gray-500 uppercase tracking-wider mb-2">
-              MEMBERSHIP TEMPLATE
+              SOFTWARE MARKETPLACE
             </p>
             <h1 className="text-5xl font-bold leading-tight mb-4">
-              Meet the new home<br />
-              for your digital goods
+              Your Destination for<br />
+              Quality Software
             </h1>
             <p className="text-xl text-gray-600">
-              Sell exclusive access to your digital goods<br />
-              all in your Framer CMS site
+              Buy and sell software solutions with confidence.<br />
+              From tools to complete applications, find what you need.
             </p>
           </div>
 

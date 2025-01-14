@@ -16,7 +16,21 @@ async function getProductsByCategory(category: string) {
   
   const { data: products, error } = await supabase
     .from('products')
-    .select('*')
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      categories,
+      image_urls,
+      short_description,
+      byline,
+      status,
+      created_at,
+      view_count,
+      purchase_count,
+      trending_score
+    `)
     .contains('categories', [category])
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
@@ -73,7 +87,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         
         {/* Product Grid */}
         <div className="py-8">
-          <ProductList products={products} category={slug} />
+          <ProductList products={products} />
         </div>
       </div>
     </>

@@ -16,7 +16,11 @@ async function getProducts() {
       image_urls,
       short_description,
       byline,
-      status
+      status,
+      created_at,
+      view_count,
+      purchase_count,
+      trending_score
     `)
     .eq('status', 'approved')
     .order('created_at', { ascending: false })
