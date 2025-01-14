@@ -1,12 +1,15 @@
 import { Navbar } from '@/components/global/Navbar'
 import { createClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { PurchaseButton } from '@/components/product/PurchaseButton'
 import { Database } from '@/types/supabase'
-import { Button } from '@/components/ui/button'
-import { Mail, Flag } from 'lucide-react'
+import { ImageGallery } from '@/components/product/ImageGallery'
+import { ProductHeader } from '@/components/product/ProductHeader'
+import { ProductDescription } from '@/components/product/ProductDescription'
+import { ProductFAQ } from '@/components/product/ProductFAQ'
+import { ProductSupport } from '@/components/product/ProductSupport'
+import { RefundPolicy } from '@/components/product/RefundPolicy'
 
 type Product = Database['public']['Tables']['products']['Row'] & {
   seller?: {
@@ -70,107 +73,35 @@ export default async function ProductPage(props: PageProps) {
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-              <Image
-                src={product.image_urls?.[0] || '/placeholder.jpg'}
-                alt={product.name}
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
-            {product.image_urls && product.image_urls.length > 1 && (
-              <div className="grid grid-cols-4 gap-4">
-                {product.image_urls.slice(1).map((url: string, i: number) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-                    <Image
-                      src={url}
-                      alt={`${product.name} ${i + 2}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ImageGallery 
+            images={product.image_urls || []} 
+            productName={product.name}
+            videoUrl={product.video_url}
+          />
 
           {/* Product Info */}
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
-              <p className="mt-2 text-xl font-semibold text-gray-900">
-                {product.price === 0 ? 'Free' : `$${product.price.toFixed(2)}`}
-              </p>
-              {/* Categories */}
-              {product.category && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-full">
-                    {product.category}
-                  </span>
-                </div>
-              )}
-            </div>
+            <ProductHeader 
+              name={product.name}
+              price={product.price}
+              categories={product.categories}
+            />
 
-            <div className="prose max-w-none">
-              <h2 className="text-lg font-semibold">Description</h2>
-              <div 
-                className="mt-2 text-gray-600"
-                dangerouslySetInnerHTML={{ __html: product.description || '' }}
-              />
-            </div>
+            <ProductDescription description={product.description} />
 
-            {product.faq && (
-              <div className="prose max-w-none">
-                <h2 className="text-lg font-semibold">FAQ</h2>
-                <div 
-                  className="mt-2 text-gray-600"
-                  dangerouslySetInnerHTML={{ __html: product.faq }}
-                />
-              </div>
-            )}
+            <ProductFAQ faq={product.faq} />
 
             <Card className="p-6">
               <PurchaseButton productId={product.id} price={product.price} />
             </Card>
 
-            {/* Support Section */}
-            <div className="border rounded-lg p-6 space-y-4">
-              <h2 className="text-lg font-semibold">Support</h2>
-              
-              {/* Contact Seller */}
-              {product.seller?.email && (
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" asChild>
-                    <a href={`mailto:${product.seller.email}`} className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Contact Seller
-                    </a>
-                  </Button>
-                </div>
-              )}
-              
-              {/* Report Button */}
-              <div className="flex items-center gap-2">
-                <Button variant="outline" className="text-red-600 hover:text-red-700" asChild>
-                  <a href={`mailto:support@yourplatform.com?subject=Report Product: ${product.name}&body=Product ID: ${product.id}`} className="flex items-center gap-2">
-                    <Flag className="h-4 w-4" />
-                    Report this product
-                  </a>
-                </Button>
-              </div>
-            </div>
+            <ProductSupport 
+              productId={product.id}
+              productName={product.name}
+              sellerEmail={product.seller?.email || null}
+            />
 
-            {/* Refund Policy */}
-            <div className="border rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-2">Refund Policy</h2>
-              <p className="text-sm text-gray-600">
-                All products are purchased directly from their respective creators. 
-                Please review the seller&apos;s refund policy before making any purchase. 
-                For any refund requests, please contact the seller directly.
-              </p>
-            </div>
+            <RefundPolicy />
           </div>
         </div>
       </main>

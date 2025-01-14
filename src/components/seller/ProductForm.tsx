@@ -75,16 +75,27 @@ const categories = [
 
 export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   const [formData, setFormData] = useState<ProductFormData>({
-    name: initialData?.name || "",
-    byline: initialData?.byline || "",
-    shortDescription: initialData?.shortDescription || "",
-    description: initialData?.description || "",
-    price: initialData?.price || 10,
-    categories: initialData?.categories || [],
-    faq: initialData?.faq || []
+    name: initialData?.name ?? "",
+    byline: initialData?.byline ?? "",
+    shortDescription: initialData?.shortDescription ?? "",
+    description: initialData?.description ?? "",
+    price: initialData?.price ?? 10,
+    categories: initialData?.categories ?? [],
+    faq: []
   });
 
-  const [faqItems, setFaqItems] = useState<FAQItem[]>(initialData?.faq || []);
+  const [faqItems, setFaqItems] = useState<FAQItem[]>(() => {
+    if (!initialData?.faq) return [];
+    try {
+      return typeof initialData.faq === 'string' 
+        ? JSON.parse(initialData.faq) 
+        : Array.isArray(initialData.faq) 
+          ? initialData.faq 
+          : [];
+    } catch {
+      return [];
+    }
+  });
 
   const addFaqItem = () => {
     setFaqItems([...faqItems, { question: '', answer: '' }]);
