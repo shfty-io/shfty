@@ -10,10 +10,10 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
       
-      <div className="bg-white rounded-lg shadow p-6 space-y-6">
+      <div className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold mb-2">Personal Information</h2>
           <div className="grid grid-cols-2 gap-4">

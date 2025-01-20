@@ -30,12 +30,12 @@ export default async function ProductFilesPage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Manage Files - {product.name}</h1>
 
       <div className="grid gap-6">
         {/* Codebase Section */}
-        <Card className="p-6">
+        <div className="border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Codebase</h2>
           {product.codebase_url ? (
             <div className="border rounded-lg p-4">
@@ -74,10 +74,10 @@ export default async function ProductFilesPage({
               </form>
             </div>
           )}
-        </Card>
+        </div>
 
         {/* Images Section */}
-        <Card className="p-6">
+        <div className="border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Product Images</h2>
           <div className="grid grid-cols-3 gap-4">
             {product.image_urls?.map((url: string, index: number) => (
@@ -108,10 +108,10 @@ export default async function ProductFilesPage({
               </form>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Video Section */}
-        <Card className="p-6">
+        <div className="border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Product Video</h2>
           {product.video_url ? (
             <div className="relative aspect-video rounded-lg overflow-hidden border">
@@ -140,7 +140,7 @@ export default async function ProductFilesPage({
               </div>
             </form>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );

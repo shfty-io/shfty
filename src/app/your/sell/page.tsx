@@ -176,7 +176,7 @@ export default function SellerDashboard() {
   }, []);
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="p-6">
       <h1 className="text-4xl font-bold mb-8">Seller Dashboard</h1>
       
       {/* Progress indicator */}
@@ -197,7 +197,7 @@ export default function SellerDashboard() {
       </div>
 
       {/* Main content area */}
-      <Card className="p-6 mb-6">
+      <div className="border rounded-lg p-6 mb-6">
         <div className="space-y-6">
           {currentStep === 1 && (
             <div>
@@ -282,7 +282,7 @@ export default function SellerDashboard() {
             </div>
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 } 

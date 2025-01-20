@@ -30,7 +30,7 @@ export default async function ListingsPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Your Listings</h1>
         <Link href="/your/sell">
@@ -45,7 +45,7 @@ export default async function ListingsPage() {
           products.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-lg shadow p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+              className="border rounded-lg p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
             >
               <div className="flex-1">
                 <h2 className="text-lg font-semibold mb-2">{product.name}</h2>

@@ -39,47 +39,45 @@ export default async function PurchasesPage() {
   const purchases = await getPurchases(user.id)
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Your Purchases</h1>
-        
-        {purchases.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">You haven't made any purchases yet.</p>
-            <Button asChild>
-              <a href="/">Browse Products</a>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {purchases.map((purchase) => {
-              const product = purchase.product as any
-              return (
-                <div
-                  key={purchase.id}
-                  className="border rounded-lg p-6 bg-card"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Purchased on {new Date(purchase.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {product.description}
-                      </p>
-                    </div>
-                    <DownloadButton productId={product.id} codebaseUrl={product.codebase_url} />
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-8">Your Purchases</h1>
+      
+      {purchases.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">You haven't made any purchases yet.</p>
+          <Button asChild>
+            <a href="/">Browse Products</a>
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {purchases.map((purchase) => {
+            const product = purchase.product as any
+            return (
+              <div
+                key={purchase.id}
+                className="border rounded-lg p-6"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Purchased on {new Date(purchase.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {product.description}
+                    </p>
                   </div>
+                  <DownloadButton productId={product.id} codebaseUrl={product.codebase_url} />
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </main>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 

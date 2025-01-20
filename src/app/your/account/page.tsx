@@ -11,10 +11,10 @@ export default async function AccountPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
       
-      <div className="bg-white rounded-lg shadow p-6 space-y-6">
+      <div className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold mb-4">Security</h2>
           <form action="/auth/reset-password" method="POST">
