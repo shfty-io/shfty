@@ -238,11 +238,13 @@ export default function SellerDashboard() {
                     </div>
                     <div className="text-sm">
                       <dt className="inline font-medium">Category:</dt>
-                      <dd className="inline ml-2">{productData?.category}</dd>
+                      <dd className="inline ml-2">{productData?.categories?.[0]}</dd>
                     </div>
                     <div className="text-sm">
                       <dt className="inline font-medium">Price:</dt>
-                      <dd className="inline ml-2">${productData?.price}</dd>
+                      <dd className="inline ml-2">
+                        {productData?.price === 0 ? 'Free' : `$${productData?.price}`}
+                      </dd>
                     </div>
                   </dl>
                 </div>

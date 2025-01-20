@@ -23,6 +23,11 @@ interface Product {
   view_count: number
   purchase_count: number
   trending_score: number
+  likes_count: number
+  user: {
+    avatar_url: string | null
+    full_name: string | null
+  }
 }
 
 interface ProductListProps {
@@ -88,8 +93,8 @@ export default function ProductList({ products }: ProductListProps) {
 
   return (
     <div>
-      <div className="border-b">
-        <div className="px-6 py-4">
+      <div className="pt-6">
+        <div className="px-6">
           <ProductFilters 
             onFilterChange={setFilters}
             counts={counts}
@@ -106,7 +111,13 @@ export default function ProductList({ products }: ProductListProps) {
                 title: product.name,
                 description: product.short_description || stripHtml(product.description),
                 price: product.price,
-                images: product.image_urls || []
+                images: product.image_urls || [],
+                view_count: product.view_count,
+                likes_count: product.likes_count,
+                user: {
+                  avatar_url: product.user.avatar_url || '/placeholder-avatar.jpg',
+                  full_name: product.user.full_name || 'Anonymous'
+                }
               }}
             />
           ))}

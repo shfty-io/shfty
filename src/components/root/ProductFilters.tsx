@@ -39,7 +39,7 @@ export default function ProductFilters({ onFilterChange, counts }: ProductFilter
   };
 
   return (
-    <div className="flex flex-col space-y-4 pb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+    <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
       <Tabs defaultValue="all" onValueChange={handleTabChange}>
         <ScrollArea>
           <TabsList className="mb-3 h-auto -space-x-px bg-background p-0 shadow-sm shadow-black/5 rtl:space-x-reverse">
@@ -47,7 +47,7 @@ export default function ProductFilters({ onFilterChange, counts }: ProductFilter
               value="all"
               className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
             >
-              All Components <span className="ml-1.5 text-gray-500">{counts.all}</span>
+              All Products <span className="ml-1.5 text-gray-500">{counts.all}</span>
             </TabsTrigger>
             <TabsTrigger
               value="latest"
@@ -72,7 +72,7 @@ export default function ProductFilters({ onFilterChange, counts }: ProductFilter
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
-            placeholder="Search components..."
+            placeholder="Search products..."
             className="h-9 w-[200px] rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">

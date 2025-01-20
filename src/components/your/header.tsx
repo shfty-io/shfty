@@ -16,6 +16,7 @@ export function Header({ onToggleSidebar, isOpen }: HeaderProps) {
           variant="ghost" 
           size="icon"
           onClick={onToggleSidebar}
+          className="mr-2"
         >
           {isOpen ? (
             <PanelLeftClose className="h-5 w-5" />

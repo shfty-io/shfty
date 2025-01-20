@@ -3,15 +3,17 @@
 import Link from 'next/link'
 import { UserNav } from '@/components/global/UserNav'
 import { Button } from "@/components/ui/button"
-import { Moon, Sun, Twitter } from 'lucide-react'
+import { Moon, Sun, Twitter, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
+import { useSidebar } from '@/components/ui/sidebar'
 
 export function Navbar() {
   const [isDark, setIsDark] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const { toggleSidebar, state } = useSidebar()
   const supabase = createClient()
 
   useEffect(() => {
@@ -49,9 +51,19 @@ export function Navbar() {
   return (
     <header className="relative w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 py-6">
-        <Link href="/" className="font-semibold">
-          Market
-        </Link>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9"
+          onClick={toggleSidebar}
+        >
+          {state === "expanded" ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
+            <PanelLeftOpen className="h-4 w-4" />
+          )}
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
         <nav className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
