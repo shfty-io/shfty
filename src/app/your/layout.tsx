@@ -1,34 +1,23 @@
 'use client';
 
 import { Header } from "@/components/your/header"
-import { Sidebar } from "@/components/your/sidebar"
-import { cn } from "@/lib/utils"
-import { useSidebar } from "@/contexts/SidebarContext"
+import { YourSidebar } from "@/components/your/YourSidebar"
+import { SidebarInset } from "@/components/ui/sidebar"
 
 export default function YourLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { isSidebarOpen, setIsSidebarOpen } = useSidebar();
-
   return (
-    <div className="min-h-screen">
-      <Sidebar isOpen={isSidebarOpen} />
-      
-      {/* Main content that scrolls */}
-      <div className={cn(
-        "min-h-screen flex flex-col transition-[margin] duration-300 ease-in-out",
-        isSidebarOpen ? "ml-64" : "ml-0"
-      )}>
-        <Header 
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-          isOpen={isSidebarOpen}
-        />
-        <main className="flex-1">
+    <div className="group/sidebar-wrapper flex min-h-svh w-full">
+      <YourSidebar />
+      <SidebarInset>
+        <Header />
+        <main className="flex-1 container mx-auto p-6">
           {children}
         </main>
-      </div>
+      </SidebarInset>
     </div>
   )
 }

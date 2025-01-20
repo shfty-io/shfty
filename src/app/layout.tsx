@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { SidebarProvider } from "@/contexts/SidebarContext";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,12 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <SidebarProvider>
-          <div className="flex-1">
-            {children}
-          </div>
-          <Toaster />
+        <SidebarProvider defaultOpen={true}>
+          {children}
         </SidebarProvider>
+        <Toaster />
       </body>
     </html>
   );
