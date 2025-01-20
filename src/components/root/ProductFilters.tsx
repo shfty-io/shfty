@@ -1,75 +1,95 @@
 import { useState } from 'react';
+import { Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProductFiltersProps {
   onFilterChange: (filters: {
-    sortBy: 'recent' | 'popular' | 'trending';
-    priceRange: string;
+    tab: 'all' | 'latest' | 'popular';
+    sortBy: 'downloaded' | 'liked' | 'newest';
   }) => void;
+  counts: {
+    all: number;
+    latest: number;
+    popular: number;
+  };
 }
 
-export default function ProductFilters({ onFilterChange }: ProductFiltersProps) {
-  const [selectedSort, setSelectedSort] = useState<'recent' | 'popular' | 'trending'>('recent');
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string>('all');
+export default function ProductFilters({ onFilterChange, counts }: ProductFiltersProps) {
+  const [sortBy, setSortBy] = useState<'downloaded' | 'liked' | 'newest'>('downloaded');
+  const [activeTab, setActiveTab] = useState<'all' | 'latest' | 'popular'>('all');
 
-  const priceRanges = [
-    { label: 'All Prices', value: 'all' },
-    { label: 'Under $10', value: '0-10' },
-    { label: '$10 - $50', value: '10-50' },
-    { label: '$50 - $100', value: '50-100' },
-    { label: 'Over $100', value: '100+' },
-  ];
-
-  const sortOptions = [
-    { label: 'Recent', value: 'recent' },
-    { label: 'Popular', value: 'popular' },
-    { label: 'Trending', value: 'trending' },
-  ];
-
-  const handleSortChange = (sort: 'recent' | 'popular' | 'trending') => {
-    setSelectedSort(sort);
-    onFilterChange({ sortBy: sort, priceRange: selectedPriceRange });
+  const handleTabChange = (value: string) => {
+    const tab = value as 'all' | 'latest' | 'popular';
+    setActiveTab(tab);
+    onFilterChange({ tab, sortBy });
   };
 
-  const handlePriceRangeChange = (range: string) => {
-    setSelectedPriceRange(range);
-    onFilterChange({ sortBy: selectedSort, priceRange: range });
+  const handleSortChange = (value: 'downloaded' | 'liked' | 'newest') => {
+    setSortBy(value);
+    onFilterChange({ tab: activeTab, sortBy: value });
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-      <div className="flex-1">
-        <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">
-          Sort By
-        </label>
-        <select
-          id="sort"
-          value={selectedSort}
-          onChange={(e) => handleSortChange(e.target.value as 'recent' | 'popular' | 'trending')}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        >
-          {sortOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex-1">
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-          Price Range
-        </label>
-        <select
-          id="price"
-          value={selectedPriceRange}
-          onChange={(e) => handlePriceRangeChange(e.target.value)}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        >
-          {priceRanges.map((range) => (
-            <option key={range.value} value={range.value}>
-              {range.label}
-            </option>
-          ))}
-        </select>
+    <div className="flex flex-col space-y-4 pb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+      <Tabs defaultValue="all" onValueChange={handleTabChange}>
+        <ScrollArea>
+          <TabsList className="mb-3 h-auto -space-x-px bg-background p-0 shadow-sm shadow-black/5 rtl:space-x-reverse">
+            <TabsTrigger
+              value="all"
+              className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
+            >
+              All Components <span className="ml-1.5 text-gray-500">{counts.all}</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="latest"
+              className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
+            >
+              Latest <span className="ml-1.5 text-gray-500">{counts.latest}</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="popular"
+              className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
+            >
+              Popular <span className="ml-1.5 text-gray-500">{counts.popular}</span>
+            </TabsTrigger>
+          </TabsList>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </Tabs>
+
+      {/* Search and Sort */}
+      <div className="flex items-center space-x-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search components..."
+            className="h-9 w-[200px] rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+            <span className="text-xs text-gray-400">/</span>
+          </div>
+        </div>
+
+        <Select value={sortBy} onValueChange={handleSortChange}>
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="downloaded">Most downloaded</SelectItem>
+            <SelectItem value="liked">Most liked</SelectItem>
+            <SelectItem value="newest">Newest</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

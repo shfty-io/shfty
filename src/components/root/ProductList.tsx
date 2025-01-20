@@ -25,44 +25,45 @@ interface Product {
   trending_score: number
 }
 
-type SortOption = 'recent' | 'popular' | 'trending';
-
 interface ProductListProps {
   products: Product[]
 }
 
 export default function ProductList({ products }: ProductListProps) {
   const [filters, setFilters] = useState<{
-    sortBy: SortOption;
-    priceRange: string;
+    tab: 'all' | 'latest' | 'popular';
+    sortBy: 'downloaded' | 'liked' | 'newest';
   }>({
-    sortBy: 'recent',
-    priceRange: 'all',
+    tab: 'all',
+    sortBy: 'downloaded'
   });
 
-  // Sort products based on selected filter
-  const sortedProducts = [...products].sort((a, b) => {
+  // Filter and sort products based on selected filters
+  const filteredAndSortedProducts = [...products].sort((a, b) => {
     switch (filters.sortBy) {
-      case 'recent':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case 'popular':
-        return b.view_count - a.view_count;
-      case 'trending':
+      case 'downloaded':
+        return b.purchase_count - a.purchase_count;
+      case 'liked':
         return b.trending_score - a.trending_score;
+      case 'newest':
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       default:
         return 0;
     }
-  });
-
-  // Filter products based on price range
-  const filteredProducts = sortedProducts.filter(product => {
-    if (filters.priceRange === 'all') return true;
-
-    const [min, max] = filters.priceRange.split('-').map(Number);
-    if (filters.priceRange === '100+') {
-      return product.price >= 100;
+  }).filter(product => {
+    switch (filters.tab) {
+      case 'latest':
+        // Show products from the last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        return new Date(product.created_at) >= sevenDaysAgo;
+      case 'popular':
+        // Show products with high purchase count or trending score
+        return product.purchase_count > 10 || product.trending_score > 50;
+      case 'all':
+      default:
+        return true;
     }
-    return product.price >= min && product.price <= max;
   });
 
   if (products.length === 0) {
@@ -74,30 +75,48 @@ export default function ProductList({ products }: ProductListProps) {
     );
   }
 
+  // Calculate counts for each tab
+  const counts = {
+    all: products.length,
+    latest: products.filter(p => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return new Date(p.created_at) >= sevenDaysAgo;
+    }).length,
+    popular: products.filter(p => p.purchase_count > 10 || p.trending_score > 50).length,
+  };
+
   return (
-    <div className="py-8">
-      <ProductFilters 
-        onFilterChange={setFilters}
-      />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={{
-              id: product.id,
-              title: product.name,
-              description: product.short_description || stripHtml(product.description),
-              price: product.price,
-              images: product.image_urls || []
-            }}
+    <div>
+      <div className="border-b">
+        <div className="px-6 py-4">
+          <ProductFilters 
+            onFilterChange={setFilters}
+            counts={counts}
           />
-        ))}
-      </div>
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No products match your selected filters.</p>
         </div>
-      )}
+      </div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredAndSortedProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={{
+                id: product.id,
+                title: product.name,
+                description: product.short_description || stripHtml(product.description),
+                price: product.price,
+                images: product.image_urls || []
+              }}
+            />
+          ))}
+        </div>
+        {filteredAndSortedProducts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No products match your selected filters.</p>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 } 
