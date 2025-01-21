@@ -72,9 +72,9 @@ export default async function Home() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen">
+      <div className="flex w-full">
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="w-full">
           <Navbar />
           <div className="flex-1 p-4">
             <ProductList products={products} />

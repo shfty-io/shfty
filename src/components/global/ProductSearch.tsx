@@ -2,30 +2,37 @@
 
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
-export function ProductSearch() {
+interface ProductSearchProps {
+  onSearch: (query: string) => void;
+}
+
+export function ProductSearch({ onSearch }: ProductSearchProps) {
   const [query, setQuery] = useState('');
-  const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-    }
+    onSearch(query.trim());
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
+    onSearch(newQuery.trim());
   };
 
   return (
-    <form onSubmit={handleSearch} className="w-full max-w-sm">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search products..."
-          className="w-full rounded-full border border-gray-200 bg-white pl-9 pr-4 py-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
-        />
+    <form onSubmit={handleSearch} className="relative">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+      <input
+        type="text"
+        value={query}
+        onChange={handleChange}
+        placeholder="Search products..."
+        className="h-9 w-[200px] rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
+      />
+      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+        <span className="text-xs text-gray-400">/</span>
       </div>
     </form>
   );

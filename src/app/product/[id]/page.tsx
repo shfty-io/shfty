@@ -1,4 +1,3 @@
-import { Navbar } from '@/components/global/Navbar'
 import { createClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/card'
@@ -68,43 +67,40 @@ export default async function ProductPage(props: PageProps) {
   }
 
   return (
-    <>
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Image Gallery */}
-          <ImageGallery 
-            images={product.image_urls || []} 
-            productName={product.name}
-            videoUrl={product.video_url}
+    <main className="container mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Image Gallery */}
+        <ImageGallery 
+          images={product.image_urls || []} 
+          productName={product.name}
+          videoUrl={product.video_url}
+        />
+
+        {/* Product Info */}
+        <div className="space-y-6">
+          <ProductHeader 
+            name={product.name}
+            price={product.price}
+            categories={product.categories}
           />
 
-          {/* Product Info */}
-          <div className="space-y-6">
-            <ProductHeader 
-              name={product.name}
-              price={product.price}
-              categories={product.categories}
-            />
+          <ProductDescription description={product.description} />
 
-            <ProductDescription description={product.description} />
+          <ProductFAQ faq={product.faq} />
 
-            <ProductFAQ faq={product.faq} />
+          <Card className="p-6">
+            <PurchaseButton productId={product.id} price={product.price} />
+          </Card>
 
-            <Card className="p-6">
-              <PurchaseButton productId={product.id} price={product.price} />
-            </Card>
+          <ProductSupport 
+            productId={product.id}
+            productName={product.name}
+            sellerEmail={product.seller?.email || null}
+          />
 
-            <ProductSupport 
-              productId={product.id}
-              productName={product.name}
-              sellerEmail={product.seller?.email || null}
-            />
-
-            <RefundPolicy />
-          </div>
+          <RefundPolicy />
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   )
 } 
