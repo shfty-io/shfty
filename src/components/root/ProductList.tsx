@@ -74,13 +74,13 @@ export default function ProductList({ products }: ProductListProps) {
     .filter(product => {
       switch (filters.tab) {
         case 'latest':
-          // Show products from the last 7 days
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          return new Date(product.created_at) >= sevenDaysAgo;
+          // Show products from the last 30 days instead of 7
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          return new Date(product.created_at) >= thirtyDaysAgo;
         case 'popular':
-          // Show products with high purchase count or trending score
-          return product.purchase_count > 10 || product.trending_score > 50;
+          // Don't filter, just show all products sorted by popularity
+          return true;
         case 'all':
         default:
           return true;
@@ -113,11 +113,11 @@ export default function ProductList({ products }: ProductListProps) {
   const counts = {
     all: products.length,
     latest: products.filter(p => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      return new Date(p.created_at) >= sevenDaysAgo;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return new Date(p.created_at) >= thirtyDaysAgo;
     }).length,
-    popular: products.filter(p => p.purchase_count > 10 || p.trending_score > 50).length,
+    popular: products.length, // All products are shown in popular tab
   };
 
   return (

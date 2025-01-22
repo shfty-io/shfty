@@ -3,7 +3,7 @@ import { Database } from "@/types/supabase"
 interface ProductHeaderProps {
   name: string
   price: number
-  categories: Database["public"]["Enums"]["product_category"][] | null
+  categories?: Database["public"]["Enums"]["product_category"][] | null
 }
 
 export function ProductHeader({ name, price, categories }: ProductHeaderProps) {

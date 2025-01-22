@@ -36,6 +36,7 @@ export function ImageGallery({ images, productName, videoUrl }: ImageGalleryProp
           src={imageUrl}
           alt={productName}
           fill
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover"
           priority={currentIndex === 0}
         />
@@ -90,6 +91,7 @@ export function ImageGallery({ images, productName, videoUrl }: ImageGalleryProp
                 src={url}
                 alt={`${productName} ${idx + 1}`}
                 fill
+                sizes="(max-width: 768px) 25vw, 15vw"
                 className="object-cover"
               />
             </button>
