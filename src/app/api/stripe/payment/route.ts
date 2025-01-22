@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
 });
 
-const PLATFORM_FEE_PERCENTAGE = 10; // 10% platform fee
+const PLATFORM_FEE_PERCENTAGE = Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 2.5;
 
 export async function POST(request: Request) {
   try {
