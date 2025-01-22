@@ -3,7 +3,27 @@ import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/server';
 import { Database } from '@/types/supabase';
-import { Navbar } from '@/components/global/Navbar';
+import { ProductNavbar } from '@/components/product/ProductNavbar';
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  categories: string[];
+  image_urls: string[] | null;
+  short_description: string;
+  byline: string;
+  created_at: string;
+  view_count: number;
+  purchase_count: number;
+  trending_score: number;
+  likes_count: number;
+  user: {
+    avatar_url: string | null;
+    full_name: string | null;
+  };
+}
 
 interface CategoryPageProps {
   params: {
@@ -11,7 +31,7 @@ interface CategoryPageProps {
   };
 }
 
-async function getProductsByCategory(category: string) {
+async function getProductsByCategory(category: string): Promise<Product[]> {
   const supabase = createClient();
   
   const { data: products, error } = await supabase
@@ -29,10 +49,12 @@ async function getProductsByCategory(category: string) {
       created_at,
       view_count,
       purchase_count,
-      trending_score
+      trending_score,
+      likes_count,
+      user:users!inner(avatar_url, full_name)
     `)
-    .contains('categories', [category])
     .eq('status', 'approved')
+    .filter('categories', 'cs', `{${category}}`)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -40,22 +62,30 @@ async function getProductsByCategory(category: string) {
     return [];
   }
 
-  return products;
+  // Transform the user array into a single object
+  const transformedProducts = products?.map(product => ({
+    ...product,
+    user: product.user[0]
+  })) || [];
+
+  return transformedProducts as Product[];
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
-  const slug = params.slug.toLowerCase();
-  const metadata = categoryMetadata[slug];
+  // Ensure params is resolved before accessing
+  const { slug } = await Promise.resolve(params);
+  const normalizedSlug = slug.toLowerCase();
+  const metadata = categoryMetadata[normalizedSlug];
   
   if (!metadata) {
     notFound();
   }
 
-  const products = await getProductsByCategory(slug);
+  const products = await getProductsByCategory(normalizedSlug);
 
   return (
     <>
-      <Navbar />
+      <ProductNavbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="py-4">

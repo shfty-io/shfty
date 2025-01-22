@@ -10,6 +10,7 @@ import { ProductFAQ } from '@/components/product/ProductFAQ'
 import { ProductSupport } from '@/components/product/ProductSupport'
 import { RefundPolicy } from '@/components/product/RefundPolicy'
 import { LikeButton } from '@/components/product/LikeButton'
+import { ProductNavbar } from '@/components/product/ProductNavbar'
 import { incrementViewCount } from '@/app/actions'
 
 type Product = Database['public']['Tables']['products']['Row'] & {
@@ -70,6 +71,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
   return (
     <div className="min-h-screen bg-background">
+      <ProductNavbar />
       <main className="container mx-auto px-4 py-8">
         {/* Top section with gallery and product info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
