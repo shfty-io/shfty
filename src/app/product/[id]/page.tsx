@@ -77,24 +77,28 @@ export default async function ProductPage({ params }: { params: { id: string } }
             images={product.image_urls || []} 
             productName={product.name}
           />
-          <div className="space-y-8">
-            <div className="flex items-start justify-between">
-              <ProductHeader 
-                name={product.name}
+          <div className="flex flex-col h-full">
+            <div className="space-y-8 flex-1">
+              <div className="flex items-start justify-between">
+                <ProductHeader 
+                  name={product.name}
+                  price={product.price}
+                />
+                <div className="ml-4">
+                  <LikeButton 
+                    productId={product.id}
+                    initialLikes={product.likes_count}
+                  />
+                </div>
+              </div>
+              <ProductDescription description={product.description} />
+            </div>
+            <div className="mt-8">
+              <PurchaseButton 
+                productId={product.id}
                 price={product.price}
               />
-              <div className="ml-4">
-                <LikeButton 
-                  productId={product.id}
-                  initialLikes={product.likes_count}
-                />
-              </div>
             </div>
-            <ProductDescription description={product.description} />
-            <PurchaseButton 
-              productId={product.id}
-              price={product.price}
-            />
           </div>
         </div>
 
@@ -102,16 +106,13 @@ export default async function ProductPage({ params }: { params: { id: string } }
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Features section - spans 2 columns */}
           <div className="lg:col-span-2">
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-6">Features</h2>
-              <ProductFAQ faq={product.faq || []} />
-            </Card>
+            <ProductFAQ faq={product.faq || []} />
           </div>
 
           {/* Support section - spans 1 column */}
           <div className="space-y-6">
             {/* Categories */}
-            <Card className="p-6">
+            <div>
               <h3 className="font-semibold mb-4">Categories</h3>
               <div className="flex flex-wrap gap-2">
                 {product.categories?.map((category: string, index: number) => (
@@ -123,31 +124,19 @@ export default async function ProductPage({ params }: { params: { id: string } }
                   </span>
                 ))}
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-6">
+            <div>
               <ProductSupport 
                 productId={product.id}
                 productName={product.name}
                 sellerEmail={product.seller?.email || null}
               />
-            </Card>
+            </div>
             
-            <Card className="p-6">
+            <div>
               <RefundPolicy />
-            </Card>
-
-            <Card className="p-6">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Report Template</h3>
-                <p className="text-sm text-muted-foreground">
-                  If you believe this template violates our terms of service, please report it.
-                </p>
-                <button className="text-sm text-red-600 hover:text-red-700">
-                  Report this template
-                </button>
-              </div>
-            </Card>
+            </div>
           </div>
         </div>
       </main>

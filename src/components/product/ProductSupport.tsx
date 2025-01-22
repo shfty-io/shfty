@@ -10,25 +10,21 @@ interface ProductSupportProps {
 
 export function ProductSupport({ productId, productName, sellerEmail }: ProductSupportProps) {
   return (
-    <div className="border rounded-lg p-6 space-y-4">
+    <div className="space-y-4">
       <h2 className="text-lg font-semibold">Support</h2>
       
       {/* Contact Seller */}
       {sellerEmail && (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <a href={`mailto:${sellerEmail}`} className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Contact Seller
-            </a>
-          </Button>
-        </div>
+        <Button variant="outline" asChild className="w-full">
+          <a href={`mailto:${sellerEmail}?subject=Question about ${encodeURIComponent(productName)}`} className="flex items-center justify-center gap-2">
+            <Mail className="h-4 w-4" />
+            Contact Seller
+          </a>
+        </Button>
       )}
       
       {/* Report Button */}
-      <div className="flex items-center gap-2">
-        <ReportDialog productId={productId} productName={productName} />
-      </div>
+      <ReportDialog productId={productId} productName={productName} />
     </div>
   )
 } 

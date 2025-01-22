@@ -145,8 +145,8 @@ export default function ProductList({ products }: ProductListProps) {
                 view_count: product.view_count,
                 likes_count: product.likes_count,
                 user: {
-                  avatar_url: product.user.avatar_url || '/placeholder-avatar.jpg',
-                  full_name: product.user.full_name || 'Anonymous'
+                  avatar_url: product.user?.avatar_url || '/placeholder-avatar.jpg',
+                  full_name: product.user?.full_name || 'Anonymous'
                 }
               }}
             />
