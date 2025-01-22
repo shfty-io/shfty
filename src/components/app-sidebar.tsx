@@ -2,7 +2,6 @@ import * as React from "react"
 import { Store, Plus, Minus } from "lucide-react"
 import Link from "next/link"
 
-import { SearchForm } from "@/components/search-form"
 import {
   Collapsible,
   CollapsibleContent,
@@ -44,14 +43,6 @@ const data = {
         { title: "Finance", url: "/category/finance", isActive: false },
         { title: "Other", url: "/category/other", isActive: false }
       ],
-    },
-    {
-      title: "Price",
-      url: "#",
-      items: [
-        { title: "Free", url: "/category/free", isActive: false },
-        { title: "Paid", url: "/category/paid", isActive: false }
-      ],
     }
   ],
 }
@@ -60,11 +51,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <Link href="/" className="flex items-center gap-2 px-4 py-2 text-lg font-semibold hover:text-primary">
-          <Store className="h-6 w-6" />
-          <span>Market</span>
+        <Link href="/" className="flex items-center space-x-2 px-4 py-2">
+          <div className="h-8 w-8 rounded bg-gray-900 flex items-center justify-center">
+            <span className="text-white text-xs font-medium">AI</span>
+          </div>
+          <div>
+            <div className="font-semibold">Marketplace</div>
+            <div className="text-xs text-gray-500">Settings</div>
+          </div>
         </Link>
-        <SearchForm />
       </SidebarHeader>
       <SidebarContent className="gap-0">
         {/* We create a collapsible SidebarGroup for each parent. */}

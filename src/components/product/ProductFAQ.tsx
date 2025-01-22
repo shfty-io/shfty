@@ -36,7 +36,10 @@ const FaqItem = React.forwardRef<
       className={cn(
         "group",
         "transition-all duration-200 ease-in-out",
-        isOpen ? "bg-muted/30" : "hover:bg-muted/10"
+        "rounded-lg border border-border/50",
+        isOpen
+          ? "bg-gradient-to-br from-background via-muted/50 to-background"
+          : "hover:bg-muted/50"
       )}
     >
       <Button
@@ -105,16 +108,16 @@ export function ProductFAQ({ faq }: ProductFAQProps) {
   if (!Array.isArray(faq) || faq.length === 0) return null
 
   return (
-    <section className="py-8 w-full">
+    <section className="w-full">
       <div className="container">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto text-center mb-12"
+          className="max-w-2xl mx-auto mb-12"
         >
-          <h2 className="text-3xl font-semibold mb-3">
+          <h2 className="text-2xl font-semibold mb-3">
             Features
           </h2>
         </motion.div>
