@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Flag } from 'lucide-react'
+import { Megaphone } from 'lucide-react'
 
 interface ReportDialogProps {
   productId: string
@@ -84,10 +84,14 @@ export function ReportDialog({ productId, productName }: ReportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="text-red-600 hover:text-red-700" size="sm">
-          <Flag className="h-4 w-4 mr-2" />
-          Report
-        </Button>
+        <button type="button" className="outline-none">
+          <div className="flex items-center space-x-2.5">
+            <Megaphone className="h-5 w-5" />
+            <span className="text-sm leading-[1.6] text-body-80 transition-opacity hover:opacity-50">
+              Report this template
+            </span>
+          </div>
+        </button>
       </DialogTrigger>
       <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>

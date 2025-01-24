@@ -2,9 +2,8 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronDown } from "lucide-react"
+import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 
 interface FAQItem {
   question: string
@@ -15,62 +14,59 @@ interface ProductFAQProps {
   faq: FAQItem[] | null
 }
 
-// Internal FaqItem component
+export function ProductFAQ({ faq }: ProductFAQProps) {
+  if (!Array.isArray(faq) || faq.length === 0) return null
+
+  return (
+    <div className="space-y-5">
+      <h4 className="body-m font-semibold">Features</h4>
+      <div className="space-y-1" data-orientation="vertical">
+        {faq.map((item, index) => (
+          <FaqItem
+            key={index}
+            question={item.question}
+            answer={item.answer}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const FaqItem = React.forwardRef<
   HTMLDivElement,
   {
     question: string
     answer: string
-    index: number
   }
 >((props, ref) => {
   const [isOpen, setIsOpen] = React.useState(false)
-  const { question, answer, index } = props
+  const { question, answer } = props
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, delay: index * 0.1 }}
+      data-state={isOpen ? "open" : "closed"}
       className={cn(
-        "group",
-        "transition-all duration-200 ease-in-out",
-        "rounded-lg border border-border/50",
-        isOpen
-          ? "bg-gradient-to-br from-background via-muted/50 to-background"
-          : "hover:bg-muted/50"
+        "group overflow-hidden rounded-[10px] border border-gray-200 dark:border-white/10",
+        "data-[state=open]:bg-surface-10"
       )}
     >
-      <Button
-        variant="ghost"
+      <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 h-auto justify-between hover:bg-transparent"
+        className="flex w-full items-center justify-between p-3 pl-4 font-medium"
       >
-        <h3
-          className={cn(
-            "text-base font-medium transition-colors duration-200 text-left",
-            "text-foreground/70",
-            isOpen && "text-foreground"
-          )}
-        >
+        <p className="body-xs text-start font-semibold">
           {question}
-        </h3>
-        <motion.div
-          animate={{
-            rotate: isOpen ? 180 : 0,
-            scale: isOpen ? 1.1 : 1,
-          }}
-          transition={{ duration: 0.2 }}
-          className={cn(
-            "p-0.5 rounded-full flex-shrink-0",
-            "transition-colors duration-200",
-            isOpen ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          <ChevronDown className="h-4 w-4" />
-        </motion.div>
-      </Button>
+        </p>
+        <div className={cn(
+          "opacity-50",
+          "group-data-[state=open]:rotate-45"
+        )}>
+          <Plus className="h-5 w-5" />
+        </div>
+      </button>
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
@@ -86,56 +82,13 @@ const FaqItem = React.forwardRef<
               transition: { duration: 0.2, ease: "easeIn" },
             }}
           >
-            <div className="px-6 pb-4 pt-2">
-              <motion.p
-                initial={{ y: -10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -10, opacity: 0 }}
-                className="text-sm text-muted-foreground leading-relaxed"
-              >
-                {answer}
-              </motion.p>
+            <div className="body-xs space-y-3 p-3 pl-4 pt-0">
+              {answer}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 })
-FaqItem.displayName = "FaqItem"
-
-export function ProductFAQ({ faq }: ProductFAQProps) {
-  if (!Array.isArray(faq) || faq.length === 0) return null
-
-  return (
-    <section className="w-full">
-      <div className="container">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto mb-12"
-        >
-          <h2 className="text-2xl font-semibold mb-3">
-            Features
-          </h2>
-        </motion.div>
-
-        {/* FAQ Items */}
-        <div className="max-w-2xl mx-auto space-y-2">
-          {faq.map((item, index) => (
-            item && typeof item === 'object' && 'question' in item && 'answer' in item ? (
-              <FaqItem
-                key={index}
-                question={item.question}
-                answer={item.answer}
-                index={index}
-              />
-            ) : null
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-} 
+FaqItem.displayName = "FaqItem" 
