@@ -26,6 +26,7 @@ import {
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
 import { Globe } from "lucide-react";
+import { BylineAvailabilityCheck } from "./BylineAvailabilityCheck";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -481,12 +482,17 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="byline">Byline</Label>
-          <Input
-            id="byline"
-            value={formData.byline}
-            onChange={(e) => setFormData({ ...formData, byline: e.target.value })}
-            required
+          <BylineAvailabilityCheck 
+            initialValue={formData.byline}
+            onBylineAvailable={(available) => {
+              if (!available) {
+                toast({
+                  title: "Byline Unavailable",
+                  description: "Please choose a different byline",
+                  variant: "destructive"
+                });
+              }
+            }}
           />
         </div>
 

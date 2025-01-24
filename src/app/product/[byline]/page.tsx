@@ -19,34 +19,44 @@ type Product = Database['public']['Tables']['products']['Row'] & {
   seller?: {
     email: string | null
     full_name: string | null
-  }
+    avatar_url: string | null
+  } | null
   hasPurchased: boolean
 }
 
-async function getProduct(id: Promise<string> | string) {
-  const resolvedId = await id
-  const supabase = createClient()
+async function getProduct(byline: string) {
+  const supabase = createClient();
   
-  // First get the product
-  const { data: product, error } = await supabase
+  // Validate byline format first
+  if (!byline || typeof byline !== 'string') {
+    console.error('Invalid byline parameter');
+    return null;
+  }
+
+  // First try to get by byline
+  let query = supabase
     .from('products')
     .select(`
       *,
       github_repo_url,
       image_urls
     `)
-    .eq('id', resolvedId)
-    .eq('status', 'approved')
-    .single()
+    .eq('status', 'approved');
 
-  if (error) {
-    console.error('Product fetch error:', error)
-    return null
+  // Check if the byline is a valid UUID format
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(byline);
+  
+  if (isUUID) {
+    query = query.eq('id', byline);
+  } else {
+    query = query.eq('byline', byline);
   }
 
-  if (!product) {
-    console.error('Product not found or not approved:', resolvedId)
-    return null
+  const { data: product, error } = await query.single();
+
+  if (error || !product) {
+    console.error('Product fetch error:', error);
+    return null;
   }
 
   // Get the current user
@@ -58,7 +68,7 @@ async function getProduct(id: Promise<string> | string) {
     const { data: purchase } = await supabase
       .from('purchases')
       .select('id')
-      .eq('product_id', resolvedId)
+      .eq('product_id', byline)
       .eq('user_id', user.id)
       .single()
     
@@ -68,7 +78,7 @@ async function getProduct(id: Promise<string> | string) {
   // Then get the seller info
   const { data: sellerData } = await supabase
     .from('profiles')
-    .select('email, full_name')
+    .select('email, full_name, avatar_url')
     .eq('user_id', product.user_id)
     .single()
 
@@ -76,22 +86,33 @@ async function getProduct(id: Promise<string> | string) {
     ...product,
     seller: sellerData ? {
       email: sellerData.email,
-      full_name: sellerData.full_name
+      full_name: sellerData.full_name,
+      avatar_url: sellerData.avatar_url
     } : null,
     hasPurchased
   }
 }
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
-  const id = await Promise.resolve(params.id)
-  const product = await getProduct(id)
+export default async function ProductPage({ 
+  params 
+}: { 
+  params: { byline: string } 
+}) {
+  // Add await for params resolution
+  const { byline } = await Promise.resolve(params);
+
+  if (!byline) {
+    notFound();
+  }
+  
+  const product = await getProduct(byline.toString());
   
   if (!product) {
-    notFound()
+    notFound();
   }
 
-  // Increment view count
-  await incrementViewCount(id)
+  // Update view count using product ID
+  await incrementViewCount(product.id);
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,4 +134,6 @@ export default async function ProductPage({ params }: { params: { id: string } }
       </main>
     </div>
   )
-} 
+}
+
+export const dynamic = 'force-dynamic'; 

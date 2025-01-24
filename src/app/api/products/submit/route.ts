@@ -86,6 +86,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Add this validation at the start of the POST handler:
+    const { data: existing } = await supabase
+      .from('products')
+      .select('id')
+      .eq('byline', productData.byline)
+      .single();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Byline is already taken" },
+        { status: 400 }
+      );
+    }
+
     // Create new product
     const { data: product, error: insertError } = await supabase
       .from('products')

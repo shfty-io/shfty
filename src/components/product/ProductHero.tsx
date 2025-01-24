@@ -6,8 +6,10 @@ import { ProductStats } from "./ProductStats"
 
 type Product = Database['public']['Tables']['products']['Row'] & {
   demo_url?: string | null
-  seller_avatar_url?: string | null
-  seller_name?: string | null
+  seller?: {
+    full_name: string | null
+    avatar_url: string | null
+  } | null
   likes_count: number
   updated_at: string | null
 }
@@ -58,8 +60,8 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
 
       <ProductStats
         productId={product.id}
-        creatorName={product.seller_name || null}
-        creatorAvatarUrl={product.seller_avatar_url || null}
+        creatorName={product.seller?.full_name || null}
+        creatorAvatarUrl={product.seller?.avatar_url || null}
         updatedAt={product.updated_at}
         likesCount={product.likes_count || 0}
         viewCount={product.view_count || 0}

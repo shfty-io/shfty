@@ -15,7 +15,7 @@ import {
 interface ProductFiltersProps {
   onFilterChange: (filters: {
     tab: 'all' | 'latest' | 'popular';
-    sortBy: 'downloaded' | 'liked' | 'newest';
+    sortBy: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
   }) => void;
   onSearch: (query: string) => void;
   counts: {
@@ -26,7 +26,7 @@ interface ProductFiltersProps {
 }
 
 export default function ProductFilters({ onFilterChange, onSearch, counts }: ProductFiltersProps) {
-  const [sortBy, setSortBy] = useState<'downloaded' | 'liked' | 'newest'>('downloaded');
+  const [sortBy, setSortBy] = useState<'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest'>('downloaded');
   const [activeTab, setActiveTab] = useState<'all' | 'latest' | 'popular'>('all');
 
   const handleTabChange = (value: string) => {
@@ -35,31 +35,31 @@ export default function ProductFilters({ onFilterChange, onSearch, counts }: Pro
     onFilterChange({ tab, sortBy });
   };
 
-  const handleSortChange = (value: 'downloaded' | 'liked' | 'newest') => {
+  const handleSortChange = (value: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest') => {
     setSortBy(value);
     onFilterChange({ tab: activeTab, sortBy: value });
   };
 
   return (
-    <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-      <Tabs defaultValue="all" onValueChange={handleTabChange}>
+    <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 flex-1 max-w-[1800px] mx-auto">
+      <Tabs defaultValue="all" onValueChange={handleTabChange} className="flex-1 md:max-w-[70%]">
         <ScrollArea>
           <TabsList className="mb-3 h-auto -space-x-px bg-background p-0 shadow-sm shadow-black/5 rtl:space-x-reverse">
             <TabsTrigger
               value="all"
-              className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
+              className="flex-shrink-0 relative overflow-hidden rounded-none border border-border py-2 px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
             >
               All Products <span className="ml-1.5 text-gray-500">{counts.all}</span>
             </TabsTrigger>
             <TabsTrigger
               value="latest"
-              className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
+              className="flex-shrink-0 relative overflow-hidden rounded-none border border-border py-2 px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
             >
               Latest <span className="ml-1.5 text-gray-500">{counts.latest}</span>
             </TabsTrigger>
             <TabsTrigger
               value="popular"
-              className="relative overflow-hidden rounded-none border border-border py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
+              className="flex-shrink-0 relative overflow-hidden rounded-none border border-border py-2 px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 first:rounded-s last:rounded-e data-[state=active]:bg-muted data-[state=active]:after:bg-primary"
             >
               Popular <span className="ml-1.5 text-gray-500">{counts.popular}</span>
             </TabsTrigger>
@@ -79,6 +79,9 @@ export default function ProductFilters({ onFilterChange, onSearch, counts }: Pro
             <SelectItem value="downloaded">Most downloaded</SelectItem>
             <SelectItem value="liked">Most liked</SelectItem>
             <SelectItem value="newest">Newest</SelectItem>
+            <SelectItem value="oldest">Oldest</SelectItem>
+            <SelectItem value="price_high">Price high to low</SelectItem>
+            <SelectItem value="price_low">Price low to high</SelectItem>
           </SelectContent>
         </Select>
       </div>

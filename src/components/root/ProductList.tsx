@@ -38,7 +38,7 @@ export default function ProductList({ products }: ProductListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<{
     tab: 'all' | 'latest' | 'popular';
-    sortBy: 'downloaded' | 'liked' | 'newest';
+    sortBy: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
   }>({
     tab: 'all',
     sortBy: 'downloaded'
@@ -51,10 +51,7 @@ export default function ProductList({ products }: ProductListProps) {
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
         return (
-          product.name.toLowerCase().includes(searchLower) ||
-          product.description.toLowerCase().includes(searchLower) ||
-          product.short_description?.toLowerCase().includes(searchLower) ||
-          product.categories.some(cat => cat.toLowerCase().includes(searchLower))
+          product.name.toLowerCase().startsWith(searchLower)
         );
       }
       return true;
@@ -67,6 +64,12 @@ export default function ProductList({ products }: ProductListProps) {
           return b.trending_score - a.trending_score;
         case 'newest':
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'price_high':
+          return b.price - a.price;
+        case 'price_low':
+          return a.price - b.price;
         default:
           return 0;
       }
@@ -144,6 +147,7 @@ export default function ProductList({ products }: ProductListProps) {
                 images: product.image_urls || [],
                 view_count: product.view_count,
                 likes_count: product.likes_count,
+                byline: product.byline,
                 user: {
                   avatar_url: product.user?.avatar_url || '/placeholder-avatar.jpg',
                   full_name: product.user?.full_name || 'Anonymous'
