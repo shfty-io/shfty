@@ -1,8 +1,13 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Database } from "@/types/supabase"
-import { ExternalLink, ChevronRight } from "lucide-react"
+import { ExternalLink, ChevronRight, Github, Download } from "lucide-react"
 import Link from "next/link"
 import { ProductStats } from "./ProductStats"
+import { PurchaseButton } from "./PurchaseButton"
+import { useState } from "react"
+import { toast } from "@/components/ui/use-toast"
 
 type Product = Database['public']['Tables']['products']['Row'] & {
   demo_url?: string | null
@@ -12,6 +17,8 @@ type Product = Database['public']['Tables']['products']['Row'] & {
   } | null
   likes_count: number
   updated_at: string | null
+  github_repo_url?: string | null
+  codebase_url?: string | null
 }
 
 interface ProductHeroProps {
@@ -20,6 +27,33 @@ interface ProductHeroProps {
 }
 
 export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleDownload = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/products/${product.id}/download-auth`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get download URL')
+      }
+
+      if (data.downloadUrl) {
+        window.location.href = data.downloadUrl
+      }
+    } catch (error) {
+      console.error('Download error:', error)
+      toast({
+        title: "Error",
+        description: "Failed to generate download link. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[1440px] px-5 flex flex-col gap-[30px]">
       {/* Breadcrumbs */}
@@ -41,12 +75,38 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
       
       {/* Buttons */}
       <div className="flex gap-2.5">
-        {!hasPurchased && (
-          <Button size="lg" asChild>
-            <Link href={`/product/${product.id}/purchase`}>
-              Purchase for ${product.price}
-            </Link>
-          </Button>
+        {!hasPurchased ? (
+          <PurchaseButton 
+            productId={product.id}
+            price={product.price}
+          />
+        ) : (
+          <div className="flex gap-2.5">
+            {product.github_repo_url && (
+              <Button size="lg" variant="outline" asChild>
+                <a 
+                  href={product.github_repo_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <Github className="h-5 w-5" />
+                  View Repository
+                </a>
+              </Button>
+            )}
+            {product.codebase_url && (
+              <Button 
+                size="lg"
+                onClick={handleDownload}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-5 w-5" />
+                {isLoading ? 'Processing...' : 'Download Files'}
+              </Button>
+            )}
+          </div>
         )}
         
         {product.demo_url && (

@@ -6,75 +6,80 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError || !user) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
-      );
+      )
     }
 
-    // Check purchase status
-    const { data: purchase } = await supabase
-      .from('purchases')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('product_id', params.id)
-      .single();
-
-    if (!purchase) {
-      return NextResponse.json(
-        { error: "Purchase not found" },
-        { status: 404 }
-      );
-    }
-
-    // Get product details
+    // Get product details first
     const { data: product } = await supabase
       .from('products')
-      .select('codebase_url, github_repo_url')
+      .select('price, codebase_url, github_repo_url')
       .eq('id', params.id)
-      .single();
+      .single()
 
     if (!product) {
       return NextResponse.json(
         { error: "Product not found" },
         { status: 404 }
-      );
+      )
+    }
+
+    // For paid products, verify purchase
+    if (product.price > 0) {
+      const { data: purchase } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('product_id', params.id)
+        .single()
+
+      if (!purchase) {
+        return NextResponse.json(
+          { error: "Purchase not found" },
+          { status: 404 }
+        )
+      }
     }
 
     // Return GitHub URL if available
     if (product.github_repo_url) {
       return NextResponse.json({ 
         githubRepoUrl: product.github_repo_url 
-      });
+      })
     }
 
-    // Existing ZIP file handling
+    // Generate download URL for codebase
     if (!product.codebase_url) {
       return NextResponse.json(
         { error: "No codebase available" },
         { status: 404 }
-      );
+      )
     }
 
-    // Generate signed URL for ZIP
-    const { data, error } = await supabase.storage
-      .from('codebases')
-      .createSignedUrl(
-        product.codebase_url.split('/').pop()!,
-        60 * 5 // 5 minute expiry
-      );
+    const { data: downloadData, error: downloadError } = await supabase
+      .storage
+      .from('products')
+      .createSignedUrl(product.codebase_url, 60 * 60) // 1 hour expiry
 
-    return NextResponse.json({ downloadUrl: data?.signedUrl });
-    
+    if (downloadError || !downloadData?.signedUrl) {
+      return NextResponse.json(
+        { error: "Failed to generate download URL" },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ downloadUrl: downloadData.signedUrl })
   } catch (error) {
-    console.error(error);
+    console.error('Download auth error:', error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to authorize download" },
       { status: 500 }
-    );
+    )
   }
 } 

@@ -1,7 +1,7 @@
-import { Navbar } from '@/components/global/Navbar'
+import { ProductNavbar } from '@/components/product/ProductNavbar'
 import { createClient } from '@/lib/server'
 import { notFound, redirect } from 'next/navigation'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Github, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Stripe from 'stripe'
@@ -11,8 +11,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 async function getSessionAndProduct(sessionId: string, productId: string) {
-  if (!sessionId) return null
-
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId)
     if (!session || session.payment_status !== 'paid') return null
@@ -26,6 +24,25 @@ async function getSessionAndProduct(sessionId: string, productId: string) {
 
     if (!product) return null
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    // Record the purchase
+    const { error } = await supabase
+      .from('purchases')
+      .insert({
+        user_id: user.id,
+        product_id: productId,
+        status: 'completed',
+        github_username: user.user_metadata?.user_name || ''
+      })
+
+    if (error) {
+      console.error('Error recording purchase:', error)
+      return null
+    }
+
     return { session, product }
   } catch (error) {
     console.error('Error fetching session:', error)
@@ -34,22 +51,25 @@ async function getSessionAndProduct(sessionId: string, productId: string) {
 }
 
 export default async function SuccessPage({
-  params: { id },
+  params,
   searchParams,
 }: {
-  params: { id: string }
+  params: { byline: string }
   searchParams: { session_id?: string }
 }) {
-  if (!searchParams.session_id) {
-    redirect(`/product/${id}`)
+  // Handle searchParams asynchronously
+  const sessionId = searchParams?.session_id
+  if (!sessionId) {
+    redirect(`/product/${params.byline}`)
   }
 
-  const result = await getSessionAndProduct(searchParams.session_id, id)
+  // Get session and product details
+  const result = await getSessionAndProduct(sessionId, params.byline)
 
   if (!result) {
     return (
       <>
-        <Navbar />
+        <ProductNavbar />
         <main className="container mx-auto px-4 py-16">
           <div className="max-w-2xl mx-auto text-center">
             <div className="mb-8">
@@ -61,7 +81,7 @@ export default async function SuccessPage({
                 We couldn't find your purchase session. If you believe this is an error, please contact support.
               </p>
               <Button asChild variant="outline">
-                <Link href={`/product/${id}`}>
+                <Link href={`/product/${params.byline}`}>
                   Return to Product
                 </Link>
               </Button>
@@ -74,17 +94,87 @@ export default async function SuccessPage({
 
   const { product } = result
 
-  // Generate download URL for the product
+  // Check if product has a GitHub repo URL
+  if (product.github_repo_url) {
+    return (
+      <>
+        <ProductNavbar />
+        <main className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="mb-8">
+              <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Thank you for your purchase!
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">
+                Your purchase of {product.name} was successful.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Button asChild size="lg" className="w-full sm:w-auto">
+                <a 
+                  href={product.github_repo_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2"
+                >
+                  <Github className="h-5 w-5" />
+                  View Repository
+                </a>
+              </Button>
+              <div className="pt-4">
+                <Link 
+                  href="/your/purchases" 
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  View your purchases
+                </Link>
+              </div>
+            </div>
+          </div>
+        </main>
+      </>
+    )
+  }
+
+  // Generate download URL for products with codebase
+  if (!product.codebase_url) {
+    return (
+      <>
+        <ProductNavbar />
+        <main className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="mb-8">
+              <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Download Error
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">
+                No codebase available for this product. Please contact support.
+              </p>
+              <Button asChild variant="outline">
+                <Link href="/your/purchases">
+                  View Your Purchases
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </>
+    )
+  }
+
   const supabase = createClient()
   const { data, error } = await supabase
     .storage
     .from('products')
-    .createSignedUrl(product.codebase_url!, 60 * 60) // 1 hour expiry
+    .createSignedUrl(product.codebase_url, 60 * 60) // 1 hour expiry
 
   if (error || !data?.signedUrl) {
     return (
       <>
-        <Navbar />
+        <ProductNavbar />
         <main className="container mx-auto px-4 py-16">
           <div className="max-w-2xl mx-auto text-center">
             <div className="mb-8">
@@ -109,7 +199,7 @@ export default async function SuccessPage({
 
   return (
     <>
-      <Navbar />
+      <ProductNavbar />
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto text-center">
           <div className="mb-8">
@@ -124,7 +214,8 @@ export default async function SuccessPage({
 
           <div className="space-y-4">
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <a href={data.signedUrl} download className="inline-flex items-center justify-center">
+              <a href={data.signedUrl} download className="inline-flex items-center justify-center gap-2">
+                <Download className="h-5 w-5" />
                 Download Files
               </a>
             </Button>
