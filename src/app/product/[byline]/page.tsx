@@ -124,12 +124,16 @@ export default async function ProductPage({
             images={product.image_urls || []} 
             productName={product.name}
           />
-          <ProductDetails
-            productId={product.id}
-            productName={product.name}
-            categories={product.categories || []}
-            faq={product.faq}
-          />
+          <div className="container mx-auto px-4">
+            <ProductDetails
+              productId={product.id}
+              productName={product.name}
+              categories={product.categories || []}
+              faq={product.faq}
+              sellerEmail={product.seller?.email}
+              sellerFullName={product.seller?.full_name}
+            />
+          </div>
         </div>
       </main>
     </div>

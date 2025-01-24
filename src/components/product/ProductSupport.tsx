@@ -6,9 +6,10 @@ interface ProductSupportProps {
   productId: string
   productName: string
   sellerEmail: string | null
+  sellerFullName: string | null
 }
 
-export function ProductSupport({ productId, productName, sellerEmail }: ProductSupportProps) {
+export function ProductSupport({ productId, productName, sellerEmail, sellerFullName }: ProductSupportProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Support</h2>
@@ -18,7 +19,7 @@ export function ProductSupport({ productId, productName, sellerEmail }: ProductS
         <Button variant="outline" asChild className="w-full">
           <a href={`mailto:${sellerEmail}?subject=Question about ${encodeURIComponent(productName)}`} className="flex items-center justify-center gap-2">
             <Mail className="h-4 w-4" />
-            Contact Seller
+            Contact {sellerFullName || 'Seller'}
           </a>
         </Button>
       )}

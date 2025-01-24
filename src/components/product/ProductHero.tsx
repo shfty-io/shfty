@@ -62,18 +62,7 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
   }
 
   return (
-    <div className="mx-auto max-w-[1440px] px-5 flex flex-col gap-[30px]">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground transition-colors">
-          Marketplace
-        </Link>
-        <ChevronRight className="h-4 w-4" />
-        <Link href="/templates" className="hover:text-foreground transition-colors">
-          Templates
-        </Link>
-      </div>
-
+    <div className="mx-auto max-w-[1440px] px-5 pt-8 flex flex-col gap-[30px]">
       {/* Title and Description */}
       <div className="flex max-w-[800px] flex-col gap-2.5">
         <h1 className="text-4xl font-bold">{product.name}</h1>

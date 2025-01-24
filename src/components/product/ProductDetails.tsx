@@ -3,6 +3,8 @@ import { RefundPolicy } from "./RefundPolicy"
 import { ReportDialog } from "./ReportDialog"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Mail } from "lucide-react"
 
 interface ProductDetailsProps {
   productId: string
@@ -12,9 +14,11 @@ interface ProductDetailsProps {
     question: string
     answer: string
   }> | null
+  sellerEmail: string | null
+  sellerFullName: string | null
 }
 
-export function ProductDetails({ productId, productName, categories, faq }: ProductDetailsProps) {
+export function ProductDetails({ productId, productName, categories, faq, sellerEmail, sellerFullName }: ProductDetailsProps) {
   return (
     <div className="mx-auto max-w-[1440px] px-5 flex flex-col gap-[60px] pb-[60px] md:flex-row md:gap-20 md:pb-0">
       {/* Main content area */}
@@ -51,6 +55,14 @@ export function ProductDetails({ productId, productName, categories, faq }: Prod
         <div className="space-y-5">
           <h6 className="body-s md:body-xs font-semibold">Support</h6>
           <div className="space-y-4">
+            {sellerEmail && (
+              <Button variant="ghost" asChild className="w-full justify-start p-0">
+                <a href={`mailto:${sellerEmail}?subject=Question about ${encodeURIComponent(productName)}`} className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Contact {sellerFullName || 'Seller'}
+                </a>
+              </Button>
+            )}
             <div className="flex items-center space-x-2.5">
               <ReportDialog productId={productId} productName={productName} />
             </div>
