@@ -35,12 +35,19 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
       const response = await fetch(`/api/products/${product.id}/download-auth`)
       const data = await response.json()
 
+      console.log('Download response:', data) // Debug log
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to get download URL')
       }
 
+      // Since this is the download button handler, prioritize the direct download URL
       if (data.downloadUrl) {
         window.location.href = data.downloadUrl
+      } else if (data.githubRepoUrl) {
+        window.open(data.githubRepoUrl, '_blank')
+      } else {
+        throw new Error('No download URL available')
       }
     } catch (error) {
       console.error('Download error:', error)
