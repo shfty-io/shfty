@@ -68,7 +68,7 @@ async function getProduct(byline: string) {
     const { data: purchase } = await supabase
       .from('purchases')
       .select('id')
-      .eq('product_id', byline)
+      .eq('product_id', product.id)
       .eq('user_id', user.id)
       .single()
     
