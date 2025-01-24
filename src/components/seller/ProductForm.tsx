@@ -40,6 +40,7 @@ export type ProductFormData = {
   codebaseSource?: 'zip' | 'github';
   codebase_url?: string | null;
   githubRepoUrl?: string | null;
+  imageUrls: string[];
 };
 
 interface FAQItem {
@@ -54,6 +55,8 @@ interface GitHubRepo {
   html_url: string;
   description: string | null;
   private: boolean;
+  updated_at: string;
+  owner: string | null;
 }
 
 const categories = [
@@ -85,6 +88,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     codebaseSource: initialData?.codebaseSource || 'zip',
     codebase_url: initialData?.codebase_url || null,
     githubRepoUrl: initialData?.githubRepoUrl || null,
+    imageUrls: initialData?.imageUrls ?? [],
   });
 
   const [faqItems, setFaqItems] = useState<FAQItem[]>(() => {
@@ -371,17 +375,29 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-medium">{repo.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                              }`}>
+                                {repo.private ? 'Private' : 'Public'}
+                              </span>
+                              {repo.owner && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Owner: {repo.owner}
+                                </span>
+                              )}
+                            </div>
                             {repo.description && (
                               <p className="text-sm text-muted-foreground mt-1">
                                 {repo.description}
                               </p>
                             )}
                           </div>
-                          {repo.private && (
-                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                              Private
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              Updated: {new Date(repo.updated_at).toLocaleDateString()}
                             </span>
-                          )}
+                          </div>
                         </div>
                       </div>
                     ))}

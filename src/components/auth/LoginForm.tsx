@@ -42,18 +42,29 @@ export function LoginForm({
     router.push('/')
   }
 
-  async function signInWithGitHub() {
-    const { error } = await supabase.auth.signInWithOAuth({
+  const handleGitHubLogin = async () => {
+    // First, sign out completely to clear any existing sessions
+    await supabase.auth.signOut({ scope: 'global' });
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
+        // Add all required scopes here
+        scopes: 'repo repo:status repo_deployment public_repo read:user user:email',
         redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+        queryParams: {
+          // Force re-authorization to get new scopes
+          access_type: 'offline',
+          prompt: 'consent'
+        }
+      }
+    });
 
     if (error) {
-      setError(error.message)
+      setError(error.message);
+      console.error('GitHub login error:', error);
     }
-  }
+  };
 
   return (
     <form onSubmit={onSubmit} className={cn("flex flex-col gap-6", className)} {...props}>
@@ -110,7 +121,7 @@ export function LoginForm({
           type="button"
           variant="outline"
           className="w-full"
-          onClick={signInWithGitHub}
+          onClick={handleGitHubLogin}
           disabled={isLoading}
         >
           <svg

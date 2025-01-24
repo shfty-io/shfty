@@ -14,13 +14,24 @@ export async function POST(request: Request) {
     }
 
     const { productData } = await request.json();
+    console.log('Received product data:', productData);
 
     // Validate required fields and constraints
-    if (!productData.name || !productData.description || !productData.price || 
-        !productData.categories || !productData.imageUrls || !productData.codebase_url ||
-        !productData.byline || !productData.shortDescription) {
+    if (!productData.name || !productData.description || 
+        typeof productData.price !== 'number' ||
+        !productData.categories || !productData.byline || !productData.shortDescription) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { 
+          error: "Missing required fields: " + 
+            [
+              !productData.name && 'name',
+              !productData.description && 'description',
+              typeof productData.price !== 'number' && 'price',
+              !productData.categories && 'categories',
+              !productData.byline && 'byline',
+              !productData.shortDescription && 'shortDescription'
+            ].filter(Boolean).join(', ')
+        },
         { status: 400 }
       );
     }
@@ -36,9 +47,9 @@ export async function POST(request: Request) {
     }
 
     // Validate price minimum
-    if (productData.price < 10) {
+    if (productData.price < 0) {
       return NextResponse.json(
-        { error: "Minimum price is $10" },
+        { error: "Price cannot be negative" },
         { status: 400 }
       );
     }
@@ -67,7 +78,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update validation
+    // Separate validation for codebase
     if (!productData.codebase_url && !productData.github_repo_url) {
       return NextResponse.json(
         { error: "Must provide either codebase URL or GitHub repository" },
