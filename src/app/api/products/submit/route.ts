@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     // Validate required fields and constraints
     if (!productData.name || !productData.description || !productData.price || 
-        !productData.categories || !productData.imageUrls || !productData.codebaseUrl ||
+        !productData.categories || !productData.imageUrls || !productData.codebase_url ||
         !productData.byline || !productData.shortDescription) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -67,6 +67,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Update validation
+    if (!productData.codebase_url && !productData.github_repo_url) {
+      return NextResponse.json(
+        { error: "Must provide either codebase URL or GitHub repository" },
+        { status: 400 }
+      );
+    }
+
     // Create new product
     const { data: product, error: insertError } = await supabase
       .from('products')
@@ -80,11 +88,12 @@ export async function POST(request: Request) {
         categories: productData.categories,
         image_urls: productData.imageUrls,
         video_url: productData.videoUrl,
-        codebase_url: productData.codebaseUrl,
+        codebase_url: productData.codebase_url,
         faq: productData.faq || null,
         status: 'in_review',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        github_repo_url: productData.github_repo_url,
       })
       .select()
       .single();

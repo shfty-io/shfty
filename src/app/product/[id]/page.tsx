@@ -12,6 +12,8 @@ import { RefundPolicy } from '@/components/product/RefundPolicy'
 import { LikeButton } from '@/components/product/LikeButton'
 import { ProductNavbar } from '@/components/product/ProductNavbar'
 import { incrementViewCount } from '@/app/actions'
+import { Button } from '@/components/ui/button'
+import { Github } from 'lucide-react'
 
 type Product = Database['public']['Tables']['products']['Row'] & {
   seller?: {
@@ -26,7 +28,10 @@ async function getProduct(id: string) {
   // First get the product
   const { data: product, error } = await supabase
     .from('products')
-    .select('*')
+    .select(`
+      *,
+      github_repo_url
+    `)
     .eq('id', id)
     .eq('status', 'approved')
     .single()
@@ -101,6 +106,20 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 price={product.price}
               />
             </div>
+            {product.github_repo_url && (
+              <div className="mt-4">
+                <Button asChild variant="outline">
+                  <a 
+                    href={product.github_repo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Github className="mr-2 h-4 w-4" />
+                    View GitHub Repository
+                  </a>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -141,6 +160,19 @@ export default async function ProductPage({ params }: { params: { id: string } }
             </div>
           </div>
         </div>
+
+        {/* Repository info section */}
+        {product.github_repo_url && (
+          <div className="mt-4 p-4 border rounded-lg bg-muted">
+            <div className="flex items-center gap-2">
+              <Github className="w-5 h-5" />
+              <h3 className="font-medium">GitHub Repository</h3>
+            </div>
+            <p className="text-sm mt-2 break-all">
+              {product.github_repo_url}
+            </p>
+          </div>
+        )}
       </main>
     </div>
   )

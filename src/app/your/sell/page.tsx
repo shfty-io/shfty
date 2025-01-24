@@ -139,7 +139,18 @@ export default function SellerDashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ productData }),
+        body: JSON.stringify({
+          productData: {
+            ...productData,
+            // Use optional chaining and nullish coalescing
+            codebase_url: productData?.codebaseSource === 'zip' 
+              ? productData?.codebase_url ?? null 
+              : null,
+            github_repo_url: productData?.codebaseSource === 'github' 
+              ? productData?.githubRepoUrl ?? null 
+              : null
+          }
+        }),
       });
 
       const data = await response.json();
