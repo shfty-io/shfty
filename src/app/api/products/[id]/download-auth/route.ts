@@ -1,6 +1,37 @@
 import { createClient } from '@/lib/server'
 import { NextResponse } from 'next/server'
 
+async function getDownloadUrl(codebaseUrl: string) {
+  const supabase = createClient()
+  try {
+    // Extract just the filename from the URL
+    const filePath = codebaseUrl.split('/').pop();
+    
+    if (!filePath) {
+      console.error('Invalid codebase URL format:', codebaseUrl)
+      return null
+    }
+
+    const { data, error } = await supabase
+      .storage
+      .from('codebases')
+      .createSignedUrl(filePath, 60 * 60)
+
+    if (error) {
+      console.error('Supabase storage error:', {
+        message: error.message,
+        url: codebaseUrl,
+        extractedPath: filePath
+      })
+      throw error
+    }
+    return data.signedUrl
+  } catch (error) {
+    console.error('Full error generating download URL:', JSON.stringify(error, null, 2))
+    return null
+  }
+}
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -17,7 +48,7 @@ export async function GET(
     }
 
     // Get product details first
-    const { data: product } = await supabase
+    const { data: product, error: productError } = await supabase
       .from('products')
       .select('price, codebase_url, github_repo_url')
       .eq('id', params.id)
@@ -42,7 +73,7 @@ export async function GET(
       if (!purchase) {
         return NextResponse.json(
           { error: "Purchase not found" },
-          { status: 404 }
+          { status: 403 }
         )
       }
     }
@@ -62,19 +93,16 @@ export async function GET(
       )
     }
 
-    const { data: downloadData, error: downloadError } = await supabase
-      .storage
-      .from('products')
-      .createSignedUrl(product.codebase_url, 60 * 60) // 1 hour expiry
-
-    if (downloadError || !downloadData?.signedUrl) {
+    const downloadUrl = await getDownloadUrl(product.codebase_url)
+    
+    if (!downloadUrl) {
       return NextResponse.json(
         { error: "Failed to generate download URL" },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ downloadUrl: downloadData.signedUrl })
+    return NextResponse.json({ downloadUrl })
   } catch (error) {
     console.error('Download auth error:', error)
     return NextResponse.json(

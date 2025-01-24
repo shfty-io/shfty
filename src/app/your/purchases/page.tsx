@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Download } from 'lucide-react'
+import { Download, Github } from 'lucide-react'
 
 async function getServerSideUser() {
   const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session?.user
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) return null
+  return user
 }
 
 async function getPurchases(userId: string) {
@@ -20,13 +21,45 @@ async function getPurchases(userId: string) {
         name,
         description,
         price,
-        codebase_url
+        codebase_url,
+        github_repo_url
       )
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   return purchases || []
+}
+
+async function getDownloadUrl(codebaseUrl: string) {
+  const supabase = createClient()
+  try {
+    // Extract just the filename from the URL
+    const filePath = codebaseUrl.split('/').pop();
+    
+    if (!filePath) {
+      console.error('Invalid codebase URL format:', codebaseUrl)
+      return null
+    }
+
+    const { data, error } = await supabase
+      .storage
+      .from('codebases')
+      .createSignedUrl(filePath, 60 * 60)
+
+    if (error) {
+      console.error('Supabase storage error:', {
+        message: error.message,
+        url: codebaseUrl,
+        extractedPath: filePath
+      })
+      throw error
+    }
+    return data.signedUrl
+  } catch (error) {
+    console.error('Full error generating download URL:', JSON.stringify(error, null, 2))
+    return null
+  }
 }
 
 export default async function PurchasesPage() {
@@ -38,11 +71,31 @@ export default async function PurchasesPage() {
 
   const purchases = await getPurchases(user.id)
 
+  // Pre-fetch download URLs
+  const purchasesWithUrls = await Promise.all(
+    purchases.map(async (purchase) => {
+      const product = purchase.product as any
+      let downloadUrl = null
+      
+      if (product.codebase_url) {
+        downloadUrl = await getDownloadUrl(product.codebase_url)
+      }
+      
+      return {
+        ...purchase,
+        product: {
+          ...product,
+          downloadUrl
+        }
+      }
+    })
+  )
+
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-8">Your Purchases</h1>
       
-      {purchases.length === 0 ? (
+      {purchasesWithUrls.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-600 mb-4">You haven't made any purchases yet.</p>
           <Button asChild>
@@ -51,7 +104,7 @@ export default async function PurchasesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {purchases.map((purchase) => {
+          {purchasesWithUrls.map((purchase) => {
             const product = purchase.product as any
             return (
               <div
@@ -63,14 +116,52 @@ export default async function PurchasesPage() {
                     <h3 className="text-xl font-semibold mb-2">
                       {product.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-sm text-muted-foreground mb-2">
                       Purchased on {new Date(purchase.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Price: ${product.price}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {product.description}
                     </p>
                   </div>
-                  <DownloadButton productId={product.id} codebaseUrl={product.codebase_url} />
+                  <div className="flex gap-2">
+                    {product.github_repo_url && (
+                      <Button variant="outline" asChild>
+                        <a 
+                          href={product.github_repo_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2"
+                        >
+                          <Github className="h-4 w-4" />
+                          View Repository
+                        </a>
+                      </Button>
+                    )}
+                    {product.downloadUrl ? (
+                      <Button asChild variant="outline">
+                        <a 
+                          href={product.downloadUrl}
+                          download
+                          className="inline-flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download Files
+                        </a>
+                      </Button>
+                    ) : product.codebase_url ? (
+                      <Button variant="outline" disabled>
+                        Error generating download
+                      </Button>
+                    ) : null}
+                    {!product.github_repo_url && !product.codebase_url && (
+                      <Button variant="outline" disabled>
+                        Download unavailable
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
@@ -78,40 +169,5 @@ export default async function PurchasesPage() {
         </div>
       )}
     </div>
-  )
-}
-
-async function DownloadButton({ 
-  productId, 
-  codebaseUrl 
-}: { 
-  productId: string
-  codebaseUrl: string 
-}) {
-  const supabase = createClient()
-  const { data } = await supabase
-    .storage
-    .from('products')
-    .createSignedUrl(codebaseUrl, 60 * 60) // 1 hour expiry
-
-  if (!data?.signedUrl) {
-    return (
-      <Button variant="outline" disabled>
-        Download unavailable
-      </Button>
-    )
-  }
-
-  return (
-    <Button asChild variant="outline">
-      <a 
-        href={data.signedUrl}
-        download
-        className="inline-flex items-center gap-2"
-      >
-        <Download className="h-4 w-4" />
-        Download
-      </a>
-    </Button>
   )
 } 
