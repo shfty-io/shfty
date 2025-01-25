@@ -15,7 +15,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { createClient } from "@/lib/client";
-import { Github, Upload, X } from "lucide-react";
+import { Github, Upload, X, Check } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
 import { Globe } from "lucide-react";
 import { BylineAvailabilityCheck } from "./BylineAvailabilityCheck";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -125,6 +126,12 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  // Use the custom debounce hook for byline
+  const debouncedByline = useDebounce(formData.byline, 500);
 
   const addFaqItem = () => {
     setFaqItems([...faqItems, { question: '', answer: '' }]);
@@ -468,32 +475,152 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     }));
   };
 
+  const checkAvailability = async (byline: string) => {
+    setIsChecking(true);
+    try {
+      const response = await fetch(`/api/products/check-byline?byline=${encodeURIComponent(byline)}`);
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setIsAvailable(false);
+        setMessage(data.error);
+        return;
+      }
+
+      setIsAvailable(data.available);
+      setMessage(data.message);
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      setIsAvailable(false);
+      setMessage('An error occurred. Please try again later.');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  // Effect to check availability when debounced byline changes
+  useEffect(() => {
+    if (debouncedByline) {
+      checkAvailability(debouncedByline);
+    } else {
+      setIsAvailable(null);
+      setMessage(null);
+    }
+  }, [debouncedByline]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="space-y-4">
-        <div>
-          <Label htmlFor="name">Product Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
+        {/* Two column layout for name and byline */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="flex items-center">
+              Product Name
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <Input
+              id="name"
+              placeholder='e.g. "Modern Dashboard Template"'
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+            <p className="text-sm text-muted-foreground">
+              The display name of your product
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="byline" className="flex items-center">
+              Slug
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="byline"
+                placeholder='e.g. "modern-dashboard"'
+                value={formData.byline}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setFormData({ ...formData, byline: newValue });
+                }}
+                required
+                className={formData.byline ? (isAvailable === false ? "border-red-500" : isAvailable === true ? "border-green-500" : "") : ""}
+              />
+              {formData.byline && (
+                <div className="absolute right-3 top-2.5">
+                  {isChecking ? (
+                    <span className="animate-pulse">...</span>
+                  ) : isAvailable === true ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : isAvailable === false ? (
+                    <X className="h-5 w-5 text-red-600" />
+                  ) : null}
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Used in the URL and imports, can't be changed later
+            </p>
+            {message && (
+              <p className={`text-sm ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                {message}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div>
-          <BylineAvailabilityCheck 
-            initialValue={formData.byline}
-            onBylineAvailable={(available) => {
-              if (!available) {
-                toast({
-                  title: "Byline Unavailable",
-                  description: "Please choose a different byline",
-                  variant: "destructive"
+        {/* Three column layout for price, category, and demo URL */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="price">Price (USD)</Label>
+            <Input
+              id="price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+              required
+            />
+          </div>
+
+          <div>
+            <Label>Categories</Label>
+            <Select
+              value={formData.categories[0] || ''}
+              onValueChange={(value) => setFormData({ ...formData, categories: [value] })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {getCategoryDisplayName(category)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Product Demo URL (Optional)</Label>
+            <UrlInput
+              placeholder="your-demo-url.com"
+              value={(formData.demoUrl || '').replace('https://', '')}
+              onChange={(e) => {
+                const url = e.target.value;
+                setFormData({ 
+                  ...formData, 
+                  demoUrl: url ? `https://${url}` : null 
                 });
-              }
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
 
         <div>
@@ -512,38 +639,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             value={formData.description}
             onChange={(value) => setFormData({ ...formData, description: value })}
           />
-        </div>
-
-        <div>
-          <Label htmlFor="price">Price (USD)</Label>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-            required
-          />
-        </div>
-
-        <div>
-          <Label>Categories</Label>
-          <Select
-            value={formData.categories[0] || ''}
-            onValueChange={(value) => setFormData({ ...formData, categories: [value] })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {getCategoryDisplayName(category)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="space-y-4">
@@ -691,13 +786,34 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
         <div>
           <Label>
-            Product Images 
+            Product Media
             <span className="text-destructive ml-1">*</span>
             <span className="text-sm text-muted-foreground ml-2">
-              (Minimum 2 required)
+              (Minimum 2 images required)
             </span>
           </Label>
           <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Video Preview */}
+            {formData.videoUrl && (
+              <div className="relative col-span-2 row-span-2 aspect-video">
+                <video
+                  src={formData.videoUrl}
+                  controls
+                  className="w-full h-full rounded-lg object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-6 w-6"
+                  onClick={removeVideo}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Image Previews */}
             {formData.imageUrls.map((url, index) => (
               <div key={url} className="relative aspect-square">
                 <Image
@@ -727,8 +843,11 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 </Button>
               </div>
             ))}
-            {formData.imageUrls.length < 8 && (
-              <div className="border-2 border-dashed rounded-lg aspect-square flex items-center justify-center">
+            
+            {/* Upload Buttons */}
+            <div className="border-2 border-dashed rounded-lg aspect-square flex flex-col gap-2 p-4">
+              {/* Image Upload */}
+              <div className="flex-1 flex flex-col items-center justify-center">
                 <Input
                   type="file"
                   accept={ALLOWED_IMAGE_TYPES.join(',')}
@@ -748,92 +867,54 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   htmlFor="image-upload"
                   className={`cursor-pointer flex flex-col items-center ${isUploading ? 'opacity-50' : ''}`}
                 >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground mt-2">
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground mt-1">
                     {isUploading ? 'Uploading...' : 'Upload Images'}
                   </span>
-                  <span className="text-xs text-muted-foreground mt-1">
+                  <span className="text-xs text-muted-foreground">
                     {formData.imageUrls.length < 2 
                       ? `${2 - formData.imageUrls.length} more required` 
                       : `${8 - formData.imageUrls.length} slots remaining`}
                   </span>
                 </Label>
               </div>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Upload 2-8 images (PNG, JPG, WEBP)
-          </p>
-        </div>
 
-        <div>
-          <Label>Product Video (Optional)</Label>
-          <div className="mt-2">
-            {formData.videoUrl ? (
-              <div className="relative aspect-video">
-                <video
-                  src={formData.videoUrl}
-                  controls
-                  className="w-full rounded-lg"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6"
-                  onClick={removeVideo}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed rounded-lg aspect-video flex items-center justify-center">
-                <Input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  id="video-upload"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleVideoUpload(file);
-                    }
-                  }}
-                />
-                <Label
-                  htmlFor="video-upload"
-                  className="cursor-pointer flex flex-col items-center"
-                >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground mt-2">
-                    Upload Video
-                  </span>
-                </Label>
-              </div>
-            )}
+              {/* Video Upload */}
+              {!formData.videoUrl && (
+                <>
+                  <div className="w-full border-t border-border my-2" />
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <Input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      id="video-upload"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleVideoUpload(file);
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor="video-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground mt-1">
+                        Upload Video
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Optional (MP4, max 100MB)
+                      </span>
+                    </Label>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Upload one video (MP4, max 100MB)
-          </p>
-        </div>
-
-        <div>
-          <Label>Product Demo URL (Optional)</Label>
-          <div className="mt-2">
-            <UrlInput
-              placeholder="your-demo-url.com"
-              value={(formData.demoUrl || '').replace('https://', '')}
-              onChange={(e) => {
-                const url = e.target.value;
-                setFormData({ 
-                  ...formData, 
-                  demoUrl: url ? `https://${url}` : null 
-                });
-              }}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Add a URL where users can try out your product (e.g., live demo, sandbox environment)
+            Upload 2-8 images (PNG, JPG, WEBP) and optionally one video
           </p>
         </div>
 
