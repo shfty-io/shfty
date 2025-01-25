@@ -3,7 +3,7 @@ import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/server';
 import { Database } from '@/types/supabase';
-import { ProductNavbar } from '@/components/product/ProductNavbar';
+import { Navbar } from '@/components/global/Navbar';
 
 interface Product {
   id: string;
@@ -51,7 +51,7 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
       purchase_count,
       trending_score,
       likes_count,
-      user:users!inner(avatar_url, full_name)
+      user:profiles!inner(avatar_url, full_name)
     `)
     .eq('status', 'approved')
     .filter('categories', 'cs', `{${category}}`)
@@ -85,8 +85,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <>
-      <ProductNavbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Navbar />
+      <div className="flex-1 p-4">
         {/* Breadcrumb */}
         <div className="py-4">
           <nav className="flex text-sm text-gray-500">

@@ -37,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link 
       href={`/product/${product.byline}`}
-      className="group relative aspect-square overflow-hidden rounded-lg bg-black block"
+      className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-black block"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
