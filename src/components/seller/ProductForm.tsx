@@ -28,6 +28,7 @@ import { UrlInput } from "@/components/ui/url-input";
 import { Globe } from "lucide-react";
 import { BylineAvailabilityCheck } from "./BylineAvailabilityCheck";
 import { useDebounce } from "@/hooks/use-debounce";
+import { CodebaseUpload } from "@/components/ui/codebase-upload";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -159,19 +160,10 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       return;
     }
 
-    if (formData.codebaseSource === 'github' && !formData.githubRepoUrl) {
+    if (!formData.githubRepoUrl && !formData.codebase_url) {
       toast({
         title: "Validation Error",
-        description: "Please provide a GitHub repository URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.codebaseSource === 'zip' && !formData.codebase_url) {
-      toast({
-        title: "Validation Error",
-        description: "Please upload a ZIP file or switch to GitHub repository",
+        description: "Please provide either a GitHub repository or upload a ZIP file",
         variant: "destructive"
       });
       return;
@@ -643,145 +635,136 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
         <div className="space-y-4">
           <div>
-            <Label>Codebase Source</Label>
-            <Select 
-              value={formData.codebaseSource}
-              onValueChange={(value) => setFormData({ 
-                ...formData, 
-                codebaseSource: value as 'zip' | 'github',
-                codebase_url: value === 'zip' ? formData.codebase_url : null,
-                githubRepoUrl: value === 'github' ? formData.githubRepoUrl : null
-              })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="zip">Upload ZIP File</SelectItem>
-                <SelectItem value="github">GitHub Repository</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {formData.codebaseSource === 'zip' && (
-            <div>
-              <Label>Upload Codebase (ZIP)</Label>
-              <div className="mt-2">
-                <Input
-                  type="file"
-                  accept=".zip"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileUpload(file);
-                    }
-                  }}
-                />
-              </div>
-              {formData.codebase_url && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  ✓ File uploaded successfully
-                </p>
-              )}
-            </div>
-          )}
-
-          {formData.codebaseSource === 'github' && (
-            <div className="space-y-4">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full"
-                    disabled={isLoadingRepos}
-                  >
-                    <Github className="mr-2 h-4 w-4" />
-                    {isLoadingRepos 
-                      ? "Loading repositories..." 
-                      : formData.githubRepoUrl 
-                        ? "Change repository" 
-                        : "Select repository"
-                    }
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Select a Repository</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    {githubRepos.map((repo) => (
-                      <div
-                        key={repo.id}
-                        className={`p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors ${
-                          formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
-                        }`}
-                        onClick={() => {
-                          setFormData({ 
-                            ...formData, 
-                            githubRepoUrl: repo.html_url 
-                          });
-                          // Close the dialog
-                          const closeButton = document.querySelector('[data-dialog-close]');
-                          if (closeButton instanceof HTMLElement) closeButton.click();
-                        }}
+            <Label className="flex items-center">
+              Codebase Source
+              <span className="text-destructive ml-1">*</span>
+              <span className="text-sm text-muted-foreground ml-2">
+                (At least one required)
+              </span>
+            </Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Label className="text-sm font-medium">GitHub Repository</Label>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Recommended</span>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div
+                      className="relative flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 text-sm ring-offset-background shadow-sm shadow-black/5 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        className="h-full -ml-3 rounded-l-lg border-r px-3 font-normal hover:bg-muted"
+                        disabled={isLoadingRepos}
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-medium">{repo.name}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                              }`}>
-                                {repo.private ? 'Private' : 'Public'}
-                              </span>
-                              {repo.owner && (
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  Owner: {repo.owner}
+                        <Github className="h-4 w-4 mr-2 shrink-0" />
+                        Select Repository
+                      </Button>
+                      <div className="flex-1 truncate pl-3">
+                        {isLoadingRepos 
+                          ? "Loading repositories..." 
+                          : formData.githubRepoUrl 
+                            ? "Repository selected"
+                            : "No repository chosen"}
+                      </div>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Select a Repository</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      {githubRepos.map((repo) => (
+                        <div
+                          key={repo.id}
+                          className={`p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors ${
+                            formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
+                          }`}
+                          onClick={() => {
+                            setFormData({ 
+                              ...formData, 
+                              githubRepoUrl: repo.html_url 
+                            });
+                            // Close the dialog
+                            const closeButton = document.querySelector('[data-dialog-close]');
+                            if (closeButton instanceof HTMLElement) closeButton.click();
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-medium">{repo.name}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {repo.private ? 'Private' : 'Public'}
                                 </span>
+                                {repo.owner && (
+                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    Owner: {repo.owner}
+                                  </span>
+                                )}
+                              </div>
+                              {repo.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {repo.description}
+                                </p>
                               )}
                             </div>
-                            {repo.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {repo.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              Updated: {new Date(repo.updated_at).toLocaleDateString()}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                Updated: {new Date(repo.updated_at).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                    {githubRepos.length === 0 && !isLoadingRepos && (
-                      <p className="text-center text-muted-foreground">
-                        No repositories found
-                      </p>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
+                      ))}
+                      {githubRepos.length === 0 && !isLoadingRepos && (
+                        <p className="text-center text-muted-foreground">
+                          No repositories found
+                        </p>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
 
-              {formData.githubRepoUrl && (
-                <div className="p-4 border rounded-lg bg-muted">
-                  <div className="flex items-center gap-2">
-                    <Github className="h-4 w-4" />
-                    <span className="text-sm font-medium">Selected Repository:</span>
+                {formData.githubRepoUrl && (
+                  <div className="p-3 border rounded-lg bg-muted">
+                    <div className="flex items-center gap-2">
+                      <Github className="h-4 w-4" />
+                      <span className="text-sm font-medium">Selected Repository:</span>
+                    </div>
+                    <a 
+                      href={formData.githubRepoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline mt-2 block break-all"
+                    >
+                      {formData.githubRepoUrl}
+                    </a>
                   </div>
-                  <a 
-                    href={formData.githubRepoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline mt-2 block break-all"
-                  >
-                    {formData.githubRepoUrl}
-                  </a>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Label className="text-sm font-medium">Upload Codebase (ZIP)</Label>
                 </div>
-              )}
+                <CodebaseUpload
+                  accept=".zip"
+                  value={formData.codebase_url}
+                  onChange={(file) => handleFileUpload(file)}
+                />
+                {formData.codebase_url && (
+                  <p className="text-sm text-muted-foreground">
+                    ✓ File uploaded successfully
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div>
