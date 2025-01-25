@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
+import { formatCurrency } from '@/lib/utils';
 
 export default async function ProfilePage() {
   const supabase = createClient();
@@ -8,6 +9,40 @@ export default async function ProfilePage() {
   if (error || !user) {
     return redirect('/auth/login');
   }
+
+  // Fetch account statistics
+  const [
+    { count: productsListed },
+    { count: totalPurchases },
+    { data: salesData }
+  ] = await Promise.all([
+    // Products Listed
+    supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+      
+    // Total Purchases
+    supabase
+      .from('purchases')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+      
+    // Modified Total Sales query
+    supabase
+      .from('purchases')
+      .select(`
+        product:products (
+          price,
+          user_id
+        )
+      `)
+      .eq('product.user_id', user.id)
+  ]);
+
+  // Fixed sales calculation
+  const totalSales = salesData?.reduce((acc, purchase) => 
+    acc + (purchase.product?.[0]?.price || 0), 0) || 0;
 
   return (
     <div className="p-6">
@@ -33,15 +68,17 @@ export default async function ProfilePage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Total Sales</p>
-              <p className="text-2xl font-semibold">$0</p>
+              <p className="text-2xl font-semibold">
+                {formatCurrency(totalSales)}
+              </p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Products Listed</p>
-              <p className="text-2xl font-semibold">0</p>
+              <p className="text-2xl font-semibold">{productsListed || 0}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Total Purchases</p>
-              <p className="text-2xl font-semibold">0</p>
+              <p className="text-2xl font-semibold">{totalPurchases || 0}</p>
             </div>
           </div>
         </div>
