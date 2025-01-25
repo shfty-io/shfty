@@ -65,6 +65,15 @@ export async function POST(request: Request) {
       application_fee_amount: platformFee,
       transfer_data: {
         destination: sellerStripeAccountId,
+        transfer_group: `ORDER_${productId}`,
+        transfer_schedule: {
+          delay_days: 7,
+          interval: 'daily'
+        }
+      } as any,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never'
       },
       metadata: {
         productId,

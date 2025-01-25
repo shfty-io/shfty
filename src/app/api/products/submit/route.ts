@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
     if (!sellerAccount?.is_onboarded) {
       return NextResponse.json(
-        { error: "Please complete payment setup before submitting a product" },
+        { error: "Complete Stripe onboarding first" },
         { status: 400 }
       );
     }

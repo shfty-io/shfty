@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       country: 'US',
       capabilities: {
         card_payments: { requested: true },
-        transfers: { requested: true },
+        transfers: { requested: true }
       },
       business_type: 'individual',
       business_profile: {
