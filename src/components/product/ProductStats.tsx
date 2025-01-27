@@ -1,4 +1,4 @@
-import { Clock, Eye, Heart, User } from "lucide-react"
+import { Clock, Eye, User } from "lucide-react"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { Separator } from "@/components/ui/separator"

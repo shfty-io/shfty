@@ -70,7 +70,7 @@ export async function POST(
     // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${params.id}-${Date.now()}.${fileExt}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('codebases')
       .upload(fileName, file);
 
@@ -172,10 +172,10 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: "Codebase deleted successfully" });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Error deleting codebase:', error);
     return NextResponse.json(
-      { error: error.message || "Failed to delete codebase" },
+      { error: error instanceof Error ? error.message : "Failed to delete codebase" },
       { status: 500 }
     );
   }

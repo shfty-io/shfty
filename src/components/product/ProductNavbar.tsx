@@ -32,7 +32,7 @@ export function ProductNavbar() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase.auth])
 
   const toggleTheme = () => {
     if (isDark) {

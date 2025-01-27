@@ -1,12 +1,8 @@
 import ProductList from '@/components/root/ProductList'
-import ProductFilters from '@/components/root/ProductFilters'
 import { Navbar } from '@/components/global/Navbar'
 import { createClient } from '@/lib/server'
 import { AppSidebar } from "@/components//root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Database } from '@/types/supabase'
-
-type DbProduct = Database['public']['Tables']['products']['Row']
 
 interface Product {
   id: string

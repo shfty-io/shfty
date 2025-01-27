@@ -131,10 +131,10 @@ export async function POST(request: Request) {
       message: "Product submitted for review successfully",
       product 
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error submitting product:', error);
     return NextResponse.json(
-      { error: error.message || "Failed to submit product" },
+      { error: error instanceof Error ? error.message : "Failed to submit product" },
       { status: 500 }
     );
   }

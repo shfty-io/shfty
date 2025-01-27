@@ -2,6 +2,24 @@ import { createClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Download, Github } from 'lucide-react'
+import Link from 'next/link'
+
+interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  codebase_url: string | null
+  github_repo_url: string | null
+  downloadUrl?: string | null
+}
+
+interface Purchase {
+  id: string
+  created_at: string
+  user_id: string
+  product: Product
+}
 
 async function getServerSideUser() {
   const supabase = createClient()
@@ -10,7 +28,7 @@ async function getServerSideUser() {
   return user
 }
 
-async function getPurchases(userId: string) {
+async function getPurchases(userId: string): Promise<Purchase[]> {
   const supabase = createClient()
   const { data: purchases } = await supabase
     .from('purchases')
@@ -74,7 +92,7 @@ export default async function PurchasesPage() {
   // Pre-fetch download URLs
   const purchasesWithUrls = await Promise.all(
     purchases.map(async (purchase) => {
-      const product = purchase.product as any
+      const product = purchase.product as Product
       let downloadUrl = null
       
       if (product.codebase_url) {
@@ -97,15 +115,15 @@ export default async function PurchasesPage() {
       
       {purchasesWithUrls.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-600 mb-4">You haven't made any purchases yet.</p>
+          <p className="text-gray-600 mb-4">You haven&apos;t made any purchases yet.</p>
           <Button asChild>
-            <a href="/">Browse Products</a>
+            <Link href="/">Browse Products</Link>
           </Button>
         </div>
       ) : (
         <div className="space-y-6">
           {purchasesWithUrls.map((purchase) => {
-            const product = purchase.product as any
+            const product = purchase.product
             return (
               <div
                 key={purchase.id}

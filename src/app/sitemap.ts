@@ -1,8 +1,5 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/server'
-import { Database } from '@/types/supabase'
-
-type Product = Database['public']['Tables']['products']['Row']
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient()

@@ -77,11 +77,17 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
       // data will be true if liked, false if unliked
       setIsLiked(data)
       setLikesCount(prev => prev + (data ? 1 : -1))
-    } catch (error: any) {
+
+      // Clear saved data after successful submission
+      localStorage.removeItem('productData');
+      
+      // Redirect to listings page
+      window.location.href = '/your/listings';
+    } catch (error: Error | unknown) {
       console.error('Error toggling like:', error)
       toast({
         title: "Error",
-        description: error?.message || "Failed to update like status",
+        description: error instanceof Error ? error.message : "Failed to update like status",
         variant: "destructive",
       })
     } finally {

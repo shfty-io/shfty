@@ -1,6 +1,20 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
+// Add interface at the top of the file after imports
+interface GitHubRepository {
+  id: number;
+  name: string;
+  description: string | null;
+  html_url: string;
+  private: boolean;
+  visibility: string;
+  updated_at: string;
+  owner: {
+    login: string;
+  };
+}
+
 export async function GET() {
   try {
     const supabase = createClient();
@@ -75,10 +89,10 @@ export async function GET() {
     
     // Log the number of repositories and how many are private
     console.log('Total repositories:', repositories.length);
-    console.log('Private repositories:', repositories.filter((repo: any) => repo.private).length);
+    console.log('Private repositories:', repositories.filter((repo: GitHubRepository) => repo.private).length);
 
     // Format response to include needed repository information
-    const formattedRepos = repositories.map((repo: any) => ({
+    const formattedRepos = repositories.map((repo: GitHubRepository) => ({
       id: repo.id,
       name: repo.name,
       description: repo.description,
@@ -86,14 +100,16 @@ export async function GET() {
       private: repo.private,
       visibility: repo.visibility,
       updated_at: repo.updated_at,
-      owner: repo.owner.login
+      owner: {
+        login: repo.owner.login
+      }
     }));
 
     return NextResponse.json({ repositories: formattedRepos });
   } catch (error) {
     console.error('Error fetching repositories:', error);
     return NextResponse.json(
-      { error: "Failed to fetch repositories" },
+      { error: error instanceof Error ? error.message : 'Failed to fetch repositories' },
       { status: 500 }
     );
   }

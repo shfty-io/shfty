@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           delay_days: 7,
           interval: 'daily'
         }
-      } as any,
+      } as Stripe.PaymentIntentCreateParams.TransferData,
       automatic_payment_methods: {
         enabled: true,
         allow_redirects: 'never'
@@ -97,10 +97,10 @@ export async function POST(request: Request) {
       clientSecret: paymentIntent.client_secret,
       status: paymentIntent.status,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing payment:', error);
     return NextResponse.json(
-      { error: error.message || "Failed to process payment" },
+      { error: error instanceof Error ? error.message : 'Failed to process payment' },
       { status: 500 }
     );
   }

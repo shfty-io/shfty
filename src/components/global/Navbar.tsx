@@ -34,7 +34,7 @@ export function Navbar() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase.auth])
 
   const toggleTheme = () => {
     if (isDark) {

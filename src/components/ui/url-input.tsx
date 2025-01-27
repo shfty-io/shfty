@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 import * as React from "react";
-import { Input } from "@/components/ui/input";
 
-export interface UrlInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
-
-const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
+const UrlInput = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(
   ({ className, ...props }, ref) => {
     return (
       <div className="flex rounded-lg shadow-sm shadow-black/5">

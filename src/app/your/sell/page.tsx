@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ProductForm, type ProductFormData } from "@/components/seller/ProductForm";
-import { PaymentSetupForm, type PaymentSetupData } from "@/components/payment/PaymentSetupForm";
 import { toast } from "@/components/ui/use-toast";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/client";
 
 const steps = [
@@ -19,7 +17,6 @@ export default function SellerDashboard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [productData, setProductData] = useState<ProductFormData | null>(null);
-  const [paymentData, setPaymentData] = useState<PaymentSetupData | null>(null);
 
   // Check payment setup status on load
   useEffect(() => {
@@ -35,12 +32,6 @@ export default function SellerDashboard() {
         router.push('/your/payment?returnTo=sell');
         return;
       }
-
-      setPaymentData({
-        stripeAccountId: sellerAccount.stripe_account_id,
-        isOnboarded: true,
-        accountStatus: sellerAccount.account_status
-      });
     };
 
     checkPaymentStatus();
@@ -56,7 +47,8 @@ export default function SellerDashboard() {
         description: "Your product information has been saved successfully.",
       });
       setCurrentStep(2);
-    } catch (error) {
+    } catch (error: Error | unknown) {
+      console.error('Error saving product:', error);
       toast({
         title: "Error",
         description: "Failed to save product details. Please try again.",
@@ -101,10 +93,11 @@ export default function SellerDashboard() {
       
       // Redirect to listings page
       window.location.href = '/your/listings';
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
+      console.error('Error submitting product:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to submit product. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit product. Please try again.",
         variant: "destructive",
       });
     }

@@ -1,28 +1,10 @@
 import { createClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
-import { Card } from '@/components/ui/card'
-import { PurchaseButton } from '@/components/product/PurchaseButton'
-import { Database } from '@/types/supabase'
 import { ImageGallery } from '@/components/product/ImageGallery'
-import { ProductFAQ } from '@/components/product/ProductFAQ'
-import { ProductSupport } from '@/components/product/ProductSupport'
-import { RefundPolicy } from '@/components/product/RefundPolicy'
-import { LikeButton } from '@/components/product/LikeButton'
 import { ProductNavbar } from '@/components/product/ProductNavbar'
 import { incrementViewCount } from '@/app/actions'
-import { Button } from '@/components/ui/button'
-import { Github } from 'lucide-react'
 import { ProductHero } from '@/components/product/ProductHero'
 import { ProductDetails } from '@/components/product/ProductDetails'
-
-type Product = Database['public']['Tables']['products']['Row'] & {
-  seller?: {
-    email: string | null
-    full_name: string | null
-    avatar_url: string | null
-  } | null
-  hasPurchased: boolean
-}
 
 async function getProduct(byline: string) {
   const supabase = createClient();

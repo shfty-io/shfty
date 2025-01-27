@@ -2,8 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Database } from "@/types/supabase"
-import { ExternalLink, ChevronRight, Github, Download } from "lucide-react"
-import Link from "next/link"
+import { ExternalLink, Github, Download } from "lucide-react"
 import { ProductStats } from "./ProductStats"
 import { PurchaseButton } from "./PurchaseButton"
 import { useState } from "react"

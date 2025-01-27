@@ -22,6 +22,8 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
     const editorRef = React.useRef<HTMLDivElement>(null);
     const [isInitialized, setIsInitialized] = React.useState(false);
 
+    React.useImperativeHandle(ref, () => editorRef.current as HTMLDivElement);
+
     React.useEffect(() => {
       if (editorRef.current && !isInitialized) {
         editorRef.current.innerHTML = value;

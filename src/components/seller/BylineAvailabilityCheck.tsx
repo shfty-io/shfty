@@ -47,7 +47,7 @@ export function BylineAvailabilityCheck({
   useEffect(() => {
     checkBylineAvailability(byline);
     return () => checkBylineAvailability.cancel();
-  }, [byline]);
+  }, [byline, checkBylineAvailability]);
 
   // Auto-format input to be URL-safe
   const handleBylineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +80,7 @@ export function BylineAvailabilityCheck({
       </div>
       <div className="text-sm space-y-1">
         <p className="text-muted-foreground">
-          This will be your product's URL: /product/{byline || 'your-byline'}
+          This will be your product&apos;s URL: /product/{byline || 'your-byline'}
         </p>
         {message && (
           <p className={`${isAvailable ? 'text-green-600' : 'text-red-600'}`}>

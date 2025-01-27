@@ -6,11 +6,10 @@ import { Upload } from "lucide-react";
 interface CodebaseUploadProps extends Omit<React.ComponentProps<"input">, "value" | "onChange"> {
   value?: string | null;
   onChange?: (file: File) => void;
-  onClear?: () => void;
 }
 
 const CodebaseUpload = React.forwardRef<HTMLInputElement, CodebaseUploadProps>(
-  ({ className, value, onChange, onClear, ...props }, ref) => {
+  ({ className, value, onChange, ...props }, ref) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
 
     const handleClick = () => {

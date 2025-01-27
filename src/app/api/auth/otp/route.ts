@@ -22,14 +22,11 @@ export async function POST(request: Request) {
 
     const supabase = createClient()
 
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: `${origin}/auth/callback`,
-        shouldCreateUser: true,
-        data: {
-          email: email
-        }
+        shouldCreateUser: true
       }
     })
 

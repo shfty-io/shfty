@@ -27,7 +27,7 @@ interface ReportDialogProps {
   productName: string
 }
 
-export function ReportDialog({ productId, productName }: ReportDialogProps) {
+export function ReportDialog({ productId }: ReportDialogProps) {
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState<'copyright_infringement' | 'other'>('other')
   const [description, setDescription] = useState('')

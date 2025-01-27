@@ -9,19 +9,13 @@ export async function GET(request: Request) {
     const supabase = createClient()
     
     try {
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
-      
-      if (error) {
-        return NextResponse.redirect(`${requestUrl.origin}/auth/error?error=${error.message}`)
-      }
-
-      // Successful authentication, redirect to home page
-      return NextResponse.redirect(`${requestUrl.origin}/`)
-    } catch (error) {
+      await supabase.auth.exchangeCodeForSession(code)
+      return NextResponse.redirect(new URL('/', requestUrl.origin))
+    } catch {
       return NextResponse.redirect(`${requestUrl.origin}/auth/error?error=Unknown error occurred`)
     }
   }
 
   // No code provided
-  return NextResponse.redirect(`${requestUrl.origin}/auth/error?error=No code provided`)
+  return NextResponse.redirect(new URL('/auth/login', requestUrl.origin))
 } 

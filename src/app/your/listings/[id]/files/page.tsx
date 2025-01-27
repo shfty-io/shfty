@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/server';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
 
@@ -67,7 +66,7 @@ export default async function ProductFilesPage({
                   <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No Codebase Uploaded</h3>
                   <p className="text-muted-foreground mb-4">
-                    Upload your product's codebase as a ZIP file
+                    Upload your product&apos;s codebase as a ZIP file
                   </p>
                   <Button>Upload Codebase</Button>
                 </div>

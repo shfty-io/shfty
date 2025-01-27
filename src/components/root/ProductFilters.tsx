@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductSearch } from '@/components/global/ProductSearch';
 import {
   Select,

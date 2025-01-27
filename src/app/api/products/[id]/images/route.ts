@@ -61,7 +61,7 @@ export async function POST(
     // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${params.id}-${Date.now()}.${fileExt}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(`images/${fileName}`, file);
 

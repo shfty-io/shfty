@@ -1,17 +1,23 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { redirect, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
 import { PaymentSetupForm, type PaymentSetupData } from "@/components/payment/PaymentSetupForm";
 import { toast } from "@/components/ui/use-toast";
+import { User } from '@supabase/supabase-js';
+
+interface SellerAccount {
+  stripe_account_id: string;
+  is_onboarded: boolean;
+}
 
 export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
-  const [user, setUser] = useState<any>(null);
-  const [sellerAccount, setSellerAccount] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [sellerAccount, setSellerAccount] = useState<SellerAccount | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,7 +32,7 @@ export default function PaymentPage() {
 
       setUser(userData);
 
-      // Check if user is a seller
+      // Check if user is a seller and update seller account state
       const { data: sellerData } = await supabase
         .from('seller_accounts')
         .select('stripe_account_id, is_onboarded')
@@ -50,7 +56,8 @@ export default function PaymentPage() {
           router.push('/your/sell');
         }
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Payment setup error:', err);
       toast({
         title: "Error",
         description: "Failed to save payment information. Please try again.",
@@ -70,7 +77,14 @@ export default function PaymentPage() {
       {/* Seller Payment Setup */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Seller Account Setup</h2>
-        <PaymentSetupForm onSubmit={handlePaymentSetup} />
+        {sellerAccount?.is_onboarded ? (
+          <div className="text-sm text-muted-foreground">
+            <p className="mb-2">✓ Your Stripe account is connected and ready to receive payments.</p>
+            <p>Account ID: {sellerAccount.stripe_account_id}</p>
+          </div>
+        ) : (
+          <PaymentSetupForm onSubmit={handlePaymentSetup} />
+        )}
       </div>
     </div>
   );

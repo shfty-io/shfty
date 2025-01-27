@@ -35,10 +35,10 @@ export async function POST() {
     }
 
     return NextResponse.json({ message: 'Storage bucket setup complete' });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Error setting up storage:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to setup storage' },
+      { error: error instanceof Error ? error.message : 'Failed to setup storage' },
       { status: 500 }
     );
   }
@@ -59,10 +59,10 @@ export async function DELETE() {
     }
 
     return NextResponse.json({ message: 'Storage bucket cleanup complete' });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Error cleaning up storage:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to cleanup storage' },
+      { error: error instanceof Error ? error.message : 'Failed to cleanup storage' },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 import { ProductNavbar } from '@/components/product/ProductNavbar'
 import { createClient } from '@/lib/server'
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { CheckCircle2, AlertCircle, Github, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -78,7 +78,7 @@ export default async function SuccessPage({
                 Session Not Found
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                We couldn't find your purchase session. If you believe this is an error, please contact support.
+                We couldn&apos;t find your purchase session. If you believe this is an error, please contact support.
               </p>
               <Button asChild variant="outline">
                 <Link href={`/product/${params.byline}`}>
@@ -183,7 +183,7 @@ export default async function SuccessPage({
                 Download Error
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                We couldn't generate your download link. Please try again or contact support.
+                We couldn&apos;t generate your download link. Please try again or contact support.
               </p>
               <Button asChild variant="outline">
                 <Link href="/your/purchases">

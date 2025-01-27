@@ -25,8 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
-import { Globe } from "lucide-react";
-import { BylineAvailabilityCheck } from "./BylineAvailabilityCheck";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CodebaseUpload } from "@/components/ui/codebase-upload";
 
@@ -289,9 +287,9 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           .getPublicUrl(data.path);
 
         return publicUrl;
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Error uploading ${file.name}:`, error);
-        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+        throw new Error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });
 
@@ -329,92 +327,11 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       console.error('Upload error:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload images. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload images. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const handleImageUpload = async (file: File) => {
-    try {
-      // Validate file size
-      if (file.size > MAX_IMAGE_SIZE) {
-        toast({
-          title: "File too large",
-          description: "Image must be less than 5MB",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Validate file type
-      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        toast({
-          title: "Invalid file type",
-          description: "Please upload a JPG, PNG, or WEBP image",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Create a more unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `images/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      const supabase = createClient();
-
-      // Upload file to Supabase storage with correct bucket and folder path
-      const { data, error } = await supabase.storage
-        .from('products') // Changed to just 'products'
-        .upload(fileName, file, { // fileName includes 'images/' prefix
-          cacheControl: '3600',
-          upsert: false,
-          contentType: file.type
-        });
-
-      if (error) {
-        console.error('Supabase storage error:', error);
-        throw new Error(error.message || 'Failed to upload image');
-      }
-
-      if (!data?.path) {
-        throw new Error('No path returned from upload');
-      }
-
-      // Get the public URL with correct bucket name
-      const { data: { publicUrl } } = supabase.storage
-        .from('products') // Changed to just 'products'
-        .getPublicUrl(data.path);
-
-      if (!publicUrl) {
-        throw new Error('Failed to get public URL');
-      }
-
-      // Verify the image is accessible
-      const imgResponse = await fetch(publicUrl);
-      if (!imgResponse.ok) {
-        throw new Error('Uploaded image is not accessible');
-      }
-
-      setFormData(prev => ({
-        ...prev,
-        imageUrls: [...prev.imageUrls, publicUrl]
-      }));
-      
-      toast({
-        title: "Upload successful",
-        description: "Your image has been uploaded",
-      });
-      
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: error.message || "Could not upload image. Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -555,7 +472,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              Used in the URL and imports, can't be changed later
+              Used in the URL and imports, can&apos;t be changed later
             </p>
             {message && (
               <p className={`text-sm ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>

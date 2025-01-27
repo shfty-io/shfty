@@ -69,10 +69,10 @@ export function PaymentSetupForm({ onSubmit }: PaymentSetupFormProps) {
 
       // Redirect to Stripe Connect onboarding
       window.location.href = data.url;
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
     } finally {

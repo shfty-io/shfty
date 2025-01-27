@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
 });
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const supabase = createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();

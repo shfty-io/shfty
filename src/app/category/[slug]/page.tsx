@@ -2,8 +2,8 @@ import ProductList from '@/components/root/ProductList';
 import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/server';
-import { Database } from '@/types/supabase';
 import { Navbar } from '@/components/global/Navbar';
+import Link from 'next/link';
 
 interface Product {
   id: string;
@@ -90,7 +90,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         {/* Breadcrumb */}
         <div className="py-4">
           <nav className="flex text-sm text-gray-500">
-            <a href="/" className="hover:text-gray-900">Marketplace</a>
+            <Link href="/" className="hover:text-gray-900">Marketplace</Link>
             <span className="mx-2">›</span>
             <span className="text-gray-900">{metadata.title}</span>
           </nav>
