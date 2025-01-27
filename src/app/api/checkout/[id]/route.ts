@@ -1,23 +1,25 @@
 import { createClient } from '@/lib/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia'
 })
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+type Context = {
+  params: { id: string }
+}
+
+export async function POST(request: NextRequest, context: Context): Promise<NextResponse> {
   try {
     const supabase = createClient()
-
+    const { id } = context.params
+    
     // Get product details
     const { data: product } = await supabase
       .from('products')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)  // Use destructured id
       .single()
 
     if (!product) {

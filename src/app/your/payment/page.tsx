@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
 import { PaymentSetupForm, type PaymentSetupData } from "@/components/payment/PaymentSetupForm";
@@ -12,7 +12,7 @@ interface SellerAccount {
   is_onboarded: boolean;
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
@@ -87,5 +87,13 @@ export default function PaymentPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PaymentPageContent />
+    </Suspense>
   );
 } 
