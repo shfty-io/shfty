@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS products (
   video_url TEXT,
   demo_url TEXT,
   github_repo_url TEXT,
-  codebase_url TEXT,
   categories product_category[],
   technologies product_technology[],
   status product_status DEFAULT 'draft',

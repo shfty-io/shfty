@@ -79,9 +79,9 @@ export async function POST(request: Request) {
     }
 
     // Separate validation for codebase
-    if (!productData.codebase_url && !productData.github_repo_url) {
+    if (!productData.githubRepoUrl) {
       return NextResponse.json(
-        { error: "Must provide either codebase URL or GitHub repository" },
+        { error: "GitHub repository URL is required" },
         { status: 400 }
       );
     }
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     }
 
     // Add GitHub token check for repository products
-    if (productData.github_repo_url) {
+    if (productData.githubRepoUrl) {
       const { data: sellerAccount } = await supabase
         .from('seller_accounts')
         .select('github_token')
@@ -127,14 +127,16 @@ export async function POST(request: Request) {
         description: productData.description, // This will store HTML content
         price: productData.price,
         categories: productData.categories,
+        technologies: productData.technologies,
+        faq: productData.faq,
+        github_repo_url: productData.githubRepoUrl,
+        github_token: productData.github_token,
         image_urls: productData.imageUrls,
         video_url: productData.videoUrl,
-        codebase_url: productData.codebase_url,
-        faq: productData.faq || null,
+        demo_url: productData.demoUrl,
         status: 'in_review',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        github_repo_url: productData.github_repo_url,
       })
       .select()
       .single();

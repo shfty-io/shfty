@@ -27,7 +27,6 @@ import {
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
 import { useDebounce } from "@/hooks/use-debounce";
-import { CodebaseUpload } from "@/components/ui/codebase-upload";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -103,7 +102,6 @@ export type ProductFormData = {
   technologies: string[];
   faq?: FAQItem[];
   codebaseSource?: 'zip' | 'github';
-  codebase_url?: string | null;
   githubRepoUrl?: string | null;
   github_token?: string | null;
   imageUrls: string[];
@@ -154,8 +152,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
     faq: [],
-    codebaseSource: initialData?.codebaseSource || 'zip',
-    codebase_url: initialData?.codebase_url || null,
+    codebaseSource: initialData?.codebaseSource || 'github',
     githubRepoUrl: initialData?.githubRepoUrl || null,
     github_token: initialData?.github_token || null,
     imageUrls: initialData?.imageUrls ?? [],
@@ -212,10 +209,10 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       return;
     }
 
-    if (!formData.githubRepoUrl && !formData.codebase_url) {
+    if (!formData.githubRepoUrl) {
       toast({
         title: "Validation Error",
-        description: "Please provide either a GitHub repository or upload a ZIP file",
+        description: "Please provide a GitHub repository",
         variant: "destructive"
       });
       return;
@@ -227,43 +224,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     };
 
     onSubmit(finalFormData);
-  };
-
-  const handleFileUpload = async (file: File) => {
-    try {
-      const supabase = createClient();
-      const fileName = `${Date.now()}-${file.name}`;
-      
-      // Upload file to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('codebases')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      // Get the public URL for the uploaded file
-      const { data: { publicUrl } } = supabase.storage
-        .from('codebases')
-        .getPublicUrl(data.path);
-
-      setFormData(prev => ({
-        ...prev,
-        codebase_url: publicUrl  // Store the public URL instead of just the path
-      }));
-      
-      toast({
-        title: "Upload successful",
-        description: "Your codebase file has been uploaded",
-      });
-      
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: "Could not upload codebase file",
-        variant: "destructive"
-      });
-    }
   };
 
   const fetchGitHubRepos = async () => {
@@ -781,53 +741,8 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   </div>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <Label className="text-sm font-medium">Upload Codebase (ZIP)</Label>
-                </div>
-                <CodebaseUpload
-                  accept=".zip"
-                  value={formData.codebase_url}
-                  onChange={(file) => handleFileUpload(file)}
-                />
-                {formData.codebase_url && (
-                  <p className="text-sm text-muted-foreground">
-                    ✓ File uploaded successfully
-                  </p>
-                )}
-              </div>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <Label>GitHub Repository URL (Optional)</Label>
-          <UrlInput
-            value={formData.githubRepoUrl || ''}
-            onChange={(e) => setFormData(prev => ({ 
-              ...prev, 
-              githubRepoUrl: typeof e === 'string' ? e : e.target.value 
-            }))}
-            placeholder="https://github.com/username/repository"
-          />
-          
-          {formData.githubRepoUrl && (
-            <div className="space-y-2">
-              <Label>GitHub Access Token</Label>
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  value={formData.github_token || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, github_token: e.target.value }))}
-                  placeholder="GitHub personal access token with repo access"
-                />
-                <p className="text-sm text-gray-500">
-                  Required for private repositories. Generate a token with 'repo' scope from GitHub Developer Settings.
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         <div>
