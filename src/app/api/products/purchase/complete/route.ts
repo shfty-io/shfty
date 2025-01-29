@@ -1,6 +1,18 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
+interface Seller {
+  github_token: string;
+  github_username: string;
+}
+
+interface Product {
+  id: string;
+  github_repo_url: string;
+  private: boolean;
+  seller: Seller;
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = createClient();
@@ -18,11 +30,12 @@ export async function POST(request: Request) {
       .select(`
         *,
         seller:seller_id (
-          github_token
+          github_token,
+          user_metadata->>'user_name' as github_username
         )
       `)
       .eq('id', productId)
-      .single();
+      .single() as { data: Product | null };
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -37,30 +50,58 @@ export async function POST(request: Request) {
     }
 
     // If it's a private repository, add the buyer as a collaborator
-    if (product.githubRepoUrl && product.private) {
-      // Extract owner and repo from GitHub URL
-      const [owner, repo] = product.githubRepoUrl.split('/').slice(-2);
-      
-      // Add buyer as a collaborator with read-only access
-      const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/collaborators/${buyerGithubUsername}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${product.seller.github_token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-          },
-          body: JSON.stringify({
-            permission: 'pull' // Read-only access
-          })
+    if (product.github_repo_url && product.private) {
+      try {
+        // Parse GitHub URL to extract owner and repo
+        const githubUrl = new URL(product.github_repo_url);
+        const [, owner, repo] = githubUrl.pathname.split('/').filter(Boolean);
+        
+        if (!owner || !repo) {
+          throw new Error('Invalid GitHub repository URL format');
         }
-      );
 
-      if (!response.ok) {
-        console.error('GitHub API error:', await response.text());
+        // Add buyer as a collaborator with read-only access
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/collaborators/${buyerGithubUsername}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${product.seller.github_token}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+            },
+            body: JSON.stringify({
+              permission: 'pull' // Read-only access
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error('GitHub API error:', {
+            status: response.status,
+            error: errorData,
+            owner,
+            repo,
+            buyer: buyerGithubUsername
+          });
+
+          // Check if it's a token permission issue
+          if (response.status === 403) {
+            return NextResponse.json(
+              { error: "The seller's GitHub token doesn't have permission to add collaborators. Please contact the seller." },
+              { status: 403 }
+            );
+          }
+
+          throw new Error(`Failed to grant repository access: ${errorData}`);
+        }
+
+        console.log(`Successfully added ${buyerGithubUsername} as collaborator to ${owner}/${repo}`);
+      } catch (error) {
+        console.error('Error granting repository access:', error);
         return NextResponse.json(
-          { error: "Failed to grant repository access" },
+          { error: error instanceof Error ? error.message : "Failed to grant repository access" },
           { status: 500 }
         );
       }
@@ -80,12 +121,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true,
-      message: "Purchase completed. You now have access to the repository on GitHub."
+      message: "Purchase completed and repository access granted. You can now access the repository on GitHub."
     });
   } catch (error) {
     console.error('Purchase completion error:', error);
     return NextResponse.json(
-      { error: "Failed to complete purchase" },
+      { error: error instanceof Error ? error.message : "Failed to complete purchase" },
       { status: 500 }
     );
   }

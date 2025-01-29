@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProductForm, type ProductFormData } from "@/components/seller/ProductForm";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/client";
+import Link from "next/link";
 
 const steps = [
   { id: 1, name: "Create Product" },
@@ -114,6 +116,15 @@ export default function SellerDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-4xl font-bold mb-8">Seller Dashboard</h1>
+      
+      <Alert className="mb-6">
+        <AlertDescription>
+          Products go through a review process before being featured.{" "}
+          <Link href="/help/product-review" className="font-medium underline underline-offset-4">
+            Learn more
+          </Link>
+        </AlertDescription>
+      </Alert>
       
       {/* Progress indicator */}
       <div className="mb-8">

@@ -33,6 +33,65 @@ interface ProductFormProps {
   initialData?: ProductFormData | null;
 }
 
+const categories = [
+  "photo-video",
+  "productivity",
+  "utilities",
+  "entertainment",
+  "developer-tools",
+  "business",
+  "creativity",
+  "security",
+  "lifestyle",
+  "education",
+  "communication-social",
+  "games",
+  "finance",
+  "other"
+];
+
+const technologies = [
+  // Frontend
+  "react",
+  "vue",
+  "angular",
+  "svelte",
+  "next.js",
+  "nuxt",
+  "tailwind",
+  // Backend
+  "node.js",
+  "python",
+  "java",
+  "php",
+  "ruby",
+  "go",
+  "rust",
+  // Databases
+  "postgresql",
+  "mysql",
+  "mongodb",
+  "supabase",
+  "firebase",
+  // Cloud & Infrastructure
+  "aws",
+  "google-cloud",
+  "azure",
+  "vercel",
+  "docker",
+  "kubernetes",
+  // Authentication
+  "clerk",
+  "auth0",
+  "nextauth",
+  // Other
+  "stripe",
+  "ngrok",
+  "graphql",
+  "redis",
+  "websocket",
+];
+
 export type ProductFormData = {
   name: string;
   byline: string;
@@ -40,6 +99,7 @@ export type ProductFormData = {
   description: string;
   price: number;
   categories: string[];
+  technologies: string[];
   faq?: FAQItem[];
   codebaseSource?: 'zip' | 'github';
   codebase_url?: string | null;
@@ -65,23 +125,6 @@ interface GitHubRepo {
   owner: string | null;
 }
 
-const categories = [
-  "photo-video",
-  "productivity",
-  "utilities",
-  "entertainment",
-  "developer-tools",
-  "business",
-  "creativity",
-  "security",
-  "lifestyle",
-  "education",
-  "communication-social",
-  "games",
-  "finance",
-  "other"
-];
-
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -100,6 +143,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     description: initialData?.description ?? "",
     price: initialData?.price ?? 10,
     categories: initialData?.categories ?? [],
+    technologies: initialData?.technologies ?? [],
     faq: [],
     codebaseSource: initialData?.codebaseSource || 'zip',
     codebase_url: initialData?.codebase_url || null,
@@ -498,22 +542,83 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           </div>
 
           <div>
-            <Label>Categories</Label>
-            <Select
-              value={formData.categories[0] || ''}
-              onValueChange={(value) => setFormData({ ...formData, categories: [value] })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {getCategoryDisplayName(category)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>
+              Categories
+              <span className="text-sm text-muted-foreground ml-2">
+                (Select up to 3)
+              </span>
+            </Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => {
+                    if (formData.categories.includes(category)) {
+                      setFormData({
+                        ...formData,
+                        categories: formData.categories.filter(c => c !== category)
+                      });
+                    } else if (formData.categories.length < 3) {
+                      setFormData({
+                        ...formData,
+                        categories: [...formData.categories, category]
+                      });
+                    } else {
+                      toast({
+                        title: "Maximum categories reached",
+                        description: "You can only select up to 3 categories",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    formData.categories.includes(category)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary hover:bg-secondary/80'
+                  }`}
+                >
+                  {getCategoryDisplayName(category)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label>
+              Technologies Used
+              <span className="text-sm text-muted-foreground ml-2">
+                (Select all that apply)
+              </span>
+            </Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {technologies.map((tech) => (
+                <button
+                  key={tech}
+                  type="button"
+                  onClick={() => {
+                    if (formData.technologies.includes(tech)) {
+                      setFormData({
+                        ...formData,
+                        technologies: formData.technologies.filter(t => t !== tech)
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        technologies: [...formData.technologies, tech]
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    formData.technologies.includes(tech)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary hover:bg-secondary/80'
+                  }`}
+                >
+                  {tech}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -536,6 +641,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           <Label htmlFor="shortDescription">Short Description</Label>
           <Textarea
             id="shortDescription"
+            placeholder="Used in search results and as an intro at the top of your template's page."
             value={formData.shortDescription}
             onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
             required
@@ -547,6 +653,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           <RichTextEditor
             value={formData.description}
             onChange={(value) => setFormData({ ...formData, description: value })}
+            placeholder="Provide as much detail as possible to significantly increase sales."
           />
         </div>
 

@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+---
+
+#Rules
+
+Technologies
+Supabase
+Next.js
+Typescript
+
+You can view schema in [supabase.ts](mdc:src/types/supabase.ts)
+You can run npx supabase gen types typescript --project-id xbwfjonmiddqfrgwdhmi > src/types/supabase.ts to make sure its up to date
