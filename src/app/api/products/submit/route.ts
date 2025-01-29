@@ -100,6 +100,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Add GitHub token check for repository products
+    if (productData.github_repo_url) {
+      const { data: sellerAccount } = await supabase
+        .from('seller_accounts')
+        .select('github_token')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!sellerAccount?.github_token) {
+        return NextResponse.json(
+          { error: "GitHub integration required for repository products" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create new product
     const { data: product, error: insertError } = await supabase
       .from('products')

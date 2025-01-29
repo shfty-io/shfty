@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
@@ -34,17 +35,17 @@ interface ProductFormProps {
 }
 
 const categories = [
-  "photo-video",
+  "photo_video",
   "productivity",
   "utilities",
   "entertainment",
-  "developer-tools",
+  "developer_tools",
   "business",
   "creativity",
   "security",
   "lifestyle",
   "education",
-  "communication-social",
+  "communication_social",
   "games",
   "finance",
   "other"
@@ -104,6 +105,7 @@ export type ProductFormData = {
   codebaseSource?: 'zip' | 'github';
   codebase_url?: string | null;
   githubRepoUrl?: string | null;
+  github_token?: string | null;
   imageUrls: string[];
   videoUrl?: string | null;
   demoUrl?: string | null;
@@ -122,7 +124,14 @@ interface GitHubRepo {
   description: string | null;
   private: boolean;
   updated_at: string;
-  owner: string | null;
+  owner: {
+    login: string;
+    id: number;
+    avatar_url: string;
+    url: string;
+    html_url: string;
+    type: string;
+  };
 }
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -130,7 +139,7 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const getCategoryDisplayName = (category: string) => {
   return category
-    .split('-')
+    .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
@@ -148,6 +157,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     codebaseSource: initialData?.codebaseSource || 'zip',
     codebase_url: initialData?.codebase_url || null,
     githubRepoUrl: initialData?.githubRepoUrl || null,
+    github_token: initialData?.github_token || null,
     imageUrls: initialData?.imageUrls ?? [],
     videoUrl: initialData?.videoUrl || null,
     demoUrl: initialData?.demoUrl || null,
@@ -674,46 +684,46 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 </div>
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div
-                      className="relative flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 text-sm ring-offset-background shadow-sm shadow-black/5 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    <Button 
+                      type="button" 
+                      variant="ghost"
+                      className="relative flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background shadow-sm shadow-black/5 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, codebaseSource: 'github' }));
+                        fetchGitHubRepos();
+                      }}
+                      disabled={isLoadingRepos}
                     >
-                      <Button 
-                        type="button" 
-                        variant="ghost"
-                        className="h-full -ml-3 rounded-l-lg border-r px-3 font-normal hover:bg-muted"
-                        disabled={isLoadingRepos}
-                      >
-                        <Github className="h-4 w-4 mr-2 shrink-0" />
-                        Select Repository
-                      </Button>
-                      <div className="flex-1 truncate pl-3">
+                      <Github className="h-4 w-4 shrink-0" />
+                      <span className="flex-1 text-left">
                         {isLoadingRepos 
                           ? "Loading repositories..." 
                           : formData.githubRepoUrl 
                             ? "Repository selected"
-                            : "No repository chosen"}
-                      </div>
-                    </div>
+                            : "Select Repository"}
+                      </span>
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Select a Repository</DialogTitle>
+                      <DialogDescription>
+                        Choose a GitHub repository to link to your product
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       {githubRepos.map((repo) => (
-                        <div
+                        <button
                           key={repo.id}
-                          className={`p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors ${
+                          type="button"
+                          className={`w-full p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors text-left ${
                             formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
                           }`}
                           onClick={() => {
-                            setFormData({ 
-                              ...formData, 
+                            setFormData(prev => ({ 
+                              ...prev, 
                               githubRepoUrl: repo.html_url 
-                            });
-                            // Close the dialog
-                            const closeButton = document.querySelector('[data-dialog-close]');
-                            if (closeButton instanceof HTMLElement) closeButton.click();
+                            }));
                           }}
                         >
                           <div className="flex items-center justify-between">
@@ -727,7 +737,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                                 </span>
                                 {repo.owner && (
                                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    Owner: {repo.owner}
+                                    Owner: {repo.owner.login}
                                   </span>
                                 )}
                               </div>
@@ -743,7 +753,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                               </span>
                             </div>
                           </div>
-                        </div>
+                        </button>
                       ))}
                       {githubRepos.length === 0 && !isLoadingRepos && (
                         <p className="text-center text-muted-foreground">
@@ -789,6 +799,35 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="space-y-4">
+          <Label>GitHub Repository URL (Optional)</Label>
+          <UrlInput
+            value={formData.githubRepoUrl || ''}
+            onChange={(e) => setFormData(prev => ({ 
+              ...prev, 
+              githubRepoUrl: typeof e === 'string' ? e : e.target.value 
+            }))}
+            placeholder="https://github.com/username/repository"
+          />
+          
+          {formData.githubRepoUrl && (
+            <div className="space-y-2">
+              <Label>GitHub Access Token</Label>
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  value={formData.github_token || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, github_token: e.target.value }))}
+                  placeholder="GitHub personal access token with repo access"
+                />
+                <p className="text-sm text-gray-500">
+                  Required for private repositories. Generate a token with 'repo' scope from GitHub Developer Settings.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>

@@ -3,13 +3,22 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
-import { PaymentSetupForm, type PaymentSetupData } from "@/components/payment/PaymentSetupForm";
+import { PaymentSetupForm } from "@/components/payment/PaymentSetupForm";
 import { toast } from "@/components/ui/use-toast";
 import { User } from '@supabase/supabase-js';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface SellerAccount {
   stripe_account_id: string;
   is_onboarded: boolean;
+  github_token?: string;
+}
+
+interface PaymentSetupData {
+  isOnboarded: boolean;
+  stripeAccountId?: string;
 }
 
 function PaymentPageContent() {
@@ -37,13 +46,35 @@ function PaymentPageContent() {
 
         // Only fetch seller account data if we don't already have it
         if (!sellerAccount) {
-          const { data: sellerData } = await supabase
+          const { data: sellerData, error: sellerError } = await supabase
             .from('seller_accounts')
-            .select('stripe_account_id, is_onboarded')
+            .select('stripe_account_id, is_onboarded, github_token')
             .eq('user_id', userData.id)
             .single();
           
-          setSellerAccount(sellerData);
+          if (sellerError && sellerError.code === 'PGRST116') {
+            // No seller account found, create one
+            console.log('Creating new seller account');
+            const { data: newSellerData, error: createError } = await supabase
+              .from('seller_accounts')
+              .insert({
+                user_id: userData.id,
+                is_onboarded: false,
+                account_status: 'pending'
+              })
+              .select()
+              .single();
+
+            if (createError) {
+              console.error('Error creating seller account:', createError);
+            } else {
+              setSellerAccount(newSellerData);
+            }
+          } else if (sellerError) {
+            console.error('Error fetching seller account:', sellerError);
+          } else {
+            setSellerAccount(sellerData);
+          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -111,6 +142,100 @@ function PaymentPageContent() {
         ) : (
           <PaymentSetupForm onSubmit={handlePaymentSetup} />
         )}
+      </div>
+
+      {/* GitHub Token Setup */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">GitHub Integration</h2>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            To enable private repository access for your buyers, you need to provide a GitHub personal access token with the following scopes:
+          </p>
+          <ul className="list-disc list-inside text-sm text-muted-foreground ml-4">
+            <li>repo (Full control of private repositories)</li>
+            <li>repo:invite (Accept repository invitations)</li>
+          </ul>
+          <div className="mt-4">
+            <Label htmlFor="github_token">GitHub Personal Access Token</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                id="github_token"
+                type="password"
+                placeholder="ghp_your_token_here"
+                value={sellerAccount?.github_token || ''}
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                  const token = e.target.value;
+                  try {
+                    const response = await fetch('/api/seller/github-token', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ token }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to save GitHub token');
+                    }
+                    
+                    setSellerAccount(prev => prev ? {
+                      ...prev,
+                      github_token: token
+                    } : null);
+                    
+                    toast({
+                      title: "Success",
+                      description: "GitHub token saved successfully",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to save GitHub token. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+              <Button 
+                variant="destructive" 
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/seller/github-token', {
+                      method: 'DELETE',
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to delete token');
+                    
+                    setSellerAccount(prev => prev ? {...prev, github_token: ''} : null);
+                    toast({
+                      title: "Success",
+                      description: "GitHub token removed successfully",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to delete GitHub token",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Remove Token
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              You can create a new token in your{" "}
+              <a
+                href="https://github.com/settings/tokens"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                GitHub Developer Settings
+              </a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

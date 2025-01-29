@@ -98,6 +98,21 @@ export async function POST(request: Request) {
         }
 
         console.log(`Successfully added ${buyerGithubUsername} as collaborator to ${owner}/${repo}`);
+
+        // Record repository access
+        const { error: accessError } = await supabase
+          .from('repository_access')
+          .insert({
+            user_id: user.id,
+            product_id: productId,
+            repository_url: product.github_repo_url,
+            access_key: buyerGithubUsername // Using GitHub username as the access key
+          });
+
+        if (accessError) {
+          console.error('Error recording repository access:', accessError);
+          // Continue even if recording fails, since the GitHub access is already granted
+        }
       } catch (error) {
         console.error('Error granting repository access:', error);
         return NextResponse.json(

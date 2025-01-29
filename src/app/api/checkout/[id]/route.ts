@@ -13,7 +13,7 @@ type Context = {
 export async function POST(request: NextRequest, context: Context): Promise<NextResponse> {
   try {
     const supabase = createClient()
-    const { id } = context.params
+    const { id } = await Promise.resolve(context.params)
     
     // Get product details
     const { data: product } = await supabase

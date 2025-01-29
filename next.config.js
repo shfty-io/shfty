@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['xbwfjonmiddqfrgwdhmi.supabase.co']
+    domains: ['xbwfjonmiddqfrgwdhmi.supabase.co', 'avatars.githubusercontent.com']
   },
   eslint: {
     ignoreDuringBuilds: true

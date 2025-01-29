@@ -1,6 +1,12 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing types if they exist
+DROP TYPE IF EXISTS product_category CASCADE;
+DROP TYPE IF EXISTS product_status CASCADE;
+DROP TYPE IF EXISTS product_technology CASCADE;
+DROP TYPE IF EXISTS report_reason CASCADE;
+
 -- Product related enums
 CREATE TYPE product_category AS ENUM (
   'photo_video', 'productivity', 'utilities', 'entertainment',
@@ -85,6 +91,7 @@ CREATE TABLE IF NOT EXISTS seller_accounts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   stripe_account_id TEXT,
+  github_token TEXT,
   is_onboarded BOOLEAN DEFAULT false,
   account_status TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
