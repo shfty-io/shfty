@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Download, Github } from 'lucide-react'
+import { Download, Github, Mail } from 'lucide-react'
 import Link from 'next/link'
 
 interface Product {
@@ -9,9 +9,12 @@ interface Product {
   name: string
   description: string
   price: number
-  codebase_url: string | null
   github_repo_url: string | null
   downloadUrl?: string | null
+  seller: {
+    email: string | null
+    full_name: string | null
+  } | null
 }
 
 interface Purchase {
@@ -39,45 +42,18 @@ async function getPurchases(userId: string): Promise<Purchase[]> {
         name,
         description,
         price,
-        codebase_url,
-        github_repo_url
+        github_repo_url,
+        user_id,
+        seller:profiles (
+          email,
+          full_name
+        )
       )
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   return purchases || []
-}
-
-async function getDownloadUrl(codebaseUrl: string) {
-  const supabase = createClient()
-  try {
-    // Extract just the filename from the URL
-    const filePath = codebaseUrl.split('/').pop();
-    
-    if (!filePath) {
-      console.error('Invalid codebase URL format:', codebaseUrl)
-      return null
-    }
-
-    const { data, error } = await supabase
-      .storage
-      .from('codebases')
-      .createSignedUrl(filePath, 60 * 60)
-
-    if (error) {
-      console.error('Supabase storage error:', {
-        message: error.message,
-        url: codebaseUrl,
-        extractedPath: filePath
-      })
-      throw error
-    }
-    return data.signedUrl
-  } catch (error) {
-    console.error('Full error generating download URL:', JSON.stringify(error, null, 2))
-    return null
-  }
 }
 
 export default async function PurchasesPage() {
@@ -89,25 +65,17 @@ export default async function PurchasesPage() {
 
   const purchases = await getPurchases(user.id)
 
-  // Pre-fetch download URLs
-  const purchasesWithUrls = await Promise.all(
-    purchases.map(async (purchase) => {
-      const product = purchase.product as Product
-      let downloadUrl = null
-      
-      if (product.codebase_url) {
-        downloadUrl = await getDownloadUrl(product.codebase_url)
+  // Simplify the purchases mapping since we don't need to fetch download URLs
+  const purchasesWithUrls = purchases.map((purchase) => {
+    const product = purchase.product as Product
+    return {
+      ...purchase,
+      product: {
+        ...product,
+        downloadUrl: null // Keep this to maintain type compatibility
       }
-      
-      return {
-        ...purchase,
-        product: {
-          ...product,
-          downloadUrl
-        }
-      }
-    })
-  )
+    }
+  })
 
   return (
     <div className="p-6">
@@ -129,7 +97,7 @@ export default async function PurchasesPage() {
                 key={purchase.id}
                 className="border rounded-lg p-6"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-4">
                   <div>
                     <h3 className="text-xl font-semibold mb-2">
                       {product.name}
@@ -144,7 +112,8 @@ export default async function PurchasesPage() {
                       {product.description}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  
+                  <div className="flex flex-wrap gap-3">
                     {product.github_repo_url && (
                       <Button variant="outline" asChild>
                         <a 
@@ -158,25 +127,15 @@ export default async function PurchasesPage() {
                         </a>
                       </Button>
                     )}
-                    {product.downloadUrl ? (
-                      <Button asChild variant="outline">
+                    {product.seller?.email && (
+                      <Button variant="outline" asChild>
                         <a 
-                          href={product.downloadUrl}
-                          download
+                          href={`mailto:${product.seller.email}?subject=Question about ${encodeURIComponent(product.name)}`}
                           className="inline-flex items-center gap-2"
                         >
-                          <Download className="h-4 w-4" />
-                          Download Files
+                          <Mail className="h-4 w-4" />
+                          Contact {product.seller.full_name || 'Seller'}
                         </a>
-                      </Button>
-                    ) : product.codebase_url ? (
-                      <Button variant="outline" disabled>
-                        Error generating download
-                      </Button>
-                    ) : null}
-                    {!product.github_repo_url && !product.codebase_url && (
-                      <Button variant="outline" disabled>
-                        Download unavailable
                       </Button>
                     )}
                   </div>

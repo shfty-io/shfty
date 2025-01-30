@@ -585,7 +585,9 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               ))}
             </div>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Product Demo URL (Optional)</Label>
             <UrlInput
@@ -599,6 +601,124 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 });
               }}
             />
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="flex items-center">
+                Codebase Source
+                <span className="text-destructive ml-1">*</span>
+                <span className="text-sm text-muted-foreground ml-2">
+                  (At least one required)
+                </span>
+              </Label>
+              <div className="mt-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Label className="text-sm font-medium">GitHub Repository</Label>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Recommended</span>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        className="relative flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background shadow-sm shadow-black/5 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, codebaseSource: 'github' }));
+                          fetchGitHubRepos();
+                        }}
+                        disabled={isLoadingRepos}
+                      >
+                        <Github className="h-4 w-4 shrink-0" />
+                        <span className="flex-1 text-left">
+                          {isLoadingRepos 
+                            ? "Loading repositories..." 
+                            : formData.githubRepoUrl 
+                              ? "Repository selected"
+                              : "Select Repository"}
+                        </span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Select a Repository</DialogTitle>
+                        <DialogDescription>
+                          Choose a GitHub repository to link to your product
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        {githubRepos.map((repo) => (
+                          <button
+                            key={repo.id}
+                            type="button"
+                            className={`w-full p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors text-left ${
+                              formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
+                            }`}
+                            onClick={() => {
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                githubRepoUrl: repo.html_url 
+                              }));
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-medium">{repo.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`text-xs px-2 py-1 rounded ${
+                                    repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {repo.private ? 'Private' : 'Public'}
+                                  </span>
+                                  {repo.owner && (
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                      Owner: {repo.owner.login}
+                                    </span>
+                                  )}
+                                </div>
+                                {repo.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {repo.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  Updated: {new Date(repo.updated_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                        {githubRepos.length === 0 && !isLoadingRepos && (
+                          <p className="text-center text-muted-foreground">
+                            No repositories found
+                          </p>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {formData.githubRepoUrl && (
+                    <div className="p-3 border rounded-lg bg-muted">
+                      <div className="flex items-center gap-2">
+                        <Github className="h-4 w-4" />
+                        <span className="text-sm font-medium">Selected Repository:</span>
+                      </div>
+                      <a 
+                        href={formData.githubRepoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline mt-2 block break-all"
+                      >
+                        {formData.githubRepoUrl}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -620,124 +740,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             onChange={(value) => setFormData({ ...formData, description: value })}
             placeholder="Provide as much detail as possible to significantly increase sales."
           />
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label className="flex items-center">
-              Codebase Source
-              <span className="text-destructive ml-1">*</span>
-              <span className="text-sm text-muted-foreground ml-2">
-                (At least one required)
-              </span>
-            </Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <Label className="text-sm font-medium">GitHub Repository</Label>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Recommended</span>
-                </div>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      type="button" 
-                      variant="ghost"
-                      className="relative flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background shadow-sm shadow-black/5 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, codebaseSource: 'github' }));
-                        fetchGitHubRepos();
-                      }}
-                      disabled={isLoadingRepos}
-                    >
-                      <Github className="h-4 w-4 shrink-0" />
-                      <span className="flex-1 text-left">
-                        {isLoadingRepos 
-                          ? "Loading repositories..." 
-                          : formData.githubRepoUrl 
-                            ? "Repository selected"
-                            : "Select Repository"}
-                      </span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Select a Repository</DialogTitle>
-                      <DialogDescription>
-                        Choose a GitHub repository to link to your product
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      {githubRepos.map((repo) => (
-                        <button
-                          key={repo.id}
-                          type="button"
-                          className={`w-full p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors text-left ${
-                            formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
-                          }`}
-                          onClick={() => {
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              githubRepoUrl: repo.html_url 
-                            }));
-                          }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-medium">{repo.name}</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-xs px-2 py-1 rounded ${
-                                  repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {repo.private ? 'Private' : 'Public'}
-                                </span>
-                                {repo.owner && (
-                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    Owner: {repo.owner.login}
-                                  </span>
-                                )}
-                              </div>
-                              {repo.description && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {repo.description}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                Updated: {new Date(repo.updated_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                      {githubRepos.length === 0 && !isLoadingRepos && (
-                        <p className="text-center text-muted-foreground">
-                          No repositories found
-                        </p>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                {formData.githubRepoUrl && (
-                  <div className="p-3 border rounded-lg bg-muted">
-                    <div className="flex items-center gap-2">
-                      <Github className="h-4 w-4" />
-                      <span className="text-sm font-medium">Selected Repository:</span>
-                    </div>
-                    <a 
-                      href={formData.githubRepoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline mt-2 block break-all"
-                    >
-                      {formData.githubRepoUrl}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
         <div>
