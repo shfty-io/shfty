@@ -5,11 +5,15 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Mail } from "lucide-react"
+import { ProductDescription } from "./ProductDescription"
+import { ProductLanguages } from "./ProductLanguages"
 
 interface ProductDetailsProps {
   productId: string
   productName: string
   categories: string[]
+  technologies: string[] | null
+  description: string | null
   faq: Array<{
     question: string
     answer: string
@@ -18,18 +22,30 @@ interface ProductDetailsProps {
   sellerFullName: string | null
 }
 
-export function ProductDetails({ productId, productName, categories, faq, sellerEmail, sellerFullName }: ProductDetailsProps) {
+export function ProductDetails({ 
+  productId, 
+  productName, 
+  categories, 
+  technologies,
+  description,
+  faq, 
+  sellerEmail, 
+  sellerFullName 
+}: ProductDetailsProps) {
   return (
     <div className="mx-auto max-w-[1440px] px-5 flex flex-col gap-[60px] pb-[60px] md:flex-row md:gap-20 md:pb-0">
       {/* Main content area */}
       <div className="w-full">
         <div className="flex flex-col space-y-[60px] md:flex-col md:space-y-[60px] lg:max-w-[900px] lg:space-y-20">
+          <ProductDescription description={description} />
           <ProductFAQ faq={faq} />
         </div>
       </div>
 
       {/* Sidebar */}
       <div className="w-full space-y-[60px] md:max-w-[300px] md:space-y-10">
+        <ProductLanguages technologies={technologies} />
+        
         {categories && categories.length > 0 && (
           <div className="space-y-5">
             <h6 className="body-s md:body-xs font-semibold">Categories</h6>

@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const byline = searchParams.get('byline')
+    const currentProductId = searchParams.get('currentProductId')
 
     if (!byline) {
       return NextResponse.json(
@@ -26,11 +27,17 @@ export async function GET(request: Request) {
 
     const supabase = createClient()
 
-    const { data } = await supabase
+    const query = supabase
       .from('products')
       .select('id')
       .eq('byline', byline)
-      .single()
+
+    // If we're editing an existing product, exclude it from the check
+    if (currentProductId) {
+      query.neq('id', currentProductId)
+    }
+
+    const { data } = await query.maybeSingle()
 
     return NextResponse.json({
       available: !data,

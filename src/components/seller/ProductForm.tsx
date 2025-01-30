@@ -93,6 +93,7 @@ const technologies = [
 ];
 
 export type ProductFormData = {
+  id?: string;
   name: string;
   byline: string;
   shortDescription: string;
@@ -399,26 +400,20 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   };
 
   const checkAvailability = async (byline: string) => {
-    setIsChecking(true);
     try {
-      const response = await fetch(`/api/products/check-byline?byline=${encodeURIComponent(byline)}`);
-
-      if (!response.ok) throw new Error('Network response was not ok');
-
+      setIsChecking(true);
+      const response = await fetch(
+        `/api/products/check-byline?byline=${encodeURIComponent(byline)}${initialData?.id ? `&currentProductId=${initialData.id}` : ''}`
+      );
       const data = await response.json();
       
-      if (data.error) {
-        setIsAvailable(false);
-        setMessage(data.error);
-        return;
-      }
-
       setIsAvailable(data.available);
       setMessage(data.message);
+      return data.available;
     } catch (error) {
-      console.error('Error checking availability:', error);
-      setIsAvailable(false);
-      setMessage('An error occurred. Please try again later.');
+      console.error('Error checking byline availability:', error);
+      setMessage('Error checking byline availability');
+      return false;
     } finally {
       setIsChecking(false);
     }

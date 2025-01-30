@@ -111,6 +111,8 @@ export default async function ProductPage({
               productId={product.id}
               productName={product.name}
               categories={product.categories || []}
+              technologies={product.technologies || []}
+              description={product.description}
               faq={product.faq}
               sellerEmail={product.seller?.email}
               sellerFullName={product.seller?.full_name}

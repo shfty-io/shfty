@@ -72,12 +72,6 @@ export default async function ListingsPage() {
                     Edit
                   </Button>
                 </Link>
-                <Link href={`/your/listings/${product.id}/files`}>
-                  <Button variant="outline" size="sm">
-                    <Package className="w-4 h-4 mr-2" />
-                    Files
-                  </Button>
-                </Link>
                 <form action={`/api/products/${product.id}/delete`} method="POST">
                   <Button variant="destructive" size="sm">
                     <Trash className="w-4 h-4 mr-2" />

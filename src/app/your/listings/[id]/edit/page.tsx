@@ -48,6 +48,8 @@ export default async function EditProductPage({
         price: formData.price,
         categories: formData.categories,
         faq: formData.faq,
+        technologies: formData.technologies,
+        image_urls: formData.imageUrls,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -74,7 +76,9 @@ export default async function EditProductPage({
           description: product.description || '',
           price: product.price,
           categories: product.categories || [],
-          faq: product.faq || []
+          faq: product.faq || [],
+          technologies: product.technologies || [],
+          imageUrls: product.image_urls || []
         }}
       />
     </div>
