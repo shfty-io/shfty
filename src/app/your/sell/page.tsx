@@ -69,9 +69,6 @@ export default function SellerDashboard() {
         body: JSON.stringify({
           productData: {
             ...productData,
-            codebase_url: productData?.codebaseSource === 'zip' 
-              ? productData?.codebase_url ?? null 
-              : null,
             github_repo_url: productData?.codebaseSource === 'github' 
               ? productData?.githubRepoUrl ?? null 
               : null
@@ -114,7 +111,7 @@ export default function SellerDashboard() {
   }, []);
 
   return (
-    <div className="p-6">
+    <div>
       <h1 className="text-4xl font-bold mb-8">Seller Dashboard</h1>
       
       <Alert className="mb-6">

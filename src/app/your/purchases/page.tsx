@@ -78,7 +78,7 @@ export default async function PurchasesPage() {
   })
 
   return (
-    <div className="p-6">
+    <div>
       <h1 className="text-3xl font-bold mb-8">Your Purchases</h1>
       
       {purchasesWithUrls.length === 0 ? (

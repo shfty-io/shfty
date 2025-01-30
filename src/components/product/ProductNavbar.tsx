@@ -7,17 +7,16 @@ import { Moon, Sun, Twitter } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
+import { useTheme } from '@/components/theme/theme-provider'
 
 export function ProductNavbar() {
-  const [isDark, setIsDark] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const { theme, setTheme } = useTheme()
   const supabase = createClient()
 
   useEffect(() => {
     setMounted(true)
-    const isDarkMode = document.documentElement.classList.contains('dark')
-    setIsDark(isDarkMode)
 
     // Get initial user
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -34,16 +33,6 @@ export function ProductNavbar() {
     }
   }, [supabase.auth])
 
-  const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove('dark')
-      setIsDark(false)
-    } else {
-      document.documentElement.classList.add('dark')
-      setIsDark(true)
-    }
-  }
-
   if (!mounted) return null
 
   return (
@@ -53,7 +42,12 @@ export function ProductNavbar() {
           Market
         </Link>
         <nav className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9" 
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          >
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>

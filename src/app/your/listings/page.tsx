@@ -30,7 +30,7 @@ export default async function ListingsPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <div className="p-6">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Your Listings</h1>
         <Link href="/your/sell">

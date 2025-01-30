@@ -65,7 +65,7 @@ export default async function EditProductPage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Edit Product - {product.name}</h1>
       <ProductForm
         onSubmit={handleSubmit}

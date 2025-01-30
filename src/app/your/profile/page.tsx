@@ -45,7 +45,7 @@ export default async function ProfilePage() {
     acc + (purchase.product?.[0]?.price || 0), 0) || 0;
 
   return (
-    <div className="p-6">
+    <div>
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
       
       <div className="space-y-6">
@@ -53,11 +53,11 @@ export default async function ProfilePage() {
           <h2 className="text-lg font-semibold mb-2">Personal Information</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-600">Email</label>
+              <label className="block text-sm font-medium text-muted-foreground">Email</label>
               <p className="mt-1">{user?.email}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600">Member Since</label>
+              <label className="block text-sm font-medium text-muted-foreground">Member Since</label>
               <p className="mt-1">{new Date(user?.created_at || "").toLocaleDateString()}</p>
             </div>
           </div>
@@ -66,18 +66,18 @@ export default async function ProfilePage() {
         <div>
           <h2 className="text-lg font-semibold mb-2">Account Statistics</h2>
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Total Sales</p>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground">Total Sales</p>
               <p className="text-2xl font-semibold">
                 {formatCurrency(totalSales)}
               </p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Products Listed</p>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground">Products Listed</p>
               <p className="text-2xl font-semibold">{productsListed || 0}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Total Purchases</p>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground">Total Purchases</p>
               <p className="text-2xl font-semibold">{totalPurchases || 0}</p>
             </div>
           </div>

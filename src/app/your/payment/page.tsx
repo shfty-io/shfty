@@ -128,11 +128,11 @@ function PaymentPageContent() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto">
       <h1 className="text-2xl font-bold mb-6">Payment Settings</h1>
       
       {/* Seller Payment Setup */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="mb-6">
         <h2 className="text-lg font-semibold mb-4">Seller Account Setup</h2>
         {sellerAccount?.is_onboarded ? (
           <div className="text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ function PaymentPageContent() {
       </div>
 
       {/* GitHub Token Setup */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div>
         <h2 className="text-lg font-semibold mb-4">GitHub Integration</h2>
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
