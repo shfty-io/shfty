@@ -34,6 +34,9 @@ interface CategoryPageProps {
 async function getProductsByCategory(category: string): Promise<Product[]> {
   const supabase = createClient();
   
+  // Convert hyphens to underscores for database query
+  const dbCategory = category.replace(/-/g, '_');
+  
   const { data: products, error } = await supabase
     .from('products')
     .select(`
@@ -54,7 +57,7 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
       user:profiles!inner(avatar_url, full_name)
     `)
     .eq('status', 'approved')
-    .filter('categories', 'cs', `{${category}}`)
+    .filter('categories', 'cs', `{${dbCategory}}`)
     .order('created_at', { ascending: false });
 
   if (error) {

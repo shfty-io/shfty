@@ -12,7 +12,7 @@ CREATE TYPE product_category AS ENUM (
   'photo_video', 'productivity', 'utilities', 'entertainment',
   'developer_tools', 'business', 'creativity', 'security',
   'lifestyle', 'education', 'communication_social',
-  'games', 'finance', 'other'
+  'ai', 'finance', 'other'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');

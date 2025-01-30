@@ -39,7 +39,7 @@ const data = {
         { title: "Lifestyle", url: "/category/lifestyle", isActive: false },
         { title: "Education", url: "/category/education", isActive: false },
         { title: "Communication & Social", url: "/category/communication-social", isActive: false },
-        { title: "Games", url: "/category/games", isActive: false },
+        { title: "AI", url: "/category/ai", isActive: false },
         { title: "Finance", url: "/category/finance", isActive: false },
         { title: "Other", url: "/category/other", isActive: false }
       ],

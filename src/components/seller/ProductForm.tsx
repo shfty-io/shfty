@@ -45,7 +45,7 @@ const categories = [
   "lifestyle",
   "education",
   "communication_social",
-  "games",
+  "ai",
   "finance",
   "other"
 ];
@@ -142,7 +142,7 @@ const getCategoryDisplayName = (category: string) => {
   return category
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .join(' & ');
 };
 
 export function ProductForm({ onSubmit, initialData }: ProductFormProps) {

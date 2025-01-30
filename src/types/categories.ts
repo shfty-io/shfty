@@ -49,9 +49,9 @@ export const categoryMetadata: Record<string, CategoryMetadata> = {
     title: 'Communication & Social',
     description: 'Tools for communication, social networking, and collaboration.',
   },
-  'games': {
-    title: 'Games',
-    description: 'Gaming applications and entertainment software.',
+  'ai': {
+    title: 'AI',
+    description: 'Artificial Intelligence tools, models, and applications.',
   },
   'finance': {
     title: 'Finance',
