@@ -106,7 +106,7 @@ export default async function ProductPage({
             images={product.image_urls || []} 
             productName={product.name}
           />
-          <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-[1440px] px-5">
             <ProductDetails
               productId={product.id}
               productName={product.name}

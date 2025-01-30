@@ -99,16 +99,13 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
     <Button
       variant="ghost"
       size="sm"
-      className="flex items-center gap-2 hover:bg-transparent"
+      className="w-8 h-8 p-0 rounded-full bg-gray-100 hover:bg-gray-100"
       onClick={handleLike}
       disabled={isLoading}
     >
       <Heart 
         className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'} transition-colors`} 
       />
-      <span className={`text-sm font-medium ${isLiked ? 'text-red-500' : 'text-gray-500'}`}>
-        {likesCount}
-      </span>
     </Button>
   )
 } 

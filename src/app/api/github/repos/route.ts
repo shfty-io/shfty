@@ -22,7 +22,7 @@ export async function GET() {
 
     if (userError || !user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized", requiresReauth: true },
         { status: 401 }
       );
     }
@@ -32,7 +32,7 @@ export async function GET() {
 
     if (sessionError || !sessionData.session) {
       return NextResponse.json(
-        { error: "Session not found" },
+        { error: "Session not found", requiresReauth: true },
         { status: 401 }
       );
     }
@@ -41,13 +41,10 @@ export async function GET() {
 
     if (!providerToken) {
       return NextResponse.json(
-        { error: "GitHub authentication required" },
+        { error: "GitHub authentication required", requiresReauth: true },
         { status: 401 }
       );
     }
-
-    // Add debug logging
-    console.log('Fetching repositories with token:', providerToken.slice(0, 10) + '...');
 
     // Test the token's scopes first
     const scopeResponse = await fetch('https://api.github.com/user', {
@@ -59,9 +56,16 @@ export async function GET() {
     });
 
     if (!scopeResponse.ok) {
+      // If the token is invalid or expired, indicate that re-authentication is required
+      if (scopeResponse.status === 401) {
+        return NextResponse.json(
+          { error: "GitHub token expired", requiresReauth: true },
+          { status: 401 }
+        );
+      }
       console.error('Failed to verify token:', await scopeResponse.text());
       return NextResponse.json(
-        { error: "Invalid GitHub token" },
+        { error: "Invalid GitHub token", requiresReauth: true },
         { status: 401 }
       );
     }
@@ -69,6 +73,14 @@ export async function GET() {
     // Log the scopes we have access to
     const scopes = scopeResponse.headers.get('x-oauth-scopes');
     console.log('Available scopes:', scopes);
+
+    // Check if we have the required scope
+    if (!scopes?.includes('repo')) {
+      return NextResponse.json(
+        { error: "Insufficient GitHub permissions. Repository access required.", requiresReauth: true },
+        { status: 401 }
+      );
+    }
 
     // Modified GitHub API call to explicitly request all repositories including private ones
     const response = await fetch('https://api.github.com/user/repos?sort=updated&visibility=all&affiliation=owner,collaborator&per_page=100', {

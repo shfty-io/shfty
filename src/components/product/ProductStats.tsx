@@ -62,7 +62,10 @@ export function ProductStats({
           {/* Likes */}
           <div className="flex flex-col items-center gap-2">
             <LikeButton productId={productId} initialLikes={likesCount} />
-            <span className="text-sm text-muted-foreground">Likes</span>
+            <div className="flex flex-col items-center text-sm">
+              <span className="font-medium">{likesCount.toLocaleString()}</span>
+              <span className="text-muted-foreground">Likes</span>
+            </div>
           </div>
 
           {/* Views */}

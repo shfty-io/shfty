@@ -33,7 +33,7 @@ export function ProductDetails({
   sellerFullName 
 }: ProductDetailsProps) {
   return (
-    <div className="mx-auto max-w-[1440px] px-5 flex flex-col gap-[60px] pb-[60px] md:flex-row md:gap-20 md:pb-0">
+    <div className="mx-auto max-w-[1440px] flex flex-col gap-[60px] pb-[60px] md:flex-row md:gap-20 md:pb-0">
       {/* Main content area */}
       <div className="w-full">
         <div className="flex flex-col space-y-[60px] md:flex-col md:space-y-[60px] lg:max-w-[900px] lg:space-y-20">

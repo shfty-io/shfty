@@ -108,6 +108,8 @@ export type ProductFormData = {
   imageUrls: string[];
   videoUrl?: string | null;
   demoUrl?: string | null;
+  hasReadme?: boolean;
+  hasDatabaseMigrations?: boolean;
 };
 
 interface FAQItem {
@@ -149,7 +151,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     byline: initialData?.byline ?? "",
     shortDescription: initialData?.shortDescription ?? "",
     description: initialData?.description ?? "",
-    price: initialData?.price ?? 10,
+    price: initialData?.price ?? 0,
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
     faq: [],
@@ -159,6 +161,8 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     imageUrls: initialData?.imageUrls ?? [],
     videoUrl: initialData?.videoUrl || null,
     demoUrl: initialData?.demoUrl || null,
+    hasReadme: initialData?.hasReadme ?? false,
+    hasDatabaseMigrations: initialData?.hasDatabaseMigrations ?? false,
   });
 
   const [faqItems, setFaqItems] = useState<FAQItem[]>(() => {
@@ -219,6 +223,15 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       return;
     }
 
+    if (!formData.hasReadme || !formData.hasDatabaseMigrations) {
+      toast({
+        title: "Validation Error",
+        description: "Please confirm that your repository includes a README and database migration files",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const finalFormData = {
       ...formData,
       faq: faqItems
@@ -233,14 +246,33 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       const response = await fetch('/api/github/repos');
       const data = await response.json();
       
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) {
+        // Check if we need to re-authenticate
+        if (data.requiresReauth) {
+          // Redirect to GitHub OAuth flow
+          const supabase = createClient();
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+              scopes: 'repo',
+              redirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+          
+          if (error) {
+            throw new Error('Failed to initiate GitHub re-authentication');
+          }
+          return;
+        }
+        throw new Error(data.error);
+      }
       
       setGithubRepos(data.repositories);
     } catch (error) {
       console.error('Error fetching repositories:', error);
       toast({
         title: "Error",
-        description: "Could not fetch your GitHub repositories",
+        description: error instanceof Error ? error.message : "Could not fetch your GitHub repositories",
         variant: "destructive"
       });
     } finally {
@@ -503,7 +535,15 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
               required
+              disabled={Boolean(formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private)}
             />
+            <p className="text-sm text-muted-foreground mt-1">
+              {formData.githubRepoUrl 
+                ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private 
+                  ? "You can set a price for private repositories" 
+                  : "Public repositories must be free"
+                : "Set your desired price - note that public repositories must be free"}
+            </p>
           </div>
 
           <div>
@@ -656,9 +696,12 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                               formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
                             }`}
                             onClick={() => {
+                              const selectedRepo = repo;
                               setFormData(prev => ({ 
                                 ...prev, 
-                                githubRepoUrl: repo.html_url 
+                                githubRepoUrl: repo.html_url,
+                                // Set price to 0 for public repos, otherwise keep the previously set price
+                                price: selectedRepo.private ? prev.price : 0
                               }));
                             }}
                           >
@@ -701,19 +744,51 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   </Dialog>
 
                   {formData.githubRepoUrl && (
-                    <div className="p-3 border rounded-lg bg-muted">
-                      <div className="flex items-center gap-2">
-                        <Github className="h-4 w-4" />
-                        <span className="text-sm font-medium">Selected Repository:</span>
+                    <div className="space-y-4">
+                      <div className="p-3 border rounded-lg bg-muted">
+                        <div className="flex items-center gap-2">
+                          <Github className="h-4 w-4" />
+                          <span className="text-sm font-medium">Selected Repository:</span>
+                        </div>
+                        <a 
+                          href={formData.githubRepoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:underline mt-2 block break-all"
+                        >
+                          {formData.githubRepoUrl}
+                        </a>
                       </div>
-                      <a 
-                        href={formData.githubRepoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline mt-2 block break-all"
-                      >
-                        {formData.githubRepoUrl}
-                      </a>
+
+                      <div className="space-y-2 p-3 border rounded-lg">
+                        <Label className="text-sm font-medium">Repository Requirements</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="hasReadme"
+                              checked={formData.hasReadme}
+                              onChange={(e) => setFormData(prev => ({ ...prev, hasReadme: e.target.checked }))}
+                              className="h-4 w-4 rounded border-gray-300"
+                            />
+                            <Label htmlFor="hasReadme" className="text-sm">
+                              Repository includes a README with setup instructions
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="hasDatabaseMigrations"
+                              checked={formData.hasDatabaseMigrations}
+                              onChange={(e) => setFormData(prev => ({ ...prev, hasDatabaseMigrations: e.target.checked }))}
+                              className="h-4 w-4 rounded border-gray-300"
+                            />
+                            <Label htmlFor="hasDatabaseMigrations" className="text-sm">
+                              Repository includes database migration files (if applicable)
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
