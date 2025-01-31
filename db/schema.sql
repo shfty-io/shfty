@@ -9,10 +9,11 @@ DROP TYPE IF EXISTS report_reason CASCADE;
 
 -- Product related enums
 CREATE TYPE product_category AS ENUM (
-  'photo_video', 'productivity', 'utilities', 'entertainment',
-  'developer_tools', 'business', 'creativity', 'security',
-  'lifestyle', 'education', 'communication_social',
-  'ai', 'finance', 'other'
+  'business', 'entertainment', 'developer_tools', 'finance',
+  'education', 'games', 'graphics_design', 'health_fitness',
+  'lifestyle', 'medical', 'news', 'photo_video',
+  'productivity', 'social_networking', 'sports', 'travel',
+  'utilities', 'weather', 'other'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');

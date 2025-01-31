@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Plus, Minus } from "lucide-react"
+import { Plus, Minus, Home } from "lucide-react"
 import Link from "next/link"
 
 import {
@@ -28,19 +28,24 @@ const data = {
       title: "Categories",
       url: "#",
       items: [
-        { title: "Photo & Video", url: "/category/photo-video", isActive: false },
-        { title: "Productivity", url: "/category/productivity", isActive: false },
-        { title: "Utilities", url: "/category/utilities", isActive: false },
+        { title: "Business", url: "/category/business", isActive: false },
         { title: "Entertainment", url: "/category/entertainment", isActive: false },
         { title: "Developer Tools", url: "/category/developer-tools", isActive: false },
-        { title: "Business", url: "/category/business", isActive: false },
-        { title: "Creativity", url: "/category/creativity", isActive: false },
-        { title: "Security", url: "/category/security", isActive: false },
-        { title: "Lifestyle", url: "/category/lifestyle", isActive: false },
-        { title: "Education", url: "/category/education", isActive: false },
-        { title: "Communication & Social", url: "/category/communication-social", isActive: false },
-        { title: "AI", url: "/category/ai", isActive: false },
         { title: "Finance", url: "/category/finance", isActive: false },
+        { title: "Education", url: "/category/education", isActive: false },
+        { title: "Games", url: "/category/games", isActive: false },
+        { title: "Graphics & Design", url: "/category/graphics-design", isActive: false },
+        { title: "Health & Fitness", url: "/category/health-fitness", isActive: false },
+        { title: "Lifestyle", url: "/category/lifestyle", isActive: false },
+        { title: "Medical", url: "/category/medical", isActive: false },
+        { title: "News", url: "/category/news", isActive: false },
+        { title: "Photo & Video", url: "/category/photo-video", isActive: false },
+        { title: "Productivity", url: "/category/productivity", isActive: false },
+        { title: "Social Networking", url: "/category/social-networking", isActive: false },
+        { title: "Sports", url: "/category/sports", isActive: false },
+        { title: "Travel", url: "/category/travel", isActive: false },
+        { title: "Utilities", url: "/category/utilities", isActive: false },
+        { title: "Weather", url: "/category/weather", isActive: false },
         { title: "Other", url: "/category/other", isActive: false }
       ],
     }
@@ -51,13 +56,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <Link href="/" className="flex items-center space-x-2 px-4 py-2">
+        <Link href="/" className="flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-accent transition-colors">
           <div className="h-8 w-8 rounded bg-gray-900 flex items-center justify-center">
-            <span className="text-white text-xs font-medium">AI</span>
+            <Home className="h-4 w-4 text-white" />
           </div>
           <div>
-            <div className="font-semibold">Marketplace</div>
-            <div className="text-xs text-gray-500">Settings</div>
+            <div className="font-semibold">shfty.io</div>
+            <div className="text-xs text-gray-500">Discover</div>
           </div>
         </Link>
       </SidebarHeader>
