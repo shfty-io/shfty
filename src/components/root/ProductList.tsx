@@ -37,10 +37,8 @@ interface ProductListProps {
 export default function ProductList({ products }: ProductListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<{
-    tab: 'all' | 'latest' | 'popular';
     sortBy: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
   }>({
-    tab: 'all',
     sortBy: 'downloaded'
   });
 
@@ -73,21 +71,6 @@ export default function ProductList({ products }: ProductListProps) {
         default:
           return 0;
       }
-    })
-    .filter(product => {
-      switch (filters.tab) {
-        case 'latest':
-          // Show products from the last 30 days instead of 7
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          return new Date(product.created_at) >= thirtyDaysAgo;
-        case 'popular':
-          // Don't filter, just show all products sorted by popularity
-          return true;
-        case 'all':
-        default:
-          return true;
-      }
     });
 
   if (products.length === 0) {
@@ -98,7 +81,6 @@ export default function ProductList({ products }: ProductListProps) {
             <ProductFilters 
               onFilterChange={setFilters}
               onSearch={setSearchQuery}
-              counts={{ all: 0, latest: 0, popular: 0 }}
             />
           </div>
         </div>
@@ -112,17 +94,6 @@ export default function ProductList({ products }: ProductListProps) {
     );
   }
 
-  // Calculate counts for each tab
-  const counts = {
-    all: products.length,
-    latest: products.filter(p => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return new Date(p.created_at) >= thirtyDaysAgo;
-    }).length,
-    popular: products.length, // All products are shown in popular tab
-  };
-
   return (
     <div>
       <div className="pt-6">
@@ -130,7 +101,6 @@ export default function ProductList({ products }: ProductListProps) {
           <ProductFilters 
             onFilterChange={setFilters}
             onSearch={setSearchQuery}
-            counts={counts}
           />
         </div>
       </div>

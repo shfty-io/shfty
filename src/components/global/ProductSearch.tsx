@@ -31,9 +31,6 @@ export function ProductSearch({ onSearch }: ProductSearchProps) {
         placeholder="Search products..."
         className="h-9 w-[200px] rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
       />
-      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-        <span className="text-xs text-gray-400">/</span>
-      </div>
     </form>
   );
 } 
