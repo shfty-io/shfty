@@ -3,16 +3,22 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
+import { usePathname } from 'next/navigation'
 
 interface PurchaseButtonProps {
   productId: string
   price: number
   className?: string
+  source?: string
 }
 
-export function PurchaseButton({ productId, price, className = '' }: PurchaseButtonProps) {
+export function PurchaseButton({ productId, price, className = '', source }: PurchaseButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-
+  const pathname = usePathname()
+  
+  // Automatically detect if we're on a category page if source is not provided
+  const isFromCategory = source || (pathname && pathname.startsWith('/category/'))
+  
   const handlePurchase = async () => {
     try {
       setIsLoading(true)
@@ -33,6 +39,12 @@ export function PurchaseButton({ productId, price, className = '' }: PurchaseBut
       // For paid products, initiate Stripe checkout
       const response = await fetch(`/api/checkout/${productId}`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          source: isFromCategory ? 'category' : 'direct'
+        })
       })
       
       const data = await response.json()

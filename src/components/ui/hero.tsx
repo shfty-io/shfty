@@ -1,24 +1,23 @@
 "use client";
 
 import { Button } from "./button";
-import { Github, ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Github, ArrowRight, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 export function Hero() {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const hasVisited = localStorage.getItem('hasVisitedBefore');
-    if (!hasVisited) {
-      setIsVisible(true);
-      localStorage.setItem('hasVisitedBefore', 'true');
-    }
-  }, []);
+  // Always visible
+  const [isVisible, setIsVisible] = useState(true);
+  const [showMission, setShowMission] = useState(false);
 
   const handleClose = () => {
     setIsVisible(false);
   };
 
+  const toggleMission = () => {
+    setShowMission(!showMission);
+  };
+
+  // Only hide when explicitly closed
   if (!isVisible) return null;
 
   return (
@@ -36,23 +35,74 @@ export function Hero() {
       </div>
       <div className="relative w-full max-w-[90rem] px-6 py-24 lg:px-16 lg:py-40">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-12">
-            <a href="https://www.producthunt.com" className="inline-flex space-x-6">
-              <span className="rounded-full bg-orange-500/10 px-3 py-1 text-sm font-semibold leading-6 text-orange-500 ring-1 ring-inset ring-orange-500/20">
-                What&apos;s new
-              </span>
-              <span className="inline-flex items-center space-x-2 text-sm font-medium leading-6 text-gray-600">
-                <span>Just launched on Product Hunt</span>
-              </span>
-            </a>
+          <div className="mb-12 flex justify-center">
+            <Button 
+              onClick={toggleMission} 
+              variant="outline" 
+              className="group flex items-center gap-2 transition-all hover:bg-blue-100 hover:text-blue-700 hover:border-blue-300"
+            >
+              <Info className="h-4 w-4" />
+              <span className="font-medium">Our Mission</span>
+              {showMission ? 
+                <ChevronUp className="h-4 w-4 transition-transform group-hover:translate-y-[-2px]" /> : 
+                <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-y-[2px]" />
+              }
+            </Button>
           </div>
-          <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl lg:text-8xl">
-            Your Marketplace for Digital Products
-          </h1>
-          <p className="mt-8 text-xl leading-8 text-gray-600 lg:text-2xl">
-            Discover and purchase amazing digital products from creators around the world. From templates to tools, find everything you need to build your next project.
-          </p>
-          <div className="mt-16 flex flex-col items-center justify-center gap-8 sm:flex-row">
+          
+          {!showMission && (
+            <>
+              <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl lg:text-8xl">
+                Your Marketplace for Digital Products
+              </h1>
+              
+              <p className="mt-8 text-xl leading-8 text-gray-600 lg:text-2xl">
+                Discover and purchase amazing digital products from creators around the world. From templates to tools, find everything you need to build your next project.
+              </p>
+            </>
+          )}
+          
+          {showMission && (
+            <div className="mt-8 bg-blue-50 p-8 rounded-lg border border-blue-100 text-left animate-in fade-in slide-in-from-top-4 duration-300 max-w-3xl mx-auto">
+              <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+                It's Time for a Restart
+              </h2>
+              
+              <div className="grid grid-cols-1 gap-6">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-5 rounded-lg shadow-md">
+                  <p className="text-xl font-medium leading-relaxed">
+                    Software must return to its rightful owners: <span className="font-bold">the business and the consumer</span>.
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Why I Created shfty</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start">
+                      <span className="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">1</span>
+                      <span>To give failed startups new life as templates others can build upon</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">2</span>
+                      <span>To free small businesses and consumers from endless subscription fees by giving them ownership</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">3</span>
+                      <span>To help creators make a living by selling their software and website templates</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400 mt-2">
+                  <p className="text-gray-700">
+                    Help make this vision a reality by starring us on GitHub and supporting us on Product Hunt.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className={`${showMission ? 'mt-8' : 'mt-16'} flex flex-col items-center justify-center gap-8 sm:flex-row`}>
             <Button size="lg" onClick={handleClose} className="h-14 w-full text-lg sm:w-auto">
               Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

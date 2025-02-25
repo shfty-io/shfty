@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
 });
 
-const PLATFORM_FEE_PERCENTAGE = Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 2.5;
+const PLATFORM_FEE_PERCENTAGE = Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10;
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { productId, paymentMethodId } = await request.json();
+    const { productId, paymentMethodId, source } = await request.json();
 
     // Get product details
     const { data: product } = await supabase
@@ -53,7 +53,9 @@ export async function POST(request: Request) {
 
     // Calculate amounts
     const amount = Math.round(product.price * 100); // Convert to cents
-    const platformFee = Math.round(amount * (PLATFORM_FEE_PERCENTAGE / 100));
+    
+    // Skip platform fee if purchase is from a category page
+    const platformFee = source === 'category' ? 0 : Math.round(amount * (PLATFORM_FEE_PERCENTAGE / 100));
 
     // Create a payment intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -78,6 +80,7 @@ export async function POST(request: Request) {
       metadata: {
         productId,
         buyerId: user.id,
+        source: source || 'direct',
       },
     });
 

@@ -15,6 +15,10 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
     const supabase = createClient()
     const { id } = await Promise.resolve(context.params)
     
+    // Get request body for source information
+    const requestBody = await request.json().catch(() => ({}))
+    const source = requestBody.source || 'direct'
+    
     // Get product details
     const { data: product } = await supabase
       .from('products')
@@ -92,6 +96,7 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
       metadata: {
         product_id: product.id,
         seller_id: product.user_id,
+        source: source,
       },
     })
 
