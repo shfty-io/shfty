@@ -90,17 +90,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     <>
       <Navbar />
       <div className="flex-1 p-4">
-        {/* Breadcrumb */}
-        <div className="py-4">
-          <nav className="flex text-sm text-gray-500">
-            <Link href="/" className="hover:text-gray-900">Marketplace</Link>
-            <span className="mx-2">›</span>
-            <span className="text-gray-900">{metadata.title}</span>
-          </nav>
-        </div>
-
         {/* Category Header */}
-        <div className="py-8">
+        <div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{metadata.title}</h1>
           <p className="text-xl text-gray-600">{metadata.description}</p>
         </div>

@@ -30,7 +30,7 @@ export default function ProductFilters({ onFilterChange, onSearch }: ProductFilt
       </div>
       <div>
         <Select value={sortBy} onValueChange={handleSortChange}>
-          <SelectTrigger className="h-9 w-[160px]">
+          <SelectTrigger className="h-9 w-[200px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
