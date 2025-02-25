@@ -29,7 +29,7 @@ export function ProductSearch({ onSearch }: ProductSearchProps) {
         value={query}
         onChange={handleChange}
         placeholder="Search products..."
-        className="h-9 w-[200px] rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
+        className="h-9 w-[300px] rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900"
       />
     </form>
   );

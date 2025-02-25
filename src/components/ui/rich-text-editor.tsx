@@ -27,6 +27,24 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
     React.useEffect(() => {
       if (editorRef.current && !isInitialized) {
         editorRef.current.innerHTML = value;
+        
+        // Apply styles to any existing headings
+        const styleMap: Record<string, any> = {
+          h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
+          h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
+          h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' }
+        };
+        
+        // Apply styles to all heading elements
+        ['h1', 'h2', 'h3'].forEach(tag => {
+          const elements = editorRef.current?.querySelectorAll(tag);
+          elements?.forEach(el => {
+            if (el instanceof HTMLElement && styleMap[tag]) {
+              Object.assign(el.style, styleMap[tag]);
+            }
+          });
+        });
+        
         setIsInitialized(true);
       }
     }, [value, isInitialized]);
@@ -50,6 +68,21 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount || !editorRef.current) return;
 
+      // Style map for headings
+      const styleMap: Record<string, any> = {
+        h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
+        h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
+        h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' },
+        p: { fontSize: '1rem', fontWeight: 'normal', marginBottom: '0.5rem' }
+      };
+
+      // Apply appropriate styles based on the element type
+      const applyStyles = (el: HTMLElement, tagName: string) => {
+        if (styleMap[tagName]) {
+          Object.assign(el.style, styleMap[tagName]);
+        }
+      };
+
       const range = selection.getRangeAt(0);
       const container = range.commonAncestorContainer;
       let element = container.nodeType === 3 ? container.parentElement : container as HTMLElement;
@@ -57,6 +90,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
       // If no specific element is selected, wrap the entire selection in the new element
       if (!element || element === editorRef.current) {
         const newElement = document.createElement(value);
+        applyStyles(newElement, value);
         try {
           range.surroundContents(newElement);
         } catch {
@@ -70,6 +104,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
           if (element.matches('p, h1, h2, h3, h4, h5, h6')) {
             const newElement = document.createElement(value);
             newElement.innerHTML = element.innerHTML;
+            applyStyles(newElement, value);
             element.replaceWith(newElement);
             break;
           }
@@ -90,6 +125,23 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
 
     return (
       <div className="space-y-2">
+        <style jsx global>{`
+          .editor-content h1 {
+            font-size: 1.875rem !important;
+            font-weight: bold !important;
+            margin-bottom: 1rem !important;
+          }
+          .editor-content h2 {
+            font-size: 1.5rem !important;
+            font-weight: bold !important;
+            margin-bottom: 0.75rem !important;
+          }
+          .editor-content h3 {
+            font-size: 1.25rem !important;
+            font-weight: semibold !important;
+            margin-bottom: 0.5rem !important;
+          }
+        `}</style>
         <div className="flex items-center gap-2">
           <Select
             defaultValue="p"
@@ -149,8 +201,26 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
           contentEditable
           onInput={handleInput}
           onKeyDown={handleKeyDown}
+          onFocus={() => {
+            // Reapply styles to ensure they're visible
+            const styleMap: Record<string, any> = {
+              h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
+              h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
+              h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' }
+            };
+            
+            // Check and apply styles to all heading elements
+            ['h1', 'h2', 'h3'].forEach(tag => {
+              const elements = editorRef.current?.querySelectorAll(tag);
+              elements?.forEach(el => {
+                if (el instanceof HTMLElement && styleMap[tag]) {
+                  Object.assign(el.style, styleMap[tag]);
+                }
+              });
+            });
+          }}
           className={cn(
-            "min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:pl-4 [&>ol]:list-decimal [&>ol]:pl-4",
+            "editor-content min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:pl-4 [&>ol]:list-decimal [&>ol]:pl-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:text-xl [&>h3]:font-semibold",
             className
           )}
           data-placeholder={placeholder}
@@ -163,4 +233,4 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
 
 RichTextEditor.displayName = "RichTextEditor";
 
-export { RichTextEditor }; 
+export { RichTextEditor };

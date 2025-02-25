@@ -27,6 +27,7 @@ import {
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { TagsSelector } from "./TagsSelector";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -34,62 +35,62 @@ interface ProductFormProps {
 }
 
 const categories = [
-  "photo_video",
-  "productivity",
-  "utilities",
-  "entertainment",
-  "developer_tools",
-  "business",
-  "creativity",
-  "security",
-  "lifestyle",
-  "education",
-  "communication_social",
-  "ai",
-  "finance",
-  "other"
+  { id: "photo_video", label: "Photo & Video" },
+  { id: "productivity", label: "Productivity" },
+  { id: "utilities", label: "Utilities" },
+  { id: "entertainment", label: "Entertainment" },
+  { id: "developer_tools", label: "Developer Tools" },
+  { id: "business", label: "Business" },
+  { id: "creativity", label: "Creativity" },
+  { id: "security", label: "Security" },
+  { id: "lifestyle", label: "Lifestyle" },
+  { id: "education", label: "Education" },
+  { id: "communication_social", label: "Communication & Social" },
+  { id: "ai", label: "AI" },
+  { id: "finance", label: "Finance" },
+  { id: "other", label: "Other" }
 ];
 
 const technologies = [
   // Frontend
-  "react",
-  "vue",
-  "angular",
-  "svelte",
-  "next.js",
-  "nuxt",
-  "tailwind",
+  { id: "react", label: "React" },
+  { id: "vue", label: "Vue" },
+  { id: "angular", label: "Angular" },
+  { id: "svelte", label: "Svelte" },
+  { id: "next.js", label: "Next.js" },
+  { id: "nuxt", label: "Nuxt" },
+  { id: "tailwind", label: "Tailwind" },
   // Backend
-  "node.js",
-  "python",
-  "java",
-  "php",
-  "ruby",
-  "go",
-  "rust",
+  { id: "node.js", label: "Node.js" },
+  { id: "python", label: "Python" },
+  { id: "java", label: "Java" },
+  { id: "php", label: "PHP" },
+  { id: "ruby", label: "Ruby" },
+  { id: "go", label: "Go" },
+  { id: "rust", label: "Rust" },
   // Databases
-  "postgresql",
-  "mysql",
-  "mongodb",
-  "supabase",
-  "firebase",
+  { id: "postgresql", label: "PostgreSQL" },
+  { id: "mysql", label: "MySQL" },
+  { id: "mongodb", label: "MongoDB" },
+  { id: "supabase", label: "Supabase" },
+  { id: "firebase", label: "Firebase" },
   // Cloud & Infrastructure
-  "aws",
-  "google-cloud",
-  "azure",
-  "vercel",
-  "docker",
-  "kubernetes",
+  { id: "aws", label: "AWS" },
+  { id: "google-cloud", label: "Google Cloud" },
+  { id: "azure", label: "Azure" },
+  { id: "vercel", label: "Vercel" },
+  { id: "docker", label: "Docker" },
+  { id: "kubernetes", label: "Kubernetes" },
   // Authentication
-  "clerk",
-  "auth0",
-  "nextauth",
+  { id: "clerk", label: "Clerk" },
+  { id: "auth0", label: "Auth0" },
+  { id: "nextauth", label: "NextAuth" },
   // Other
-  "stripe",
-  "ngrok",
-  "graphql",
-  "redis",
-  "websocket",
+  { id: "stripe", label: "Stripe" },
+  { id: "ngrok", label: "Ngrok" },
+  { id: "graphql", label: "GraphQL" },
+  { id: "redis", label: "Redis" },
+  { id: "websocket", label: "WebSocket" },
 ];
 
 export type ProductFormData = {
@@ -102,7 +103,6 @@ export type ProductFormData = {
   categories: string[];
   technologies: string[];
   faq?: FAQItem[];
-  codebaseSource?: 'zip' | 'github';
   githubRepoUrl?: string | null;
   github_token?: string | null;
   imageUrls: string[];
@@ -138,13 +138,6 @@ interface GitHubRepo {
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const getCategoryDisplayName = (category: string) => {
-  return category
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' & ');
-};
-
 export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   const [formData, setFormData] = useState<ProductFormData>({
     name: initialData?.name ?? "",
@@ -155,7 +148,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
     faq: [],
-    codebaseSource: initialData?.codebaseSource || 'github',
     githubRepoUrl: initialData?.githubRepoUrl || null,
     github_token: initialData?.github_token || null,
     imageUrls: initialData?.imageUrls ?? [],
@@ -187,6 +179,18 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
   // Use the custom debounce hook for byline
   const debouncedByline = useDebounce(formData.byline, 500);
+
+  const [selectedCategories, setSelectedCategories] = useState<typeof categories[0][]>(
+    initialData?.categories 
+      ? categories.filter(cat => initialData.categories.includes(cat.id)) 
+      : []
+  );
+  
+  const [selectedTechnologies, setSelectedTechnologies] = useState<typeof technologies[0][]>(
+    initialData?.technologies 
+      ? technologies.filter(tech => initialData.technologies.includes(tech.id)) 
+      : []
+  );
 
   const addFaqItem = () => {
     setFaqItems([...faqItems, { question: '', answer: '' }]);
@@ -281,10 +285,10 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   };
 
   useEffect(() => {
-    if (formData.codebaseSource === 'github') {
+    if (formData.githubRepoUrl) {
       fetchGitHubRepos();
     }
-  }, [formData.codebaseSource]);
+  }, [formData.githubRepoUrl]);
 
   const handleMultipleImageUpload = async (files: FileList) => {
     const fileArray = Array.from(files);
@@ -461,13 +465,28 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     }
   }, [debouncedByline]);
 
+  // Update formData when selectedCategories or selectedTechnologies change
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      categories: selectedCategories.map(cat => cat.id)
+    }));
+  }, [selectedCategories]);
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      technologies: selectedTechnologies.map(tech => tech.id)
+    }));
+  }, [selectedTechnologies]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Two column layout for name and byline */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="flex items-center">
+            <Label htmlFor="name" className="flex items-center text-sm font-medium">
               Product Name
               <span className="text-destructive ml-1">*</span>
             </Label>
@@ -477,14 +496,15 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              className="h-10"
             />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               The display name of your product
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="byline" className="flex items-center">
+            <Label htmlFor="byline" className="flex items-center text-sm font-medium">
               Slug
               <span className="text-destructive ml-1">*</span>
             </Label>
@@ -498,7 +518,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   setFormData({ ...formData, byline: newValue });
                 }}
                 required
-                className={formData.byline ? (isAvailable === false ? "border-red-500" : isAvailable === true ? "border-green-500" : "") : ""}
+                className={`h-10 ${formData.byline ? (isAvailable === false ? "border-red-500" : isAvailable === true ? "border-green-500" : "") : ""}`}
               />
               {formData.byline && (
                 <div className="absolute right-3 top-2.5">
@@ -512,21 +532,21 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               Used in the URL and imports, can&apos;t be changed later
             </p>
             {message && (
-              <p className={`text-sm ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-xs ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
                 {message}
               </p>
             )}
           </div>
         </div>
 
-        {/* Three column layout for price, category, and demo URL */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="price">Price (USD)</Label>
+        {/* Three column layout for price, category, and technologies */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="price" className="text-sm font-medium">Price (USD)</Label>
             <Input
               id="price"
               type="number"
@@ -535,101 +555,41 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
               required
+              className="h-10"
               disabled={Boolean(formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private)}
             />
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {formData.githubRepoUrl 
                 ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private 
                   ? "You can set a price for private repositories" 
                   : "Public repositories must be free"
-                : "Set your desired price - note that public repositories must be free"}
+                : "Set your desired price "}
             </p>
           </div>
 
-          <div>
-            <Label>
-              Categories
-              <span className="text-sm text-muted-foreground ml-2">
-                (Select up to 3)
-              </span>
-            </Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => {
-                    if (formData.categories.includes(category)) {
-                      setFormData({
-                        ...formData,
-                        categories: formData.categories.filter(c => c !== category)
-                      });
-                    } else if (formData.categories.length < 3) {
-                      setFormData({
-                        ...formData,
-                        categories: [...formData.categories, category]
-                      });
-                    } else {
-                      toast({
-                        title: "Maximum categories reached",
-                        description: "You can only select up to 3 categories",
-                        variant: "destructive"
-                      });
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    formData.categories.includes(category)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary hover:bg-secondary/80'
-                  }`}
-                >
-                  {getCategoryDisplayName(category)}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-2">
+            <TagsSelector 
+              tags={categories}
+              selectedTags={selectedCategories}
+              setSelectedTags={setSelectedCategories}
+              title="Categories"
+              maxTags={3}
+            />
           </div>
 
-          <div>
-            <Label>
-              Technologies Used
-              <span className="text-sm text-muted-foreground ml-2">
-                (Select all that apply)
-              </span>
-            </Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {technologies.map((tech) => (
-                <button
-                  key={tech}
-                  type="button"
-                  onClick={() => {
-                    if (formData.technologies.includes(tech)) {
-                      setFormData({
-                        ...formData,
-                        technologies: formData.technologies.filter(t => t !== tech)
-                      });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        technologies: [...formData.technologies, tech]
-                      });
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    formData.technologies.includes(tech)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary hover:bg-secondary/80'
-                  }`}
-                >
-                  {tech}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-2">
+            <TagsSelector 
+              tags={technologies}
+              selectedTags={selectedTechnologies}
+              setSelectedTags={setSelectedTechnologies}
+              title="Technologies Used"
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <Label>Product Demo URL (Optional)</Label>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Product Demo URL (Optional)</Label>
             <UrlInput
               placeholder="your-demo-url.com"
               value={(formData.demoUrl || '').replace('https://', '')}
@@ -640,188 +600,176 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   demoUrl: url ? `https://${url}` : null 
                 });
               }}
+              className="h-10"
             />
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label className="flex items-center">
-                Codebase Source
-                <span className="text-destructive ml-1">*</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  (At least one required)
-                </span>
-              </Label>
-              <div className="mt-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <Label className="text-sm font-medium">GitHub Repository</Label>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Recommended</span>
+          <div className="space-y-2">
+            <Label className="flex items-center text-sm font-medium">
+              GitHub Repository
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <div className="flex rounded-md">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div 
+                    className={`flex h-10 w-full items-center justify-start gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer ${isLoadingRepos ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => {
+                      if (!isLoadingRepos) {
+                        fetchGitHubRepos();
+                      }
+                    }}
+                  >
+                    <Github className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">
+                      {isLoadingRepos 
+                        ? "Loading repositories..." 
+                        : formData.githubRepoUrl 
+                          ? "Repository selected"
+                          : "Select Repository"}
+                    </span>
                   </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        type="button" 
-                        variant="ghost"
-                        className="relative flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background shadow-sm shadow-black/5 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Select a Repository</DialogTitle>
+                    <DialogDescription>
+                      Choose a GitHub repository to link to your product
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    {githubRepos.map((repo) => (
+                      <button
+                        key={repo.id}
+                        type="button"
+                        className={`w-full p-4 border rounded-md cursor-pointer hover:border-primary transition-colors text-left ${
+                          formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
+                        }`}
                         onClick={() => {
-                          setFormData(prev => ({ ...prev, codebaseSource: 'github' }));
-                          fetchGitHubRepos();
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            githubRepoUrl: repo.html_url,
+                            // Set price to 0 for public repos, otherwise keep the previously set price
+                            price: repo.private ? prev.price : 0
+                          }));
                         }}
-                        disabled={isLoadingRepos}
                       >
-                        <Github className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 text-left">
-                          {isLoadingRepos 
-                            ? "Loading repositories..." 
-                            : formData.githubRepoUrl 
-                              ? "Repository selected"
-                              : "Select Repository"}
-                        </span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Select a Repository</DialogTitle>
-                        <DialogDescription>
-                          Choose a GitHub repository to link to your product
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        {githubRepos.map((repo) => (
-                          <button
-                            key={repo.id}
-                            type="button"
-                            className={`w-full p-4 border rounded-lg cursor-pointer hover:border-primary transition-colors text-left ${
-                              formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
-                            }`}
-                            onClick={() => {
-                              const selectedRepo = repo;
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                githubRepoUrl: repo.html_url,
-                                // Set price to 0 for public repos, otherwise keep the previously set price
-                                price: selectedRepo.private ? prev.price : 0
-                              }));
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="font-medium">{repo.name}</h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className={`text-xs px-2 py-1 rounded ${
-                                    repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                                  }`}>
-                                    {repo.private ? 'Private' : 'Public'}
-                                  </span>
-                                  {repo.owner && (
-                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                      Owner: {repo.owner.login}
-                                    </span>
-                                  )}
-                                </div>
-                                {repo.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {repo.description}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">
-                                  Updated: {new Date(repo.updated_at).toLocaleDateString()}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-medium">{repo.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                              }`}>
+                                {repo.private ? 'Private' : 'Public'}
+                              </span>
+                              {repo.owner && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Owner: {repo.owner.login}
                                 </span>
-                              </div>
+                              )}
                             </div>
-                          </button>
-                        ))}
-                        {githubRepos.length === 0 && !isLoadingRepos && (
-                          <p className="text-center text-muted-foreground">
-                            No repositories found
-                          </p>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  {formData.githubRepoUrl && (
-                    <div className="space-y-4">
-                      <div className="p-3 border rounded-lg bg-muted">
-                        <div className="flex items-center gap-2">
-                          <Github className="h-4 w-4" />
-                          <span className="text-sm font-medium">Selected Repository:</span>
-                        </div>
-                        <a 
-                          href={formData.githubRepoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline mt-2 block break-all"
-                        >
-                          {formData.githubRepoUrl}
-                        </a>
-                      </div>
-
-                      <div className="space-y-2 p-3 border rounded-lg">
-                        <Label className="text-sm font-medium">Repository Requirements</Label>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id="hasReadme"
-                              checked={formData.hasReadme}
-                              onChange={(e) => setFormData(prev => ({ ...prev, hasReadme: e.target.checked }))}
-                              className="h-4 w-4 rounded border-gray-300"
-                            />
-                            <Label htmlFor="hasReadme" className="text-sm">
-                              Repository includes a README with setup instructions
-                            </Label>
+                            {repo.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {repo.description}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id="hasDatabaseMigrations"
-                              checked={formData.hasDatabaseMigrations}
-                              onChange={(e) => setFormData(prev => ({ ...prev, hasDatabaseMigrations: e.target.checked }))}
-                              className="h-4 w-4 rounded border-gray-300"
-                            />
-                            <Label htmlFor="hasDatabaseMigrations" className="text-sm">
-                              Repository includes database migration files (if applicable)
-                            </Label>
+                            <span className="text-xs text-muted-foreground">
+                              Updated: {new Date(repo.updated_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
+                      </button>
+                    ))}
+                    {githubRepos.length === 0 && !isLoadingRepos && (
+                      <p className="text-center text-muted-foreground">
+                        No repositories found
+                      </p>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {formData.githubRepoUrl && (
+                <div className="space-y-4 mt-2">
+                  <div className="p-3 border rounded-md bg-muted">
+                    <div className="flex items-center gap-2">
+                      <Github className="h-4 w-4" />
+                      <span className="text-sm font-medium">Selected Repository:</span>
+                    </div>
+                    <a 
+                      href={formData.githubRepoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline mt-2 block break-all"
+                    >
+                      {formData.githubRepoUrl}
+                    </a>
+                  </div>
+
+                  <div className="space-y-2 p-3 border rounded-md">
+                    <Label className="text-sm font-medium">Repository Requirements</Label>
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="hasReadme"
+                          checked={formData.hasReadme}
+                          onChange={(e) => setFormData(prev => ({ ...prev, hasReadme: e.target.checked }))}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <Label htmlFor="hasReadme" className="text-sm font-normal">
+                          Repository includes a README with setup instructions
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="hasDatabaseMigrations"
+                          checked={formData.hasDatabaseMigrations}
+                          onChange={(e) => setFormData(prev => ({ ...prev, hasDatabaseMigrations: e.target.checked }))}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <Label htmlFor="hasDatabaseMigrations" className="text-sm font-normal">
+                          Repository includes database migration files (if applicable)
+                        </Label>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="shortDescription">Short Description</Label>
+        <div className="space-y-2">
+          <Label htmlFor="shortDescription" className="text-sm font-medium">Short Description</Label>
           <Textarea
             id="shortDescription"
             placeholder="Used in search results and as an intro at the top of your template's page."
             value={formData.shortDescription}
             onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
             required
+            className="min-h-[80px] resize-y"
           />
         </div>
 
-        <div>
-          <Label htmlFor="description">Full Description</Label>
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-sm font-medium">Full Description</Label>
           <RichTextEditor
             value={formData.description}
-            onChange={(value) => setFormData({ ...formData, description: value })}
+            onChange={(value: string) => setFormData({ ...formData, description: value })}
             placeholder="Provide as much detail as possible to significantly increase sales."
           />
         </div>
 
-        <div>
-          <Label>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center">
             Product Media
             <span className="text-destructive ml-1">*</span>
-            <span className="text-sm text-muted-foreground ml-2">
+            <span className="text-xs text-muted-foreground ml-2">
               (Minimum 2 images required)
             </span>
           </Label>
@@ -832,7 +780,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 <video
                   src={formData.videoUrl}
                   controls
-                  className="w-full h-full rounded-lg object-cover"
+                  className="w-full h-full rounded-md object-cover"
                 />
                 <Button
                   type="button"
@@ -853,7 +801,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   src={url}
                   alt={`Product image ${index + 1}`}
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-cover rounded-md"
                 />
                 <Button
                   type="button"
@@ -878,7 +826,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             ))}
             
             {/* Upload Buttons */}
-            <div className="border-2 border-dashed rounded-lg aspect-square flex flex-col gap-2 p-4">
+            <div className="border-2 border-dashed rounded-md aspect-square flex flex-col gap-2 p-4">
               {/* Image Upload */}
               <div className="flex-1 flex flex-col items-center justify-center">
                 <Input
@@ -946,43 +894,55 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               )}
             </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Upload 2-8 images (PNG, JPG, WEBP) and optionally one video
           </p>
         </div>
 
-        <div>
-          <Label>FAQ</Label>
+        <div className="space-y-4">
+          <Label className="text-sm font-medium">FAQ</Label>
           <div className="space-y-4">
             {faqItems.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <Input
-                  placeholder="Question"
-                  value={item.question}
-                  onChange={(e) => updateFaqItem(index, 'question', e.target.value)}
-                />
-                <Textarea
-                  placeholder="Answer"
-                  value={item.answer}
-                  onChange={(e) => updateFaqItem(index, 'answer', e.target.value)}
-                />
+              <div key={index} className="space-y-3 p-4 border rounded-md">
+                <div className="space-y-2">
+                  <Label htmlFor={`faq-question-${index}`} className="text-xs font-medium">Question</Label>
+                  <Input
+                    id={`faq-question-${index}`}
+                    placeholder="Question"
+                    value={item.question}
+                    onChange={(e) => updateFaqItem(index, 'question', e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`faq-answer-${index}`} className="text-xs font-medium">Answer</Label>
+                  <Textarea
+                    id={`faq-answer-${index}`}
+                    placeholder="Answer"
+                    value={item.answer}
+                    onChange={(e) => updateFaqItem(index, 'answer', e.target.value)}
+                    className="min-h-[80px] resize-y"
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="destructive"
+                  size="sm"
                   onClick={() => removeFaqItem(index)}
+                  className="mt-2"
                 >
                   Remove FAQ Item
                 </Button>
               </div>
             ))}
-            <Button type="button" onClick={addFaqItem}>
+            <Button type="button" variant="outline" onClick={addFaqItem} className="w-full">
               Add FAQ Item
             </Button>
           </div>
         </div>
       </div>
 
-      <Button type="submit">Save Changes</Button>
+      <Button type="submit" className="w-full md:w-auto">Save Changes</Button>
     </form>
   );
 } 

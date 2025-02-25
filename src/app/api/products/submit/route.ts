@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Separate validation for codebase
+    // GitHub repository validation
     if (!productData.githubRepoUrl) {
       return NextResponse.json(
         { error: "GitHub repository URL is required" },

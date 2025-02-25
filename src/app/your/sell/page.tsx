@@ -69,9 +69,7 @@ export default function SellerDashboard() {
         body: JSON.stringify({
           productData: {
             ...productData,
-            github_repo_url: productData?.codebaseSource === 'github' 
-              ? productData?.githubRepoUrl ?? null 
-              : null
+            github_repo_url: productData?.githubRepoUrl ?? null
           }
         }),
       });
@@ -111,11 +109,11 @@ export default function SellerDashboard() {
   }, []);
 
   return (
-    <div>
-      <h1 className="text-4xl font-bold mb-8">Seller Dashboard</h1>
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Seller Dashboard</h1>
       
-      <Alert className="mb-6">
-        <AlertDescription>
+      <Alert className="mb-8">
+        <AlertDescription className="text-sm">
           Products go through a review process before being featured.{" "}
           <Link href="/help/product-review" className="font-medium underline underline-offset-4">
             Learn more
@@ -131,7 +129,7 @@ export default function SellerDashboard() {
             <div
               key={step.id}
               className={`text-sm ${
-                step.id <= currentStep ? "text-primary" : "text-muted-foreground"
+                step.id <= currentStep ? "text-primary font-medium" : "text-muted-foreground"
               }`}
             >
               {step.name}
@@ -141,12 +139,12 @@ export default function SellerDashboard() {
       </div>
 
       {/* Main content area */}
-      <div className="border rounded-lg p-6 mb-6">
+      <div className="border rounded-lg p-6 md:p-8 mb-6 bg-card shadow-sm">
         <div className="space-y-6">
           {currentStep === 1 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Create Your Product</h2>
-              <p className="text-muted-foreground mb-4">
+              <h2 className="text-2xl font-semibold mb-2">Create Your Product</h2>
+              <p className="text-muted-foreground mb-6">
                 Start by providing details about your software product.
               </p>
               <ProductForm onSubmit={handleProductSubmit} initialData={productData} />
@@ -155,37 +153,66 @@ export default function SellerDashboard() {
 
           {currentStep === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Submit Product</h2>
-              <p className="text-muted-foreground mb-4">
+              <h2 className="text-2xl font-semibold mb-2">Submit Product</h2>
+              <p className="text-muted-foreground mb-6">
                 Review your product details and submit for review.
               </p>
               <div className="space-y-6">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium mb-2">Product Details</h3>
-                  <dl className="space-y-1">
-                    <div className="text-sm">
-                      <dt className="inline font-medium">Name:</dt>
-                      <dd className="inline ml-2">{productData?.name}</dd>
+                <div className="border rounded-lg p-6 bg-card/50">
+                  <h3 className="font-medium text-lg mb-4">Product Details</h3>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground mb-1">Name</dt>
+                      <dd className="text-base">{productData?.name}</dd>
                     </div>
-                    <div className="text-sm">
-                      <dt className="inline font-medium">Category:</dt>
-                      <dd className="inline ml-2">{productData?.categories?.[0]}</dd>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground mb-1">Categories</dt>
+                      <dd>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {productData?.categories?.map((category) => (
+                            <span 
+                              key={category} 
+                              className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
+                            >
+                              {category.split('_')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' & ')}
+                            </span>
+                          ))}
+                        </div>
+                      </dd>
                     </div>
-                    <div className="text-sm">
-                      <dt className="inline font-medium">Price:</dt>
-                      <dd className="inline ml-2">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground mb-1">Technologies</dt>
+                      <dd>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {productData?.technologies?.map((tech) => (
+                            <span 
+                              key={tech} 
+                              className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground mb-1">Price</dt>
+                      <dd className="text-base">
                         {productData?.price === 0 ? 'Free' : `$${productData?.price}`}
                       </dd>
                     </div>
                   </dl>
                 </div>
 
-                <div className="flex gap-4">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                  <Button variant="outline" onClick={() => setCurrentStep(1)} className="w-full sm:w-auto">
                     Back to Product Details
                   </Button>
                   <Button 
                     onClick={handleFinalSubmit}
+                    className="w-full sm:w-auto"
                   >
                     Submit for Review
                   </Button>
