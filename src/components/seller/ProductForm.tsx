@@ -1,17 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { createClient } from "@/lib/client";
@@ -435,7 +428,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     }));
   };
 
-  const checkAvailability = async (byline: string) => {
+  const checkAvailability = useCallback(async (byline: string) => {
     try {
       setIsChecking(true);
       const response = await fetch(
@@ -453,7 +446,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [initialData?.id]);
 
   // Effect to check availability when debounced byline changes
   useEffect(() => {
@@ -463,7 +456,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       setIsAvailable(null);
       setMessage(null);
     }
-  }, [debouncedByline]);
+  }, [debouncedByline, checkAvailability]);
 
   // Update formData when selectedCategories or selectedTechnologies change
   useEffect(() => {

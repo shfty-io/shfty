@@ -89,7 +89,7 @@ function PaymentPageContent() {
     };
 
     fetchData();
-  }, [router]); // Remove sellerAccount from dependencies to prevent re-fetching
+  }, [router, sellerAccount]);
 
   const handlePaymentSetup = async (data: PaymentSetupData) => {
     try {
@@ -114,6 +114,63 @@ function PaymentPageContent() {
       toast({
         title: "Error",
         description: "Failed to save payment information. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGithubTokenChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const token = e.target.value;
+    try {
+      const response = await fetch('/api/seller/github-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save GitHub token');
+      }
+      
+      setSellerAccount(prev => prev ? {
+        ...prev,
+        github_token: token
+      } : null);
+      
+      toast({
+        title: "Success",
+        description: "GitHub token saved successfully",
+      });
+    } catch (err) {
+      console.error('GitHub token save error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to save GitHub token. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveToken = async () => {
+    try {
+      const response = await fetch('/api/seller/github-token', {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete token');
+      
+      setSellerAccount(prev => prev ? {...prev, github_token: ''} : null);
+      toast({
+        title: "Success",
+        description: "GitHub token removed successfully",
+      });
+    } catch (err) {
+      console.error('GitHub token remove error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to delete GitHub token",
         variant: "destructive",
       });
     }
@@ -163,62 +220,11 @@ function PaymentPageContent() {
                 type="password"
                 placeholder="ghp_your_token_here"
                 value={sellerAccount?.github_token || ''}
-                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
-                  const token = e.target.value;
-                  try {
-                    const response = await fetch('/api/seller/github-token', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({ token }),
-                    });
-                    
-                    if (!response.ok) {
-                      throw new Error('Failed to save GitHub token');
-                    }
-                    
-                    setSellerAccount(prev => prev ? {
-                      ...prev,
-                      github_token: token
-                    } : null);
-                    
-                    toast({
-                      title: "Success",
-                      description: "GitHub token saved successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to save GitHub token. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+                onChange={handleGithubTokenChange}
               />
               <Button 
                 variant="destructive" 
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/seller/github-token', {
-                      method: 'DELETE',
-                    });
-                    
-                    if (!response.ok) throw new Error('Failed to delete token');
-                    
-                    setSellerAccount(prev => prev ? {...prev, github_token: ''} : null);
-                    toast({
-                      title: "Success",
-                      description: "GitHub token removed successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to delete GitHub token",
-                      variant: "destructive",
-                    });
-                  }
-                }}
+                onClick={handleRemoveToken}
               >
                 Remove Token
               </Button>

@@ -41,7 +41,7 @@ export default function ProductFilterExample() {
             <AlertDescription>
               Select a filter type from the dropdown and enter your criteria. 
               Add different types of filters and group them as needed. 
-              Click "Apply Filters" to see the structured data.
+              Click &quot;Apply Filters&quot; to see the structured data.
             </AlertDescription>
           </Alert>
         </div>

@@ -115,7 +115,7 @@ export default function SellerDashboard() {
       <Alert className="mb-8">
         <AlertDescription className="text-sm">
           Products go through a review process before being featured.{" "}
-          <Link href="/help/product-review" className="font-medium underline underline-offset-4">
+          <Link href="/help/product-review" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-4">
             Learn more
           </Link>
         </AlertDescription>

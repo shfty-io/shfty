@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Download, Github, Mail } from 'lucide-react'
+import { Github, Mail } from 'lucide-react'
 import Link from 'next/link'
 
 interface Product {

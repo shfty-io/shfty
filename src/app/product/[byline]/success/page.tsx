@@ -309,7 +309,7 @@ export default async function SuccessPage({
                 Repository Access Pending
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                We couldn't grant repository access. The seller needs to set up their GitHub integration.
+                We couldn&apos;t grant repository access. The seller needs to set up their GitHub integration.
               </p>
               <Button asChild variant="outline">
                 <Link href={`/product/${byline}`}>

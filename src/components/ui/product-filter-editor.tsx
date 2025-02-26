@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Search, Tag, Filter } from "lucide-react";
+import { Bold, Italic, List, Filter } from "lucide-react";
 import {
   Select,
   SelectContent,

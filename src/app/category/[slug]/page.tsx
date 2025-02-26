@@ -3,7 +3,6 @@ import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/server';
 import { Navbar } from '@/components/global/Navbar';
-import Link from 'next/link';
 
 interface Product {
   id: string;

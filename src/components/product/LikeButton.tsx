@@ -80,9 +80,6 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
 
       // Clear saved data after successful submission
       localStorage.removeItem('productData');
-      
-      // Redirect to listings page
-      window.location.href = '/your/listings';
     } catch (error: Error | unknown) {
       console.error('Error toggling like:', error)
       toast({
@@ -99,13 +96,14 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
     <Button
       variant="ghost"
       size="sm"
-      className="w-8 h-8 p-0 rounded-full bg-gray-100 hover:bg-gray-100"
+      className="flex items-center gap-1 py-1 px-2 rounded-full bg-gray-100 hover:bg-gray-100"
       onClick={handleLike}
       disabled={isLoading}
     >
       <Heart 
         className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'} transition-colors`} 
       />
+      <span className="text-xs font-medium">{likesCount}</span>
     </Button>
   )
 } 

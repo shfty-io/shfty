@@ -29,7 +29,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
         editorRef.current.innerHTML = value;
         
         // Apply styles to any existing headings
-        const styleMap: Record<string, any> = {
+        const styleMap: Record<string, React.CSSProperties> = {
           h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
           h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
           h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' }
@@ -69,7 +69,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
       if (!selection || !selection.rangeCount || !editorRef.current) return;
 
       // Style map for headings
-      const styleMap: Record<string, any> = {
+      const styleMap: Record<string, React.CSSProperties> = {
         h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
         h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
         h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' },
@@ -203,7 +203,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
           onKeyDown={handleKeyDown}
           onFocus={() => {
             // Reapply styles to ensure they're visible
-            const styleMap: Record<string, any> = {
+            const styleMap: Record<string, React.CSSProperties> = {
               h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
               h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
               h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' }

@@ -185,8 +185,8 @@ export function parseFilterHtml(html: string): FilterData {
 /**
  * Convert structured filter data into a query object that can be used with API requests
  */
-export function filtersToQueryObject(filterData: FilterData): Record<string, any> {
-  const query: Record<string, any> = {};
+export function filtersToQueryObject(filterData: FilterData): Record<string, string[] | number> {
+  const query: Record<string, string[] | number> = {};
   
   // Add categories
   if (filterData.categories.length > 0) {

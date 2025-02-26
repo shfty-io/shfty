@@ -3,6 +3,7 @@
 import { Button } from "./button";
 import { Github, ArrowRight, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 export function Hero() {
   // Always visible
@@ -65,7 +66,7 @@ export function Hero() {
           {showMission && (
             <div className="mt-8 bg-blue-50 p-8 rounded-lg border border-blue-100 text-left animate-in fade-in slide-in-from-top-4 duration-300 max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center">
-                It's Time for a Restart
+                It&apos;s Time for a Restart
               </h2>
               
               <div className="grid grid-cols-1 gap-6">
@@ -122,7 +123,7 @@ export function Hero() {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-base font-semibold leading-6 text-gray-900 hover:text-gray-700"
               >
-                <img src="/producthunt.svg" alt="Product Hunt" className="h-6 w-6" />
+                <Image src="/producthunt.svg" alt="Product Hunt" width={24} height={24} className="h-6 w-6" />
                 Like on Product Hunt
               </a>
             </div>

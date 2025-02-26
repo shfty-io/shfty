@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   is_admin BOOLEAN DEFAULT false,
   stripe_customer_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  email_notifications_enabled BOOLEAN DEFAULT true
 );
 
 -- Create products table
@@ -203,7 +204,8 @@ BEGIN
         stripe_customer_id,
         created_at,
         updated_at,
-        github_username
+        github_username,
+        email_notifications_enabled
     ) VALUES (
         NEW.id,
         NEW.id,
@@ -215,7 +217,8 @@ BEGIN
         NULL,
         NOW(),
         NOW(),
-        COALESCE(NEW.raw_user_meta_data->>'user_name', NULL)
+        COALESCE(NEW.raw_user_meta_data->>'user_name', NULL),
+        true
     );
     RETURN NEW;
 END;
