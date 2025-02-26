@@ -937,25 +937,25 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div className="space-y-4">
-          <Label className="text-sm font-medium">FAQ</Label>
+          <Label className="text-sm font-medium">Features</Label>
           <div className="space-y-4">
             {faqItems.map((item, index) => (
               <div key={index} className="space-y-3 p-4 border rounded-md">
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-question-${index}`} className="text-xs font-medium">Question</Label>
+                  <Label htmlFor={`faq-question-${index}`} className="text-xs font-medium">Feature</Label>
                   <Input
                     id={`faq-question-${index}`}
-                    placeholder="Question"
+                    placeholder="Feature"
                     value={item.question}
                     onChange={(e) => updateFaqItem(index, 'question', e.target.value)}
                     className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-answer-${index}`} className="text-xs font-medium">Answer</Label>
+                  <Label htmlFor={`faq-answer-${index}`} className="text-xs font-medium">Description</Label>
                   <Textarea
                     id={`faq-answer-${index}`}
-                    placeholder="Answer"
+                    placeholder="Description"
                     value={item.answer}
                     onChange={(e) => updateFaqItem(index, 'answer', e.target.value)}
                     className="min-h-[80px] resize-y"
@@ -968,12 +968,12 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   onClick={() => removeFaqItem(index)}
                   className="mt-2"
                 >
-                  Remove FAQ Item
+                  Remove Feature
                 </Button>
               </div>
             ))}
             <Button type="button" variant="outline" onClick={addFaqItem} className="w-full">
-              Add FAQ Item
+              Add Feature
             </Button>
           </div>
         </div>
