@@ -484,30 +484,34 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="space-y-6">
         {/* Two column layout for name and byline */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="flex items-center text-sm font-medium">
-              Product Name
-              <span className="text-destructive ml-1">*</span>
-            </Label>
-            <Input
-              id="name"
-              placeholder='e.g. "Modern Dashboard Template"'
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="h-10"
-            />
+            <div className="h-6 flex items-center">
+              <Label htmlFor="name" className="text-sm font-medium">Name</Label>
+            </div>
+            <div className="relative">
+              <Input
+                id="name"
+                placeholder="My Product"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="h-10"
+                maxLength={25}
+              />
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              The display name of your product
+              The display name of your product (max 25 characters)
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="byline" className="flex items-center text-sm font-medium">
-              Slug
-              <span className="text-destructive ml-1">*</span>
-            </Label>
+            <div className="h-6 flex items-center">
+              <Label htmlFor="byline" className="text-sm font-medium">
+                Slug
+                <span className="text-destructive ml-1">*</span>
+              </Label>
+            </div>
             <div className="relative">
               <Input
                 id="byline"
@@ -519,6 +523,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 }}
                 required
                 className={`h-10 ${formData.byline ? (isAvailable === false ? "border-red-500" : isAvailable === true ? "border-green-500" : "") : ""}`}
+                maxLength={25}
               />
               {formData.byline && (
                 <div className="absolute right-3 top-2.5">
@@ -532,32 +537,40 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 </div>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Used in the URL and imports, can&apos;t be changed later
-            </p>
-            {message && (
-              <p className={`text-xs ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
-                {message}
+            <div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Used in the URL and imports, can&apos;t be changed later (max 25 characters)
               </p>
-            )}
+              {message && (
+                <p className={`text-xs ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                  {message}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Three column layout for price, category, and technologies */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="price" className="text-sm font-medium">Price (USD)</Label>
-            <Input
-              id="price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-              required
-              className="h-10"
-              disabled={Boolean(formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private)}
-            />
+            <div className="h-6 flex items-center">
+              <Label htmlFor="price" className="text-sm font-medium">Price (USD)</Label>
+            </div>
+            <div className="relative">
+              <Input
+                id="price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                required
+                className={`h-10 ${formData.price >= 0 ? "" : "border-red-500"}`}
+                disabled={Boolean(formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private)}
+              />
+              {formData.price < 0 && (
+                <div className="absolute right-3 top-2.5">
+                  <X className="h-5 w-5 text-red-600" />
+                </div>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               {formData.githubRepoUrl 
                 ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private 
@@ -566,7 +579,9 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 : "Set your desired price "}
             </p>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <TagsSelector 
               tags={categories}
@@ -589,27 +604,36 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Product Demo URL (Optional)</Label>
-            <UrlInput
-              placeholder="your-demo-url.com"
-              value={(formData.demoUrl || '').replace('https://', '')}
-              onChange={(e) => {
-                const url = e.target.value;
-                setFormData({ 
-                  ...formData, 
-                  demoUrl: url ? `https://${url}` : null 
-                });
-              }}
-              className="h-10"
-            />
+            <div className="h-6 flex items-center">
+              <Label className="text-sm font-medium">Product Demo URL (Optional)</Label>
+            </div>
+            <div className="relative">
+              <UrlInput
+                placeholder="your-demo-url.com"
+                value={(formData.demoUrl || '').replace('https://', '')}
+                onChange={(e) => {
+                  const url = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    demoUrl: url ? `https://${url}` : null 
+                  });
+                }}
+                className="h-10"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Link to a live demo of your product
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center text-sm font-medium">
-              GitHub Repository
-              <span className="text-destructive ml-1">*</span>
-            </Label>
-            <div className="flex rounded-md">
+            <div className="h-6 flex items-center">
+              <Label className="text-sm font-medium">
+                GitHub Repository
+                <span className="text-destructive ml-1">*</span>
+              </Label>
+            </div>
+            <div className="relative">
               <Dialog>
                 <DialogTrigger asChild>
                   <div 
@@ -691,7 +715,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                   </div>
                 </DialogContent>
               </Dialog>
-
+              
               {formData.githubRepoUrl && (
                 <div className="space-y-4 mt-2">
                   <div className="p-3 border rounded-md bg-muted">
@@ -741,28 +765,41 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 </div>
               )}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Link your GitHub repository to your product
+            </p>
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="shortDescription" className="text-sm font-medium">Short Description</Label>
-          <Textarea
-            id="shortDescription"
-            placeholder="Used in search results and as an intro at the top of your template's page."
-            value={formData.shortDescription}
-            onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
-            required
-            className="min-h-[80px] resize-y"
-          />
+          <div className="relative">
+            <Textarea
+              id="shortDescription"
+              placeholder="Used in search results and as an intro at the top of your template's page."
+              value={formData.shortDescription}
+              onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+              required
+              className="min-h-[80px] resize-y"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Brief description of your product
+          </p>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="description" className="text-sm font-medium">Full Description</Label>
-          <RichTextEditor
-            value={formData.description}
-            onChange={(value: string) => setFormData({ ...formData, description: value })}
-            placeholder="Provide as much detail as possible to significantly increase sales."
-          />
+          <div className="relative w-full">
+            <RichTextEditor
+              value={formData.description}
+              onChange={(value: string) => setFormData({ ...formData, description: value })}
+              placeholder="Provide as much detail as possible to significantly increase sales."
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Detailed information about your product
+          </p>
         </div>
 
         <div className="space-y-2">
