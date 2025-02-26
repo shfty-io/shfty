@@ -2,13 +2,22 @@
 
 import { Button } from "./button";
 import { Github, ArrowRight, Info, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 export function Hero() {
   // Always visible
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [showMission, setShowMission] = useState(false);
+
+  useEffect(() => {
+    // Check if this is the first visit
+    const hasVisited = localStorage.getItem('hasVisitedBefore');
+    if (!hasVisited) {
+      setIsVisible(true);
+      localStorage.setItem('hasVisitedBefore', 'true');
+    }
+  }, []);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -18,7 +27,7 @@ export function Hero() {
     setShowMission(!showMission);
   };
 
-  // Only hide when explicitly closed
+  // Only show if isVisible is true
   if (!isVisible) return null;
 
   return (

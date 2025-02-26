@@ -10,7 +10,7 @@ export default function AuthErrorPage() {
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <GalleryVerticalEnd className="size-4" />
           </div>
-          <span className="font-medium">SoftMarket</span>
+          <span className="font-medium">shifty</span>
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="text-2xl font-bold">Authentication Error</h1>
