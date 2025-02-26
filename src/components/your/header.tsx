@@ -29,7 +29,7 @@ export function Header() {
   if (!mounted) return null;
 
   return (
-    <header className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 rounded-t-lg">
+    <header className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 rounded-t-lg z-[90]">
       <div className="flex h-16 items-center justify-between px-4">
         <Button 
           variant="ghost" 

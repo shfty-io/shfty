@@ -26,8 +26,8 @@ export function YourSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
-      <SidebarHeader>
+    <Sidebar className="z-[100]">
+      <SidebarHeader className="relative z-[100]">
         <Link href="/" className="flex items-center space-x-2 px-4 py-2">
           <div className="h-8 w-8 rounded bg-gray-900 flex items-center justify-center">
             <span className="text-white text-xs font-medium">AI</span>
@@ -39,7 +39,7 @@ export function YourSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="z-[100]">
         <div className="px-3 py-2">
           <div className="text-xs font-medium text-gray-500 mb-2">Settings</div>
           <SidebarMenu>
@@ -54,7 +54,7 @@ export function YourSidebar() {
         </div>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="z-[100]">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>

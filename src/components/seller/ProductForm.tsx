@@ -481,11 +481,11 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   }, [selectedTechnologies]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8 relative z-40">
       <div className="space-y-6">
         {/* Two column layout for name and byline */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <div className="h-6 flex items-center">
               <Label htmlFor="name" className="text-sm font-medium">Name</Label>
             </div>
@@ -505,7 +505,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <div className="h-6 flex items-center">
               <Label htmlFor="byline" className="text-sm font-medium">
                 Slug
@@ -549,7 +549,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <div className="h-6 flex items-center">
               <Label htmlFor="price" className="text-sm font-medium">Price (USD)</Label>
             </div>
@@ -582,7 +582,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <TagsSelector 
               tags={categories}
               selectedTags={selectedCategories}
@@ -592,7 +592,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <TagsSelector 
               tags={technologies}
               selectedTags={selectedTechnologies}
@@ -603,7 +603,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <div className="h-6 flex items-center">
               <Label className="text-sm font-medium">Product Demo URL (Optional)</Label>
             </div>
@@ -626,7 +626,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative z-[70]">
             <div className="h-6 flex items-center">
               <Label className="text-sm font-medium">
                 GitHub Repository
@@ -771,7 +771,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 relative z-[70]">
           <Label htmlFor="shortDescription" className="text-sm font-medium">Short Description</Label>
           <div className="relative">
             <Textarea
@@ -788,7 +788,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 relative z-[70]">
           <Label htmlFor="description" className="text-sm font-medium">Full Description</Label>
           <div className="relative w-full">
             <RichTextEditor
@@ -802,7 +802,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 relative z-[70]">
           <Label className="text-sm font-medium flex items-center">
             Product Media
             <span className="text-destructive ml-1">*</span>
@@ -936,7 +936,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 relative z-[70]">
           <Label className="text-sm font-medium">Features</Label>
           <div className="space-y-4">
             {faqItems.map((item, index) => (
