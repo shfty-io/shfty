@@ -115,4 +115,60 @@ If the `handle_new_user` trigger isn't creating profiles:
 5. Monitor function execution:
    ```sql
    SELECT * FROM pg_stat_user_functions WHERE funcname = 'handle_new_user';
-   ``` 
+   ```
+
+## Applying Feedback Feature Migrations
+
+To fix the error with the feedback table and apply all migrations in the correct order, follow these steps:
+
+### Using the Supabase Dashboard
+
+1. Go to your Supabase project dashboard
+2. Navigate to the SQL Editor
+3. Create a new query
+4. Copy the contents of `db/apply_migrations.sql` into the editor
+5. Click "Run" to execute all migrations in the correct order
+
+### Using the Supabase CLI
+
+If you have the Supabase CLI installed, you can run:
+
+```bash
+supabase db execute --file ./db/apply_migrations.sql
+```
+
+### Using psql
+
+If you have direct database access using psql:
+
+```bash
+psql -h YOUR_DB_HOST -U postgres -d postgres -f ./db/apply_migrations.sql
+```
+
+## Manual Migration (If Needed)
+
+If you prefer to run migrations individually:
+
+1. First apply the admin column migration:
+```sql
+-- Run this first
+\i db/migrations/add_admin_column.sql
+```
+
+2. Then create the feedback table:
+```sql
+-- Run this after adding the admin column
+\i db/migrations/create_feedback_table.sql
+```
+
+## Promoting Users to Admin
+
+After applying migrations, you can promote a user to admin using:
+
+```sql
+-- Replace with the actual user email
+SELECT promote_admin_by_email('admin@yourdomain.com');
+
+-- Or by user ID
+SELECT promote_admin_by_id('user-uuid-here');
+``` 

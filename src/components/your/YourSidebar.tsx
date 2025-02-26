@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
+import { FeedbackDialog } from "@/components/ui/feedback-dialog";
 
 const navigation = [
   { name: "Profile", href: "/your/profile" },
@@ -58,10 +59,12 @@ export function YourSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href="/feedback" className="flex items-center">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Feedback
-              </Link>
+              <FeedbackDialog trigger={
+                <div className="flex items-center cursor-pointer w-full">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Feedback
+                </div>
+              } />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
