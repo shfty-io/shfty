@@ -9,11 +9,10 @@ DROP TYPE IF EXISTS report_reason CASCADE;
 
 -- Product related enums
 CREATE TYPE product_category AS ENUM (
-  'business', 'entertainment', 'developer_tools', 'finance',
-  'education', 'games', 'graphics_design', 'health_fitness',
-  'lifestyle', 'medical', 'news', 'photo_video',
-  'productivity', 'social_networking', 'sports', 'travel',
-  'utilities', 'weather', 'other'
+  'photo_video', 'productivity', 'utilities', 'entertainment',
+  'developer_tools', 'business', 'creativity', 'security',
+  'lifestyle', 'education', 'communication_social', 'games',
+  'finance', 'other'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');
@@ -58,6 +57,7 @@ CREATE TABLE IF NOT EXISTS products (
   video_url TEXT,
   demo_url TEXT,
   github_repo_url TEXT,
+  github_token TEXT,
   categories product_category[],
   technologies product_technology[],
   status product_status DEFAULT 'draft',
@@ -269,6 +269,33 @@ BEGIN
     UPDATE products
     SET purchase_count = purchase_count + 1
     WHERE id = product_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to increment view count (alias for increment_product_view)
+CREATE OR REPLACE FUNCTION increment_view_count(product_id UUID)
+RETURNS VOID AS $$
+BEGIN
+    PERFORM increment_product_view(product_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Functions for managing codebases bucket
+CREATE OR REPLACE FUNCTION cleanup_codebases_bucket()
+RETURNS VOID AS $$
+BEGIN
+    -- Implementation details would depend on your storage setup
+    -- This is a placeholder function to match the type definition
+    NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION manage_codebases_bucket()
+RETURNS VOID AS $$
+BEGIN
+    -- Implementation details would depend on your storage setup
+    -- This is a placeholder function to match the type definition
+    NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
