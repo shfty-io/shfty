@@ -1,0 +1,64 @@
+---
+description: Guidelines for API and data fetching in the project
+globs: globs: ["**/api/**/*.ts", "**/app/api/**/*.ts", "**/lib/api/**/*.ts"]
+alwaysApply: false
+---
+# API and Data Fetching Guidelines
+
+## API Routes
+
+- Use Next.js Route Handlers for API endpoints
+- Organize API routes by domain or feature
+- Implement proper error handling and status codes
+- Validate request data with zod or similar
+- Implement rate limiting for public endpoints
+- Use appropriate HTTP methods (GET, POST, PUT, DELETE)
+
+## Data Fetching
+
+- Prefer server components for data fetching
+- Implement proper caching strategies
+- Use SWR or React Query for client-side data fetching
+- Handle loading, error, and empty states
+- Implement optimistic updates when appropriate
+- Use proper TypeScript types for API responses
+
+## Authentication and Authorization
+
+- Validate authentication in API routes
+- Implement proper authorization checks
+- Use middleware for common auth logic
+- Handle expired tokens and refresh flows
+- Implement proper CSRF protection
+
+## Error Handling
+
+- Use consistent error response format
+- Implement proper logging for server errors
+- Return appropriate HTTP status codes
+- Provide user-friendly error messages
+- Handle network errors gracefully
+
+## Performance
+
+- Implement proper caching headers
+- Use edge functions for low-latency APIs
+- Optimize database queries
+- Implement pagination for large datasets
+- Use appropriate fetch cache options
+
+## Security
+
+- Validate and sanitize all user inputs
+- Implement proper CORS settings
+- Use HTTPS for all API calls
+- Protect against common vulnerabilities (XSS, CSRF, etc.)
+- Implement proper rate limiting
+
+## Testing
+
+- Write unit tests for API handlers
+- Implement integration tests for API flows
+- Mock external dependencies
+- Test error scenarios
+- Test performance with load testing

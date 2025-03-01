@@ -1,0 +1,63 @@
+---
+description: Guidelines for working with Supabase in the project
+globs: globs: ["**/components/**/*.tsx", "**/app/**/components/**/*.tsx"]
+alwaysApply: false
+---
+# Supabase Guidelines
+
+## Authentication
+
+- We are using SSR for authentication, NOT auth helpers
+- Use server-side authentication flows with cookies
+- Implement proper CSRF protection
+- Handle auth state changes appropriately
+- Use appropriate role-based access control (RBAC)
+
+## Database
+
+- Use Supabase migrations for schema changes
+- Follow naming conventions for tables and columns:
+  - Use snake_case for table and column names
+  - Use plural for table names (e.g., `users`, `products`)
+  - Use singular for junction tables (e.g., `user_product`)
+- Add appropriate indexes for frequently queried columns
+- Set up proper foreign key constraints
+- Use RLS (Row Level Security) policies for data access control
+
+## API Calls
+
+- Use typed queries with the generated types
+- Implement proper error handling for all database operations
+- Use transactions for operations that modify multiple tables
+- Avoid N+1 query problems by using appropriate joins
+- Cache frequently accessed data when appropriate
+
+## Real-time
+
+- Use Supabase real-time features for live updates
+- Implement proper channel and event handling
+- Consider performance implications of real-time subscriptions
+- Unsubscribe from channels when components unmount
+
+## Storage
+
+- Organize files in appropriate buckets
+- Set up proper access control for storage buckets
+- Handle file uploads with proper validation
+- Implement appropriate file size limits
+
+## Type Generation
+
+- Keep types up to date by running:
+  ```
+  npx supabase gen types typescript --project-id xbwfjonmiddqfrgwdhmi > src/types/supabase.ts
+  ```
+- Use the generated types for all Supabase operations
+- Extend types as needed for specific use cases
+
+## Edge Functions
+
+- Use Edge Functions for server-side logic that needs to be close to users
+- Keep Edge Functions small and focused
+- Implement proper error handling in Edge Functions
+- Test Edge Functions thoroughly before deployment

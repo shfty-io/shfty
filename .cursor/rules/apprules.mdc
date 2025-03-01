@@ -1,14 +1,77 @@
 ---
-description: 
-globs: 
+description: Core application rules and architecture guidelines
+globs: globs: ["**/app/**/*", "**/src/**/*"] alwaysApply: true
+alwaysApply: true
 ---
+# Application Rules
 
-#Rules
+## Project Overview
 
-Technologies
-Supabase
-Next.js
-Typescript
+- This is a Next.js application using Supabase for backend services
+- Deployed on Vercel
+- Using TypeScript for type safety
+- Using Tailwind CSS for styling
+
+## Architecture
+
+- Follow a feature-based architecture
+- Organize code by domain/feature rather than technical concerns
+- Keep business logic separate from UI components
+- Use server components for data fetching and processing
+- Use client components only when necessary
+
+## State Management
+
+- Use React's built-in state management where possible
+- Use context for global state that spans multiple components
+- Consider using Zustand for more complex state management
+- Avoid prop drilling by using composition or context
+
+## Authentication
+
+- We are using SSR for authentication, NOT auth helpers
+- Implement proper role-based access control
+- Handle authentication state appropriately
+- Protect routes that require authentication
+
+## Data Flow
+
+- Use server components for initial data fetching
+- Use SWR or React Query for client-side data fetching and mutations
+- Implement proper error handling for all data operations
+- Use TypeScript types for all data structures
+
+## Performance
+
+- Optimize component rendering
+- Implement proper code splitting
+- Use Next.js Image component for images
+- Implement proper caching strategies
+- Monitor performance with Vercel Analytics
+
+## Security
+
+- Validate all user inputs
+- Implement proper CSRF protection
+- Use HTTPS for all API calls
+- Follow security best practices for authentication
+- Implement proper error handling
+
+## Accessibility
+
+- Follow WCAG guidelines
+- Use semantic HTML
+- Implement proper ARIA attributes
+- Ensure keyboard navigation
+- Test with screen readers
+
+## Deployment
+
+- Use Vercel for deployment
+- Set up proper environment variables
+- Implement proper CI/CD pipeline
+- Use preview deployments for pull requests
+- Monitor application health with Vercel Analytics
 
 You can view schema in [supabase.ts](mdc:src/types/supabase.ts)
 You can run npx supabase gen types typescript --project-id xbwfjonmiddqfrgwdhmi > src/types/supabase.ts to make sure its up to date
