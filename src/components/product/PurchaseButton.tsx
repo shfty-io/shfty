@@ -15,7 +15,6 @@ interface PurchaseButtonProps {
 
 export function PurchaseButton({ productId, price, className = '', source }: PurchaseButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [csrfReady, setCsrfReady] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   
@@ -28,7 +27,6 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
         if (!token) {
           await generateCsrfToken()
         }
-        setCsrfReady(true)
       } catch (err) {
         console.error('Failed to generate CSRF token:', err)
         toast({

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     )
     
     // Exchange the code for a session
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (error) {
       console.error('Session exchange error:', error)
@@ -76,9 +76,9 @@ export async function GET(request: NextRequest) {
     
     // Success! Return the response with cookies already set
     return response
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Auth callback error:', error)
-    const errorMessage = error?.message || 'Unknown authentication error occurred'
+    const errorMessage = error instanceof Error ? error.message : 'Unknown authentication error occurred'
     
     return NextResponse.redirect(
       new URL(`/auth/login?error=${encodeURIComponent(errorMessage)}`, origin)

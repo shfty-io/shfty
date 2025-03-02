@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { validateCsrfToken } from '@/lib/csrf'
 import { 
-  createAuthenticationError, 
   createNotFoundError, 
   createExternalServiceError,
   handleApiError

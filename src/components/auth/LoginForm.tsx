@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClientComponentClient } from '@/lib/server'
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 export function LoginForm({
   className,
@@ -14,9 +14,8 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const router = useRouter()
   const supabase = createClientComponentClient()
-
+  
   // Check if there's a redirect parameter
   const redirectPath = searchParams.get('redirect') || '/'
 
@@ -28,7 +27,7 @@ export function LoginForm({
       const callbackUrl = new URL('/auth/callback', window.location.origin)
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           scopes: 'repo repo:status repo_deployment public_repo read:user user:email',

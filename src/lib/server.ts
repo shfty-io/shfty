@@ -1,22 +1,25 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 // This version is meant to be used in Server Components and Route Handlers
-export const createClient = (cookieStore?: any) => {
+export const createClient = () => {
   // We create a no-op cookie handler for Server Components
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        get(_name: string) {
           // For Server Components, we return empty cookies
           // The real cookie handling will happen in middleware or client-side
           return ''
         },
-        set(name: string, value: string, options: CookieOptions) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        set(_name: string, _value: string, _options: CookieOptions) {
           // No-op in Server Components
         },
-        remove(name: string, options: CookieOptions) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        remove(_name: string, _options: CookieOptions) {
           // No-op in Server Components
         }
       },

@@ -1,13 +1,18 @@
 import { setCsrfCookie } from '@/lib/csrf';
 import { NextResponse } from 'next/server';
 
+interface CsrfResponse {
+  success: boolean;
+  token?: string;
+}
+
 export async function POST() {
   try {
     // Generate a new CSRF token and set it in a cookie
     const token = await setCsrfCookie();
     
     // Return the token in development mode for easier debugging
-    const response: any = { success: true };
+    const response: CsrfResponse = { success: true };
     if (process.env.NODE_ENV !== 'production') {
       response.token = token;
     }
