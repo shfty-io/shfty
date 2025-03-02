@@ -1,8 +1,8 @@
 ---
 description: Guidelines for working with Supabase in the project
-globs: globs: ["**/supabase*.ts", "**/db*.ts", "**/auth*.ts"]
-alwaysApply: false
+globs: ["**/supabase*.ts", "**/db*.ts", "**/auth*.ts"]
 ---
+
 # Supabase Guidelines
 
 ## Authentication
@@ -60,4 +60,4 @@ alwaysApply: false
 - Use Edge Functions for server-side logic that needs to be close to users
 - Keep Edge Functions small and focused
 - Implement proper error handling in Edge Functions
-- Test Edge Functions thoroughly before deployment
+- Test Edge Functions thoroughly before deployment 

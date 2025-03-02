@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/server'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { validateCsrfToken } from '@/lib/csrf'
@@ -7,6 +6,8 @@ import {
   createExternalServiceError,
   handleApiError
 } from '@/lib/error-handler'
+import { createServerClient } from '@supabase/ssr'
+import type { CookieOptions } from '@supabase/ssr'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia'
@@ -30,7 +31,36 @@ export async function POST(
     const id = pathParts[pathParts.length - 1];
     const productPath = `/product/${id}`;
 
-    const supabase = createClient()
+    // Create a response early for cookie handling
+    const response = NextResponse.next()
+    
+    // Create supabase client with proper cookies handling for API routes
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            response.cookies.set({
+              name,
+              value,
+              ...options
+            })
+          },
+          remove(name: string, options: CookieOptions) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+              maxAge: 0
+            })
+          },
+        },
+      }
+    )
     
     // Get request body for source information
     const requestBody = await request.json().catch(() => ({}))
