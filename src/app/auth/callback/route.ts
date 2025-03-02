@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -17,9 +17,40 @@ export async function GET(request: NextRequest) {
     )
   }
   
+  // Create a response early so we can use it for cookies
+  const response = NextResponse.redirect(new URL(returnTo, origin))
+  
   try {
-    // Create Supabase client for this request, with cookies
-    const supabase = createClient()
+    // Create Supabase client using the native createServerClient
+    // Since this is a Server Action route, we can access the cookies directly
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) {
+            return request.cookies.get(name)?.value
+          },
+          set(name, value, options) {
+            // Set the cookie on both the request and response
+            response.cookies.set({
+              name, 
+              value,
+              ...options
+            })
+          },
+          remove(name, options) {
+            // Remove the cookie from both the request and response
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+              maxAge: 0
+            })
+          }
+        }
+      }
+    )
     
     // Exchange the code for a session
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -43,10 +74,8 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Success! Redirect to the return path
-    const redirectUrl = new URL(returnTo, origin)
-    
-    return NextResponse.redirect(redirectUrl)
+    // Success! Return the response with cookies already set
+    return response
   } catch (error: any) {
     console.error('Auth callback error:', error)
     const errorMessage = error?.message || 'Unknown authentication error occurred'

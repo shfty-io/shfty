@@ -1,17 +1,14 @@
 "use client"
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClientComponentClient } from '@/lib/server'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 
 export function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createClientComponentClient()
 
   const handleGitHubSignIn = async () => {
     setIsLoading(true);
