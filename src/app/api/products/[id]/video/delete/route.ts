@@ -2,10 +2,14 @@ import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   try {
+    // Extract the ID from the URL
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 3]; // -3 because the path is /products/[id]/video/delete
+    
     const supabase = createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -20,7 +24,7 @@ export async function POST(
     const { data: product } = await supabase
       .from('products')
       .select('video_url')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
@@ -53,7 +57,7 @@ export async function POST(
     const { error: updateError } = await supabase
       .from('products')
       .update({ video_url: null })
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (updateError) {
       console.error('Update error:', updateError);

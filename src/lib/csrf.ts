@@ -12,13 +12,16 @@ export function generateCsrfToken(): string {
 export async function setCsrfCookie(): Promise<string> {
   const token = generateCsrfToken();
   const cookieStore = await cookies();
+  
+  // Set the cookie with appropriate options
   cookieStore.set('csrf_token', token, {
-    httpOnly: true,
+    httpOnly: false, // Allow JavaScript access in client
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax', // More permissive to work in development
     path: '/',
     maxAge: 60 * 60, // 1 hour
   });
+  
   return token;
 }
 
@@ -28,6 +31,17 @@ export async function validateCsrfToken(request: NextRequest): Promise<boolean> 
   const cookieToken = cookieStore.get('csrf_token')?.value;
   const headerToken = request.headers.get('x-csrf-token');
   
+  // Log tokens in development mode for debugging
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('CSRF Validation:', { 
+      cookieToken: cookieToken ? 'exists' : 'missing',
+      headerToken: headerToken ? 'exists' : 'missing',
+      cookieValue: cookieToken?.substring(0, 8) + '...',
+      headerValue: headerToken?.substring(0, 8) + '...',
+      match: cookieToken === headerToken
+    });
+  }
+  
   if (!cookieToken || !headerToken) {
     return false;
   }
@@ -36,13 +50,13 @@ export async function validateCsrfToken(request: NextRequest): Promise<boolean> 
 }
 
 // CSRF protection middleware for API routes
-export function csrfProtection<T extends unknown[]>(
-  handler: (req: NextRequest, ...args: T) => Promise<NextResponse>
+export function csrfProtection<T>(
+  handler: (req: NextRequest, context: T) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, ...args: T) => {
+  return async (request: NextRequest, context: T) => {
     // Skip CSRF check for GET requests as they should be idempotent
     if (request.method === 'GET') {
-      return handler(request, ...args);
+      return handler(request, context);
     }
     
     // For all other methods, validate CSRF token
@@ -53,6 +67,6 @@ export function csrfProtection<T extends unknown[]>(
       });
     }
     
-    return handler(request, ...args);
+    return handler(request, context);
   };
 } 

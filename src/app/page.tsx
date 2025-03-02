@@ -4,7 +4,6 @@ import { createClient } from '@/lib/server'
 import { AppSidebar } from "@/components/root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Hero } from '@/components/ui/hero'
-import { getCachedLatest } from '@/lib/cache'
 
 interface Product {
   id: string
@@ -66,8 +65,8 @@ async function getProducts(): Promise<Product[]> {
 }
 
 export default async function Home() {
-  // Use cached function for better performance
-  const products = await getCachedLatest(getProducts, 12)
+  // Not using cache for now since it causes issues with cookies in Next.js 15
+  const products = await getProducts()
 
   return (
     <>

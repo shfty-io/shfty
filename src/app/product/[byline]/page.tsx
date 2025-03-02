@@ -1,10 +1,7 @@
 import { createClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
-import { ImageGallery } from '@/components/product/ImageGallery'
-import { ProductNavbar } from '@/components/product/ProductNavbar'
 import { incrementViewCount } from '@/app/actions'
-import { ProductHero } from '@/components/product/ProductHero'
-import { ProductDetails } from '@/components/product/ProductDetails'
+import { ProductPageContent } from './page.client'
 
 async function getProduct(byline: string) {
   const supabase = createClient();
@@ -75,13 +72,20 @@ async function getProduct(byline: string) {
   }
 }
 
-export default async function ProductPage({ 
-  params 
-}: { 
-  params: { byline: string } 
-}) {
-  // Add await for params resolution
-  const { byline } = await Promise.resolve(params);
+// Define types for the page props
+type Params = Promise<{ byline: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+interface PageProps {
+  params: Params;
+  searchParams: SearchParams;
+}
+
+export default async function ProductPage({ params }: PageProps) {
+  const { byline } = await params;
+  
+  // Increment view count (fire and forget)
+  incrementViewCount(byline).catch(console.error);
 
   if (!byline) {
     notFound();
@@ -93,35 +97,7 @@ export default async function ProductPage({
     notFound();
   }
 
-  // Update view count using product ID
-  await incrementViewCount(product.id);
-
-  return (
-    <div className="min-h-screen bg-background">
-      <ProductNavbar />
-      <main>
-        <div className="space-y-8">
-          <ProductHero product={product} hasPurchased={product.hasPurchased} />
-          <ImageGallery 
-            images={product.image_urls || []} 
-            productName={product.name}
-          />
-          <div className="mx-auto max-w-[1440px] px-5">
-            <ProductDetails
-              productId={product.id}
-              productName={product.name}
-              categories={product.categories || []}
-              technologies={product.technologies || []}
-              description={product.description}
-              faq={product.faq}
-              sellerEmail={product.seller?.email}
-              sellerFullName={product.seller?.full_name}
-            />
-          </div>
-        </div>
-      </main>
-    </div>
-  )
+  return <ProductPageContent product={product} />;
 }
 
 export const dynamic = 'force-dynamic'; 

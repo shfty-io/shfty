@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/client'
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useSearchParams, useRouter } from 'next/navigation'
 
 export function LoginForm({
   className,
@@ -12,27 +13,49 @@ export function LoginForm({
 }: React.ComponentPropsWithoutRef<"form">) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const supabase = createClient()
 
+  // Check if there's a redirect parameter
+  const redirectPath = searchParams.get('redirect') || '/'
+
+  // Handle GitHub login
   const handleGitHubLogin = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Construct the redirect URL with the final destination
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      callbackUrl.searchParams.set('returnTo', redirectPath)
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           scopes: 'repo repo:status repo_deployment public_repo read:user user:email',
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: callbackUrl.toString(),
+          // This should be true for Next.js to properly handle the PKCE flow
+          skipBrowserRedirect: false,
         }
       });
 
       if (error) throw error;
+
+      // Don't manually redirect - Supabase handles it
+      // But we should never get here since skipBrowserRedirect is false
     } catch (error) {
       console.error('GitHub login error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in with GitHub');
-    } finally {
       setIsLoading(false);
     }
   };
+
+  // If there's an error message from a redirect (like failed auth)
+  useEffect(() => {
+    const errorMsg = searchParams.get('error')
+    if (errorMsg) {
+      setError(decodeURIComponent(errorMsg))
+    }
+  }, [searchParams])
 
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>

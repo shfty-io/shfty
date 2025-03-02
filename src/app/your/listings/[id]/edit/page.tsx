@@ -1,14 +1,21 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/server';
-import { ProductForm, ProductFormData } from '@/components/seller/ProductForm';
+import { ProductFormData } from '@/components/seller/ProductForm';
 import { revalidatePath } from 'next/cache';
+import { EditPageContent } from './page.client';
 
-export default async function EditProductPage({
-  params
-}: {
-  params: { id: string }
-}) {
+// Define types for the page props
+type Params = Promise<{ id: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+interface PageProps {
+  params: Params;
+  searchParams: SearchParams;
+}
+
+export default async function EditProductPage({ params }: PageProps) {
   const { id } = await params;
+  
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -64,23 +71,5 @@ export default async function EditProductPage({
     return { success: true };
   }
 
-  return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Edit Product - {product.name}</h1>
-      <ProductForm
-        onSubmit={handleSubmit}
-        initialData={{
-          name: product.name,
-          byline: product.byline,
-          shortDescription: product.short_description,
-          description: product.description || '',
-          price: product.price,
-          categories: product.categories || [],
-          faq: product.faq || [],
-          technologies: product.technologies || [],
-          imageUrls: product.image_urls || []
-        }}
-      />
-    </div>
-  );
+  return <EditPageContent product={product} onSubmit={handleSubmit} />;
 } 

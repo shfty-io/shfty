@@ -1,8 +1,8 @@
-import ProductList from '@/components/root/ProductList';
+import { Navbar } from '@/components/global/Navbar';
 import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/server';
-import { Navbar } from '@/components/global/Navbar';
+import { CategoryPageContent } from './page.client';
 
 interface Product {
   id: string;
@@ -24,10 +24,13 @@ interface Product {
   };
 }
 
-interface CategoryPageProps {
-  params: {
-    slug: string;
-  };
+// Use a type alias for the params
+type Params = Promise<{ slug: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+interface PageProps {
+  params: Params;
+  searchParams: SearchParams;
 }
 
 async function getProductsByCategory(category: string): Promise<Product[]> {
@@ -73,9 +76,9 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
   return transformedProducts as Product[];
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
-  // Ensure params is resolved before accessing
-  const { slug } = await Promise.resolve(params);
+export default async function CategoryPage({ params }: PageProps) {
+  const { slug } = await params;
+  
   const normalizedSlug = slug.toLowerCase();
   const metadata = categoryMetadata[normalizedSlug];
   
@@ -88,18 +91,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <>
       <Navbar />
-      <div className="flex-1 p-4">
-        {/* Category Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{metadata.title}</h1>
-          <p className="text-xl text-gray-600">{metadata.description}</p>
-        </div>
-        
-        {/* Product Grid */}
-        <div className="py-8">
-          <ProductList products={products} />
-        </div>
-      </div>
+      <CategoryPageContent 
+        title={metadata.title}
+        description={metadata.description}
+        products={products}
+      />
     </>
   );
 } 

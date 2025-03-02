@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/server'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { csrfProtection } from '@/lib/csrf'
+import { validateCsrfToken } from '@/lib/csrf'
 import { 
   createAuthenticationError, 
   createNotFoundError, 
@@ -13,14 +13,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia'
 })
 
-type Context = {
-  params: { id: string }
-}
-
-async function handleCheckout(request: NextRequest, context: Context): Promise<NextResponse> {
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse> {
   try {
+    // CSRF validation
+    if (!(await validateCsrfToken(request))) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid CSRF token' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Extract the ID from the URL
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 1];
+    const productPath = `/product/${id}`;
+
     const supabase = createClient()
-    const { id } = await Promise.resolve(context.params)
     
     // Get request body for source information
     const requestBody = await request.json().catch(() => ({}))
@@ -30,15 +41,47 @@ async function handleCheckout(request: NextRequest, context: Context): Promise<N
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('*')
-      .eq('id', id)  // Use destructured id
+      .eq('id', id)
       .single()
 
     if (productError || !product) {
       return createNotFoundError('Product')
     }
 
+    // Get user - required for both free and paid products
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      // Return a more helpful error for easier redirect after login
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Authentication required',
+          redirectTo: `/auth/login?redirect=${encodeURIComponent(productPath)}`
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     // If product is free, handle direct download
     if (product.price === 0) {
+      // Record the free purchase first
+      const { error: purchaseError } = await supabase
+        .from('purchases')
+        .insert({
+          product_id: product.id,
+          user_id: user.id,
+          amount: 0,
+          payment_method: 'free',
+          status: 'completed'
+        })
+
+      if (purchaseError) {
+        console.error('Error recording free purchase:', purchaseError)
+        // Continue anyway as this isn't critical
+      }
+      
       // Generate a download URL for the codebase
       const { data: downloadUrl, error: downloadError } = await supabase
         .storage
@@ -50,12 +93,6 @@ async function handleCheckout(request: NextRequest, context: Context): Promise<N
       }
 
       return NextResponse.json({ downloadUrl })
-    }
-
-    // Get or create customer
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return createAuthenticationError()
     }
 
     // Get user's profile for customer details
@@ -134,7 +171,4 @@ async function handleCheckout(request: NextRequest, context: Context): Promise<N
   } catch (error) {
     return handleApiError(error)
   }
-}
-
-// Apply CSRF protection to the checkout handler
-export const POST = csrfProtection(handleCheckout) 
+} 

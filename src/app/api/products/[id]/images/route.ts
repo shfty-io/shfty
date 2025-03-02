@@ -2,10 +2,14 @@ import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: Request
 ) {
   try {
+    // Extract the ID from the URL
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 2]; // -2 because the last part is 'images'
+    
     const supabase = createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -20,7 +24,7 @@ export async function POST(
     const { data: product } = await supabase
       .from('products')
       .select('image_urls')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
@@ -60,7 +64,7 @@ export async function POST(
 
     // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
-    const fileName = `${params.id}-${Date.now()}.${fileExt}`;
+    const fileName = `${id}-${Date.now()}.${fileExt}`;
     const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(`images/${fileName}`, file);
@@ -83,7 +87,7 @@ export async function POST(
     const { error: updateError } = await supabase
       .from('products')
       .update({ image_urls: newImageUrls })
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (updateError) {
       console.error('Update error:', updateError);

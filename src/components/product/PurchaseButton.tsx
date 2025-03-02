@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { fetchWithCsrf, generateCsrfToken, getCsrfToken } from '@/lib/csrf-client'
 
 interface PurchaseButtonProps {
   productId: string
@@ -14,7 +15,32 @@ interface PurchaseButtonProps {
 
 export function PurchaseButton({ productId, price, className = '', source }: PurchaseButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [csrfReady, setCsrfReady] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  
+  // Ensure CSRF token is available when component mounts
+  useEffect(() => {
+    const prepareCsrfToken = async () => {
+      try {
+        // Check if token already exists
+        const token = getCsrfToken()
+        if (!token) {
+          await generateCsrfToken()
+        }
+        setCsrfReady(true)
+      } catch (err) {
+        console.error('Failed to generate CSRF token:', err)
+        toast({
+          title: "Warning",
+          description: "Failed to set up security token. You may experience issues with checkout.",
+          variant: "destructive"
+        })
+      }
+    }
+    
+    prepareCsrfToken()
+  }, [])
   
   // Automatically detect if we're on a category page if source is not provided
   const isFromCategory = source || (pathname && pathname.startsWith('/category/'))
@@ -23,9 +49,31 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
     try {
       setIsLoading(true)
       
+      // Always refresh the CSRF token before making a purchase request
+      await generateCsrfToken()
+      
       // For free products, handle direct download
       if (price === 0) {
-        const response = await fetch(`/api/products/${productId}/download-auth`)
+        const response = await fetchWithCsrf(`/api/products/${productId}/download-auth`)
+        
+        if (response.status === 401) {
+          // User is not authenticated, redirect to login
+          const data = await response.json().catch(() => ({}))
+          const redirectUrl = data.redirectTo || `/auth/login?redirect=${encodeURIComponent(pathname || '/')}`
+          router.push(redirectUrl)
+          return
+        }
+        
+        if (response.status === 403) {
+          toast({
+            title: "Error",
+            description: "Security validation failed. Please refresh the page and try again.",
+            variant: "destructive"
+          })
+          setIsLoading(false)
+          return
+        }
+        
         const data = await response.json()
 
         if (data.githubRepoUrl) {
@@ -37,7 +85,7 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
       }
 
       // For paid products, initiate Stripe checkout
-      const response = await fetch(`/api/checkout/${productId}`, {
+      const response = await fetchWithCsrf(`/api/checkout/${productId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,6 +94,26 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
           source: isFromCategory ? 'category' : 'direct'
         })
       })
+      
+      if (response.status === 401) {
+        // User is not authenticated, redirect to login with the current path
+        const data = await response.json().catch(() => ({}))
+        const redirectUrl = data.redirectTo || `/auth/login?redirect=${encodeURIComponent(pathname || '/')}`
+        router.push(redirectUrl)
+        return
+      }
+      
+      if (response.status === 403) {
+        // CSRF token issue
+        console.error('CSRF validation failed')
+        toast({
+          title: "Error",
+          description: "Security validation failed. Please refresh the page and try again.",
+          variant: "destructive"
+        })
+        setIsLoading(false)
+        return
+      }
       
       const data = await response.json()
       
