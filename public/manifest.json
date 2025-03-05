@@ -1,7 +1,7 @@
 {
-  "name": "Software Marketplace",
-  "short_name": "Marketplace",
-  "description": "Buy and sell software templates and digital products",
+  "name": "Shifty",
+  "short_name": "Shifty",
+  "description": "Marketplace for code",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -312,13 +312,35 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         }
 
         const fileExt = file.name.split('.').pop();
-        const fileName = `images/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         
         const supabase = createClient();
+        
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+        
+        // Create a unique filename with a random component
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        // Create a path with user_id and product_id (if available)
+        let filePath = `images/${user.id}`;
+        
+        // If we have initialData with an id, use it for the subfolder
+        if (initialData?.id) {
+          filePath += `/${initialData.id}`;
+        } else {
+          // For new products, create a temporary folder with timestamp
+          filePath += `/temp-${Date.now()}`;
+        }
+        
+        filePath += `/${uniqueFileName}`;
 
         const { data, error } = await supabase.storage
           .from('products')
-          .upload(fileName, file, {
+          .upload(filePath, file, {
             cacheControl: '3600',
             upsert: false,
             contentType: file.type
@@ -382,11 +404,33 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   const handleVideoUpload = async (file: File) => {
     try {
       const supabase = createClient();
-      const fileName = `${Date.now()}-${file.name}`;
+      
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Create a unique filename
+      const uniqueFileName = `${Date.now()}-${file.name}`;
+      
+      // Create a path with user_id and product_id (if available)
+      let filePath = `videos/${user.id}`;
+      
+      // If we have initialData with an id, use it for the subfolder
+      if (initialData?.id) {
+        filePath += `/${initialData.id}`;
+      } else {
+        // For new products, create a temporary folder with timestamp
+        filePath += `/temp-${Date.now()}`;
+      }
+      
+      filePath += `/${uniqueFileName}`;
       
       const { data, error } = await supabase.storage
         .from('product-videos')
-        .upload(fileName, file);
+        .upload(filePath, file);
 
       if (error) throw error;
 

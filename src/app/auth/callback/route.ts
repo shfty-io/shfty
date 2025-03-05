@@ -9,9 +9,16 @@ export async function GET(request: NextRequest) {
   // Get the returnTo path (where to redirect after successful auth)
   const returnTo = requestUrl.searchParams.get('returnTo') || '/'
   
+  // Log all parameters for debugging
+  console.log('Auth callback params:', {
+    code: code ? 'present' : 'missing',
+    returnTo,
+    allParams: Object.fromEntries(requestUrl.searchParams.entries())
+  })
+  
   // Make sure we have the code parameter
   if (!code) {
-    console.error('No code provided in callback')
+    console.error('No code provided in callback. URL params:', Object.fromEntries(requestUrl.searchParams.entries()))
     return NextResponse.redirect(
       new URL(`/auth/login?error=${encodeURIComponent('No authentication code provided')}`, origin)
     )
@@ -22,16 +29,18 @@ export async function GET(request: NextRequest) {
   
   try {
     // Create Supabase client using the native createServerClient
-    // Since this is a Server Action route, we can access the cookies directly
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name) {
-            return request.cookies.get(name)?.value
+            const cookie = request.cookies.get(name)
+            console.log(`Getting cookie ${name}:`, cookie ? 'found' : 'not found')
+            return cookie?.value
           },
           set(name, value, options) {
+            console.log(`Setting cookie ${name}`)
             // Set the cookie on both the request and response
             response.cookies.set({
               name, 
@@ -40,6 +49,7 @@ export async function GET(request: NextRequest) {
             })
           },
           remove(name, options) {
+            console.log(`Removing cookie ${name}`)
             // Remove the cookie from both the request and response
             response.cookies.set({
               name,
@@ -52,8 +62,9 @@ export async function GET(request: NextRequest) {
       }
     )
     
+    console.log('Exchanging code for session...')
     // Exchange the code for a session
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (error) {
       console.error('Session exchange error:', error)
@@ -74,6 +85,7 @@ export async function GET(request: NextRequest) {
       )
     }
     
+    console.log('Session exchange successful, redirecting to:', returnTo)
     // Success! Return the response with cookies already set
     return response
   } catch (error: unknown) {

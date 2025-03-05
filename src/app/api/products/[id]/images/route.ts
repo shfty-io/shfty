@@ -65,9 +65,11 @@ export async function POST(
     // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${id}-${Date.now()}.${fileExt}`;
+    // Create a subfolder structure with user_id/product_id
+    const filePath = `images/${user.id}/${id}/${fileName}`;
     const { error: uploadError } = await supabase.storage
       .from('products')
-      .upload(`images/${fileName}`, file);
+      .upload(filePath, file);
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
@@ -80,7 +82,7 @@ export async function POST(
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('products')
-      .getPublicUrl(`images/${fileName}`);
+      .getPublicUrl(filePath);
 
     // Update product with new image URL
     const newImageUrls = [...(product.image_urls || []), publicUrl];

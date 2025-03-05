@@ -141,38 +141,70 @@ CREATE INDEX IF NOT EXISTS feedback_status_idx ON feedback(status);
 -- Enable RLS (Row Level Security)
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
 
--- Create policies for feedback table
--- Allow users to insert their own feedback
-CREATE POLICY insert_own_feedback ON feedback
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+-- Create policies for feedback table with conditional checks
+DO $$
+BEGIN
+  -- Allow users to insert their own feedback
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'insert_own_feedback'
+  ) THEN
+    CREATE POLICY insert_own_feedback ON feedback
+      FOR INSERT TO authenticated
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
 
--- Allow users to read their own feedback
-CREATE POLICY read_own_feedback ON feedback
-  FOR SELECT TO authenticated
-  USING (auth.uid() = user_id);
+  -- Allow users to read their own feedback
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'read_own_feedback'
+  ) THEN
+    CREATE POLICY read_own_feedback ON feedback
+      FOR SELECT TO authenticated
+      USING (auth.uid() = user_id);
+  END IF;
 
--- Allow admins to read all feedback
-CREATE POLICY admin_read_all_feedback ON feedback
-  FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
-  );
+  -- Allow admins to read all feedback
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'admin_read_all_feedback'
+  ) THEN
+    CREATE POLICY admin_read_all_feedback ON feedback
+      FOR SELECT TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.is_admin = true
+        )
+      );
+  END IF;
 
--- Allow admins to update all feedback (for status changes)
-CREATE POLICY admin_update_all_feedback ON feedback
-  FOR UPDATE TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
-  );
+  -- Allow admins to update all feedback (for status changes)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'admin_update_all_feedback'
+  ) THEN
+    CREATE POLICY admin_update_all_feedback ON feedback
+      FOR UPDATE TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.is_admin = true
+        )
+      );
+  END IF;
+END
+$$;
 
 -- Function to update timestamp on feedback update
 CREATE OR REPLACE FUNCTION update_feedback_timestamp()
@@ -192,7 +224,42 @@ CREATE TRIGGER update_feedback_timestamp_trigger
 -- Functions
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    meta_data JSONB;
+    user_name TEXT;
+    full_name TEXT;
+    avatar_url TEXT;
 BEGIN
+    -- Get metadata from either raw_user_meta_data or raw_app_meta_data
+    meta_data := COALESCE(NEW.raw_user_meta_data, '{}'::JSONB) || COALESCE(NEW.raw_app_meta_data, '{}'::JSONB);
+    
+    -- Extract user information with fallbacks for different auth providers
+    -- GitHub typically uses 'user_name', 'name', Google uses 'name', 'picture', etc.
+    user_name := COALESCE(
+        meta_data->>'user_name',
+        meta_data->>'preferred_username',
+        meta_data->>'username',
+        meta_data->>'nickname',
+        meta_data->>'email',
+        ''
+    );
+    
+    full_name := COALESCE(
+        meta_data->>'full_name',
+        meta_data->>'name',
+        meta_data->>'given_name' || ' ' || meta_data->>'family_name',
+        user_name,
+        ''
+    );
+    
+    avatar_url := COALESCE(
+        meta_data->>'avatar_url',
+        meta_data->>'picture',
+        meta_data->>'avatar',
+        NULL
+    );
+
+    -- Insert the new profile with extracted data
     INSERT INTO public.profiles (
         id,
         user_id,
@@ -209,18 +276,24 @@ BEGIN
     ) VALUES (
         NEW.id,
         NEW.id,
-        NEW.email,
-        COALESCE(NEW.raw_user_meta_data->>'full_name', NULL),
-        COALESCE(NEW.raw_user_meta_data->>'avatar_url', NULL),
+        COALESCE(NEW.email, ''),
+        full_name,
+        avatar_url,
         false,
         false,
         NULL,
         NOW(),
         NOW(),
-        COALESCE(NEW.raw_user_meta_data->>'user_name', NULL),
+        user_name,
         true
     );
     RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log the error (this will appear in Supabase logs)
+        RAISE LOG 'Error in handle_new_user: %, User data: %', SQLERRM, NEW;
+        -- Still return NEW to allow the auth user to be created even if profile creation fails
+        RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -301,12 +374,34 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- RLS Policies
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public profiles are viewable by everyone"
-    ON profiles FOR SELECT
-    USING (true);
 
-CREATE POLICY "Users can update own profile"
-    ON profiles FOR UPDATE
-    USING (auth.uid() = id);
+-- Create policies for profiles table with conditional checks
+DO $$
+BEGIN
+  -- Public profiles are viewable by everyone
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'profiles' 
+    AND policyname = 'Public profiles are viewable by everyone'
+  ) THEN
+    CREATE POLICY "Public profiles are viewable by everyone"
+      ON profiles FOR SELECT
+      USING (true);
+  END IF;
+
+  -- Users can update own profile
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'profiles' 
+    AND policyname = 'Users can update own profile'
+  ) THEN
+    CREATE POLICY "Users can update own profile"
+      ON profiles FOR UPDATE
+      USING (auth.uid() = id);
+  END IF;
+END
+$$;
 
 -- More RLS policies can be added here for other tables 

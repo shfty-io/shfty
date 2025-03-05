@@ -105,8 +105,14 @@ export const createMiddlewareClient = (request: Request, response: Response) => 
 }
 
 // Use this for client-side components
+let clientInstance: ReturnType<typeof createServerClient> | null = null;
+
 export const createClientComponentClient = () => {
-  return createServerClient(
+  if (typeof window !== 'undefined' && clientInstance) {
+    return clientInstance;
+  }
+
+  const newClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -176,4 +182,10 @@ export const createClientComponentClient = () => {
       }
     }
   )
+
+  if (typeof window !== 'undefined') {
+    clientInstance = newClient;
+  }
+
+  return newClient;
 } 

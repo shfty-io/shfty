@@ -27,20 +27,24 @@ export function LoginForm({
       const callbackUrl = new URL('/auth/callback', window.location.origin)
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting GitHub login flow with redirect to:', callbackUrl.toString())
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           scopes: 'repo repo:status repo_deployment public_repo read:user user:email',
           redirectTo: callbackUrl.toString(),
-          // This should be true for Next.js to properly handle the PKCE flow
           skipBrowserRedirect: false,
         }
       });
 
-      if (error) throw error;
-
+      if (error) {
+        console.error('GitHub login error from Supabase:', error)
+        throw error;
+      }
+      
+      console.log('OAuth sign-in initiated successfully')
       // Don't manually redirect - Supabase handles it
-      // But we should never get here since skipBrowserRedirect is false
     } catch (error) {
       console.error('GitHub login error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in with GitHub');

@@ -66,18 +66,34 @@ export async function POST(
 
     // If there's an existing video, delete it first
     if (product.video_url) {
-      const existingFileName = product.video_url.split('/').pop();
-      await supabase.storage
-        .from('products')
-        .remove([`videos/${existingFileName}`]);
+      // Extract the path from the URL
+      const urlPath = new URL(product.video_url).pathname;
+      const pathParts = urlPath.split('/');
+      const existingFileName = pathParts[pathParts.length - 1];
+      
+      // Check if the path contains user_id and product_id structure
+      if (pathParts.includes('videos') && pathParts.length > 3) {
+        // This is a path with the new structure
+        const filePath = urlPath.substring(urlPath.indexOf('videos'));
+        await supabase.storage
+          .from('products')
+          .remove([filePath]);
+      } else {
+        // This is a path with the old structure
+        await supabase.storage
+          .from('products')
+          .remove([`videos/${existingFileName}`]);
+      }
     }
 
     // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${id}-${Date.now()}.${fileExt}`;
+    // Create a subfolder structure with user_id/product_id
+    const filePath = `videos/${user.id}/${id}/${fileName}`;
     const { error: uploadError } = await supabase.storage
       .from('videos')
-      .upload(fileName, file);
+      .upload(filePath, file);
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
@@ -90,7 +106,7 @@ export async function POST(
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('products')
-      .getPublicUrl(`videos/${fileName}`);
+      .getPublicUrl(filePath);
 
     // Update product with new video URL
     const { error: updateError } = await supabase
