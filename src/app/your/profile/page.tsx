@@ -1,49 +1,91 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClientComponentClient } from '@/lib/server';
 import { formatCurrency } from '@/lib/utils';
+import { User } from '@supabase/supabase-js';
 
-export default async function ProfilePage() {
-  const supabase = createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return redirect('/auth/login');
+export default function ProfilePage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState({
+    productsListed: 0,
+    totalPurchases: 0,
+    totalSales: 0,
+  });
+  
+  const supabase = createClientComponentClient();
+  
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          console.error('Auth error in profile page:', error);
+          router.push('/auth/login?redirect=/your/profile');
+          return;
+        }
+        
+        setUser(user);
+        
+        // Fetch account statistics
+        const [
+          { count: productsListed },
+          { count: totalPurchases },
+          { data: salesData }
+        ] = await Promise.all([
+          // Products Listed
+          supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+            
+          // Total Purchases
+          supabase
+            .from('purchases')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+            
+          // Modified Total Sales query
+          supabase
+            .from('purchases')
+            .select(`
+              product:products (
+                price,
+                user_id
+              )
+            `)
+            .eq('product.user_id', user.id)
+        ]);
+        
+        // Fixed sales calculation
+        const totalSales = salesData?.reduce((acc, purchase) => 
+          acc + (purchase.product?.[0]?.price || 0), 0) || 0;
+          
+        setStats({
+          productsListed: productsListed || 0,
+          totalPurchases: totalPurchases || 0,
+          totalSales,
+        });
+      } catch (error) {
+        console.error('Error loading profile data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkUser();
+  }, [supabase, router]);
+  
+  if (isLoading) {
+    return <div className="min-h-[40vh] flex items-center justify-center">Loading profile data...</div>;
   }
-
-  // Fetch account statistics
-  const [
-    { count: productsListed },
-    { count: totalPurchases },
-    { data: salesData }
-  ] = await Promise.all([
-    // Products Listed
-    supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id),
-      
-    // Total Purchases
-    supabase
-      .from('purchases')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id),
-      
-    // Modified Total Sales query
-    supabase
-      .from('purchases')
-      .select(`
-        product:products (
-          price,
-          user_id
-        )
-      `)
-      .eq('product.user_id', user.id)
-  ]);
-
-  // Fixed sales calculation
-  const totalSales = salesData?.reduce((acc, purchase) => 
-    acc + (purchase.product?.[0]?.price || 0), 0) || 0;
-
+  
+  if (!user) return null; // User redirected, don't render anything
+  
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
@@ -69,16 +111,16 @@ export default async function ProfilePage() {
             <div className="p-4">
               <p className="text-sm text-muted-foreground">Total Sales</p>
               <p className="text-2xl font-semibold">
-                {formatCurrency(totalSales)}
+                {formatCurrency(stats.totalSales)}
               </p>
             </div>
             <div className="p-4">
               <p className="text-sm text-muted-foreground">Products Listed</p>
-              <p className="text-2xl font-semibold">{productsListed || 0}</p>
+              <p className="text-2xl font-semibold">{stats.productsListed}</p>
             </div>
             <div className="p-4">
               <p className="text-sm text-muted-foreground">Total Purchases</p>
-              <p className="text-2xl font-semibold">{totalPurchases || 0}</p>
+              <p className="text-2xl font-semibold">{stats.totalPurchases}</p>
             </div>
           </div>
         </div>

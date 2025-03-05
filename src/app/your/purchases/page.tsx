@@ -1,81 +1,102 @@
-import { createClient } from '@/lib/server'
-import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Github, Mail } from 'lucide-react'
-import Link from 'next/link'
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@/lib/server';
+import { Button } from '@/components/ui/button';
+import { Github, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { User } from '@supabase/supabase-js';
 
 interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  github_repo_url: string | null
-  downloadUrl?: string | null
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  github_repo_url: string | null;
+  downloadUrl?: string | null;
   seller: {
-    email: string | null
-    full_name: string | null
-  } | null
+    email: string | null;
+    full_name: string | null;
+  } | null;
 }
 
 interface Purchase {
-  id: string
-  created_at: string
-  user_id: string
-  product: Product
+  id: string;
+  created_at: string;
+  user_id: string;
+  product: Product;
 }
 
-async function getServerSideUser() {
-  const supabase = createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return null
-  return user
-}
+export default function PurchasesPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClientComponentClient();
 
-async function getPurchases(userId: string): Promise<Purchase[]> {
-  const supabase = createClient()
-  const { data: purchases } = await supabase
-    .from('purchases')
-    .select(`
-      *,
-      product:products (
-        id,
-        name,
-        description,
-        price,
-        github_repo_url,
-        user_id,
-        seller:profiles (
-          email,
-          full_name
-        )
-      )
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-
-  return purchases || []
-}
-
-export default async function PurchasesPage() {
-  const user = await getServerSideUser()
+  useEffect(() => {
+    async function loadUserAndPurchases() {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          console.error('Auth error in purchases page:', error);
+          router.push('/auth/login');
+          return;
+        }
+        
+        setUser(user);
+        
+        // Fetch user's purchases
+        const { data: purchases } = await supabase
+          .from('purchases')
+          .select(`
+            *,
+            product:products (
+              id,
+              name,
+              description,
+              price,
+              github_repo_url,
+              user_id,
+              seller:profiles (
+                email,
+                full_name
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        setPurchases(purchases || []);
+      } catch (error) {
+        console.error('Error loading purchases data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadUserAndPurchases();
+  }, [supabase, router]);
   
-  if (!user) {
-    redirect('/auth/login')
+  if (isLoading) {
+    return <div className="min-h-[40vh] flex items-center justify-center">Loading your purchases...</div>;
   }
-
-  const purchases = await getPurchases(user.id)
+  
+  if (!user) return null; // User redirected, don't render anything
 
   // Simplify the purchases mapping since we don't need to fetch download URLs
   const purchasesWithUrls = purchases.map((purchase) => {
-    const product = purchase.product as Product
+    const product = purchase.product as Product;
     return {
       ...purchase,
       product: {
         ...product,
         downloadUrl: null // Keep this to maintain type compatibility
       }
-    }
-  })
+    };
+  });
 
   return (
     <div>
@@ -91,7 +112,7 @@ export default async function PurchasesPage() {
       ) : (
         <div className="space-y-6">
           {purchasesWithUrls.map((purchase) => {
-            const product = purchase.product
+            const product = purchase.product;
             return (
               <div
                 key={purchase.id}
@@ -141,10 +162,10 @@ export default async function PurchasesPage() {
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 } 

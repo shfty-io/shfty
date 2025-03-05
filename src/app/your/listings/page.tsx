@@ -1,33 +1,78 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/server';
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@/lib/server';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Edit, Package, Trash } from 'lucide-react';
+import { User } from '@supabase/supabase-js';
 
-export default async function ListingsPage() {
-  const supabase = createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  categories: string[];
+  created_at: string;
+  updated_at: string;
+  status: string;
+  short_description: string;
+};
 
-  if (error || !user) {
-    return redirect('/auth/login');
+export default function ListingsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    async function loadUserAndProducts() {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          console.error('Auth error in listings page:', error);
+          router.push('/auth/login');
+          return;
+        }
+        
+        setUser(user);
+        
+        // Fetch user's products
+        const { data: products } = await supabase
+          .from('products')
+          .select(`
+            id,
+            name,
+            description,
+            price,
+            categories,
+            created_at,
+            updated_at,
+            status,
+            short_description
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        setProducts(products || []);
+      } catch (error) {
+        console.error('Error loading listings data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadUserAndProducts();
+  }, [supabase, router]);
+  
+  if (isLoading) {
+    return <div className="min-h-[40vh] flex items-center justify-center">Loading your listings...</div>;
   }
-
-  // Fetch user's products
-  const { data: products } = await supabase
-    .from('products')
-    .select(`
-      id,
-      name,
-      description,
-      price,
-      categories,
-      created_at,
-      updated_at,
-      status,
-      short_description
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  
+  if (!user) return null; // User redirected, don't render anything
 
   return (
     <div>

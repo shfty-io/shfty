@@ -1,14 +1,44 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/server";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@/lib/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { User } from '@supabase/supabase-js';
 
-export default async function AccountPage() {
-  const supabase = createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+export default function AccountPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClientComponentClient();
 
-  if (error || !user) {
-    return redirect('/auth/login');
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          console.error('Auth error in account page:', error);
+          router.push('/auth/login');
+          return;
+        }
+        
+        setUser(user);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadUser();
+  }, [supabase, router]);
+  
+  if (isLoading) {
+    return <div className="min-h-[40vh] flex items-center justify-center">Loading account settings...</div>;
   }
+  
+  if (!user) return null; // User redirected, don't render anything
 
   return (
     <div>

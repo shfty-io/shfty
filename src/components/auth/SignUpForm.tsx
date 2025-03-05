@@ -4,20 +4,31 @@ import { useState } from 'react'
 import { createClientComponentClient } from '@/lib/server'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
+import { useSearchParams } from 'next/navigation'
 
 export function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
   const supabase = createClientComponentClient()
+  
+  // Check if there's a redirect parameter
+  const redirectPath = searchParams.get('redirect') || '/'
 
   const handleGitHubSignIn = async () => {
     setIsLoading(true);
     try {
+      // Construct the redirect URL with the final destination
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      callbackUrl.searchParams.set('returnTo', redirectPath)
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           scopes: 'repo repo:status repo_deployment public_repo read:user user:email',
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: callbackUrl.toString(),
+          // This should be true for Next.js to properly handle the PKCE flow
+          skipBrowserRedirect: false,
         }
       })
       if (error) throw error;
