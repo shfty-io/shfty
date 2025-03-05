@@ -216,10 +216,20 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update timestamp on feedback update
-CREATE TRIGGER update_feedback_timestamp_trigger
-  BEFORE UPDATE ON feedback
-  FOR EACH ROW
-  EXECUTE FUNCTION update_feedback_timestamp();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger 
+    WHERE tgname = 'update_feedback_timestamp_trigger' 
+    AND tgrelid = 'feedback'::regclass
+  ) THEN
+    CREATE TRIGGER update_feedback_timestamp_trigger
+      BEFORE UPDATE ON feedback
+      FOR EACH ROW
+      EXECUTE FUNCTION update_feedback_timestamp();
+  END IF;
+END
+$$;
 
 -- Functions
 CREATE OR REPLACE FUNCTION handle_new_user()
@@ -405,3 +415,329 @@ END
 $$;
 
 -- More RLS policies can be added here for other tables 
+
+-- ============================================================
+-- ENABLE ROW LEVEL SECURITY ON ALL REMAINING TABLES
+-- ============================================================
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seller_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE repository_access ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- PRODUCTS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Anyone can view approved products
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'products' 
+    AND policyname = 'Anyone can view approved products'
+  ) THEN
+    -- Check if status column exists first
+    DO $inner$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'products' 
+        AND column_name = 'status'
+      ) THEN
+        CREATE POLICY "Anyone can view approved products"
+        ON products FOR SELECT
+        TO authenticated
+        USING (status = 'approved' OR user_id = auth.uid());
+      ELSE
+        -- Create a more permissive policy if status column doesn't exist
+        CREATE POLICY "Anyone can view products"
+        ON products FOR SELECT
+        TO authenticated
+        USING (true);
+      END IF;
+    END $inner$;
+  END IF;
+
+  -- Sellers can create their own products
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'products' 
+    AND policyname = 'Sellers can create their own products'
+  ) THEN
+    CREATE POLICY "Sellers can create their own products"
+    ON products FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+
+  -- Sellers can update their own products
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'products' 
+    AND policyname = 'Sellers can update their own products'
+  ) THEN
+    CREATE POLICY "Sellers can update their own products"
+    ON products FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+
+  -- Sellers can delete their own products
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'products' 
+    AND policyname = 'Sellers can delete their own products'
+  ) THEN
+    CREATE POLICY "Sellers can delete their own products"
+    ON products FOR DELETE
+    TO authenticated
+    USING (auth.uid() = user_id);
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- PURCHASES TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Users can view their own purchases
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'purchases' 
+    AND policyname = 'Users can view their own purchases'
+  ) THEN
+    CREATE POLICY "Users can view their own purchases"
+    ON purchases FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+  END IF;
+
+  -- Users can create their own purchases
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'purchases' 
+    AND policyname = 'Users can create their own purchases'
+  ) THEN
+    CREATE POLICY "Users can create their own purchases"
+    ON purchases FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- LIKES TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Users can view their own likes
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'likes' 
+    AND policyname = 'Users can view their own likes'
+  ) THEN
+    CREATE POLICY "Users can view their own likes"
+    ON likes FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+  END IF;
+
+  -- Users can like products (create likes)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'likes' 
+    AND policyname = 'Users can create likes'
+  ) THEN
+    CREATE POLICY "Users can create likes"
+    ON likes FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+
+  -- Users can unlike products (delete likes)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'likes' 
+    AND policyname = 'Users can delete their own likes'
+  ) THEN
+    CREATE POLICY "Users can delete their own likes"
+    ON likes FOR DELETE
+    TO authenticated
+    USING (auth.uid() = user_id);
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- SELLER ACCOUNTS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Users can view their own seller account
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_accounts' 
+    AND policyname = 'Users can view their own seller account'
+  ) THEN
+    CREATE POLICY "Users can view their own seller account"
+    ON seller_accounts FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+  END IF;
+
+  -- Users can create their own seller account
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_accounts' 
+    AND policyname = 'Users can create their own seller account'
+  ) THEN
+    CREATE POLICY "Users can create their own seller account"
+    ON seller_accounts FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+
+  -- Users can update their own seller account
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_accounts' 
+    AND policyname = 'Users can update their own seller account'
+  ) THEN
+    CREATE POLICY "Users can update their own seller account"
+    ON seller_accounts FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- REPOSITORY ACCESS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Users can view repositories they have access to
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'repository_access' 
+    AND policyname = 'Users can view their repository access'
+  ) THEN
+    CREATE POLICY "Users can view their repository access"
+    ON repository_access FOR SELECT
+    TO authenticated
+    USING (user_id = auth.uid());
+  END IF;
+
+  -- Sellers can grant repository access to buyers
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'repository_access' 
+    AND policyname = 'Sellers can create repository access'
+  ) THEN
+    CREATE POLICY "Sellers can create repository access"
+    ON repository_access FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      -- Check if the authenticated user is the seller of the product
+      EXISTS (
+        SELECT 1 FROM products p
+        JOIN purchases pur ON p.id = pur.product_id
+        WHERE p.user_id = auth.uid()
+        AND pur.user_id = repository_access.user_id
+        AND p.id = repository_access.product_id
+      )
+    );
+  END IF;
+
+  -- Sellers can update repository access they granted
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'repository_access' 
+    AND policyname = 'Sellers can update repository access'
+  ) THEN
+    CREATE POLICY "Sellers can update repository access"
+    ON repository_access FOR UPDATE
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM products
+        WHERE products.id = repository_access.product_id
+        AND products.user_id = auth.uid()
+      )
+    );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- REPORTS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Users can view their own reports
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'reports' 
+    AND policyname = 'Users can view their own reports'
+  ) THEN
+    CREATE POLICY "Users can view their own reports"
+    ON reports FOR SELECT
+    TO authenticated
+    USING (reporter_id = auth.uid());
+  END IF;
+
+  -- Users can create reports
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'reports' 
+    AND policyname = 'Users can create reports'
+  ) THEN
+    CREATE POLICY "Users can create reports"
+    ON reports FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = reporter_id);
+  END IF;
+  
+  -- Admin can view all reports
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'reports' 
+    AND policyname = 'Admins can view all reports'
+  ) THEN
+    CREATE POLICY "Admins can view all reports"
+    ON reports FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_admin = true
+      )
+    );
+  END IF;
+END
+$$; 

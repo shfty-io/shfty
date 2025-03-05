@@ -67,6 +67,11 @@ function PaymentPageContent() {
 
             if (createError) {
               console.error('Error creating seller account:', createError);
+              toast({
+                title: "Error",
+                description: "Failed to create seller account. Please try again.",
+                variant: "destructive",
+              });
             } else {
               setSellerAccount(newSellerData);
             }
