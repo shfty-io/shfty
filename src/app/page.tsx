@@ -1,6 +1,6 @@
 import ProductList from '@/components/root/ProductList'
 import { Navbar } from '@/components/global/Navbar'
-import { createClient, createServerComponentClient, createServiceClient } from '@/lib/server'
+import { createServiceClient } from '@/lib/server'
 import { AppSidebar } from "@/components/root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Hero } from '@/components/ui/hero'

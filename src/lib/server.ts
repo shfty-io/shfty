@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions, createBrowserClient } from "@supabase/ssr";
+import { createServerClient, createBrowserClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 // This version accepts an already awaited cookies() result

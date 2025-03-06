@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Exchanging code for session...')
     // Exchange the code for a session
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (error) {
       console.error('Session exchange error:', error)

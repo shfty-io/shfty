@@ -1,16 +1,16 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
   // Create an unmodified response
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
   // Create supabase client
-  const supabase = createServerClient(
+  createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
             ...options,
           });
         },
-        remove(name, options) {
+        remove(name) {
           // This is used for removing cookies from the request to the server
           request.cookies.delete(name);
           // This is used for removing cookies from the response to the client

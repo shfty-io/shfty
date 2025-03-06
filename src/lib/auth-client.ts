@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions, createBrowserClient } from "@supabase/ssr";
+import { createServerClient, createBrowserClient } from "@supabase/ssr";
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 // For pages directory API routes and getServerSideProps

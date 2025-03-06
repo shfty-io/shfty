@@ -4,7 +4,6 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { LoginForm } from "@/components/auth/LoginForm"
 import Link from "next/link"
 import Image from "next/image"
-import { Suspense } from "react"
 
 export default function LoginPage() {
   return (

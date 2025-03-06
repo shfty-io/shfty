@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     // Only call delete_user function if we found a profile
     if (profileId) {
       // Call the database function to delete the user with the profile ID
-      const { data, error } = await supabase.rpc('delete_user', {
+      const { error } = await supabase.rpc('delete_user', {
         input_profile_id: profileId
       });
 

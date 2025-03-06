@@ -34,9 +34,6 @@ export async function POST(
     // Create supabase client
     const supabase = createClient(await cookies());
     
-    // Create a response early for cookie handling
-    const response = NextResponse.next()
-    
     // Get request body for source information
     const requestBody = await request.json().catch(() => ({}))
     const source = requestBody.source || 'direct'

@@ -24,7 +24,7 @@ export function SignUpForm() {
       
       console.log('Starting GitHub sign-up flow with redirect to:', callbackUrl.toString())
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           scopes: 'repo repo:status repo_deployment public_repo read:user user:email',
