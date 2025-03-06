@@ -3,7 +3,6 @@ import { Navbar } from '@/components/global/Navbar'
 import { createServiceClient } from '@/lib/server'
 import { AppSidebar } from "@/components/root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Hero } from '@/components/ui/hero'
 
 interface Product {
   id: string
@@ -112,7 +111,6 @@ export default async function Home() {
     
     return (
       <>
-        <Hero />
         <SidebarProvider defaultOpen={true}>
           <div className="flex w-full">
             <AppSidebar />

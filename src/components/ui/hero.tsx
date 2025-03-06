@@ -2,36 +2,27 @@
 
 import { Button } from "./button";
 import { Github, ArrowRight, Info, ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 
-export function Hero() {
-  // Always visible
-  const [isVisible, setIsVisible] = useState(false);
+interface HeroProps {
+  onClose: () => void;
+}
+
+export function Hero({ onClose }: HeroProps) {
   const [showMission, setShowMission] = useState(false);
-
-  useEffect(() => {
-    // Check if this is the first visit
-    const hasVisited = localStorage.getItem('hasVisitedBefore');
-    if (!hasVisited) {
-      setIsVisible(true);
-      localStorage.setItem('hasVisitedBefore', 'true');
-    }
-  }, []);
-
-  const handleClose = () => {
-    setIsVisible(false);
-  };
 
   const toggleMission = () => {
     setShowMission(!showMission);
   };
 
-  // Only show if isVisible is true
-  if (!isVisible) return null;
+  const handleStartShopping = () => {
+    console.log("Hero - Start Shopping button clicked");
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-[100] flex min-h-screen w-full flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex min-h-screen w-full flex-col items-center justify-center overflow-hidden" style={{backgroundColor: 'rgba(255, 255, 255, 0.95)'}}>
       <div className="absolute inset-0 bg-white">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50" />
         <div 
@@ -78,12 +69,6 @@ export function Hero() {
                 It&apos;s Time for a Restart
               </h2>
               
-              <div className="grid grid-cols-1 gap-6">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-5 rounded-lg shadow-md">
-                  <p className="text-xl font-medium leading-relaxed">
-                    Software must return to its rightful owners: <span className="font-bold">the business and the consumer</span>.
-                  </p>
-                </div>
                 
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-gray-900">Why I Created shfty</h3>
@@ -109,11 +94,10 @@ export function Hero() {
                   </p>
                 </div>
               </div>
-            </div>
-          )}
+            )}
           
           <div className={`${showMission ? 'mt-8' : 'mt-16'} flex flex-col items-center justify-center gap-8 sm:flex-row`}>
-            <Button size="lg" onClick={handleClose} className="h-14 w-full text-lg sm:w-auto">
+            <Button size="lg" onClick={handleStartShopping} className="h-14 w-full text-lg sm:w-auto">
               Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <div className="flex items-center gap-8">
@@ -139,6 +123,16 @@ export function Hero() {
           </div>
         </div>
       </div>
+      
+      <button 
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+        aria-label="Close"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   );
 } 
