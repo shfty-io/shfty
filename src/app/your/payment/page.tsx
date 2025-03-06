@@ -32,7 +32,6 @@ function PaymentPageContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
         const supabase = createClient();
         
         const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
@@ -44,42 +43,40 @@ function PaymentPageContent() {
 
         setUser(userData);
 
-        // Only fetch seller account data if we don't already have it
-        if (!sellerAccount) {
-          const { data: sellerData, error: sellerError } = await supabase
+        // Fetch seller account data
+        const { data: sellerData, error: sellerError } = await supabase
+          .from('seller_accounts')
+          .select('stripe_account_id, is_onboarded, github_token')
+          .eq('user_id', userData.id)
+          .single();
+        
+        if (sellerError && sellerError.code === 'PGRST116') {
+          // No seller account found, create one
+          console.log('Creating new seller account');
+          const { data: newSellerData, error: createError } = await supabase
             .from('seller_accounts')
-            .select('stripe_account_id, is_onboarded, github_token')
-            .eq('user_id', userData.id)
+            .insert({
+              user_id: userData.id,
+              is_onboarded: false,
+              account_status: 'pending'
+            })
+            .select()
             .single();
-          
-          if (sellerError && sellerError.code === 'PGRST116') {
-            // No seller account found, create one
-            console.log('Creating new seller account');
-            const { data: newSellerData, error: createError } = await supabase
-              .from('seller_accounts')
-              .insert({
-                user_id: userData.id,
-                is_onboarded: false,
-                account_status: 'pending'
-              })
-              .select()
-              .single();
 
-            if (createError) {
-              console.error('Error creating seller account:', createError);
-              toast({
-                title: "Error",
-                description: "Failed to create seller account. Please try again.",
-                variant: "destructive",
-              });
-            } else {
-              setSellerAccount(newSellerData);
-            }
-          } else if (sellerError) {
-            console.error('Error fetching seller account:', sellerError);
+          if (createError) {
+            console.error('Error creating seller account:', createError);
+            toast({
+              title: "Error",
+              description: "Failed to create seller account. Please try again.",
+              variant: "destructive",
+            });
           } else {
-            setSellerAccount(sellerData);
+            setSellerAccount(newSellerData);
           }
+        } else if (sellerError) {
+          console.error('Error fetching seller account:', sellerError);
+        } else {
+          setSellerAccount(sellerData);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -94,7 +91,7 @@ function PaymentPageContent() {
     };
 
     fetchData();
-  }, [router, sellerAccount]);
+  }, [router]);
 
   const handlePaymentSetup = async (data: PaymentSetupData) => {
     try {
@@ -182,11 +179,17 @@ function PaymentPageContent() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-[200px]">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center w-full h-[400px]">
+        <div className="animate-pulse text-center">
+          <p className="text-muted-foreground">Loading payment information...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
-    return null;
+    return null; // This will be handled by the router redirect
   }
 
   return (
@@ -254,8 +257,16 @@ function PaymentPageContent() {
 
 export default function PaymentPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PaymentPageContent />
-    </Suspense>
+    <div className="w-full min-h-[400px]">
+      <Suspense fallback={
+        <div className="flex items-center justify-center w-full h-[400px]">
+          <div className="animate-pulse text-center">
+            <p className="text-muted-foreground">Loading payment information...</p>
+          </div>
+        </div>
+      }>
+        <PaymentPageContent />
+      </Suspense>
+    </div>
   );
 } 

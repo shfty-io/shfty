@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/client';
 import { 
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ export function FeedbackDialog({ trigger }: FeedbackDialogProps) {
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const { toast } = useToast();
 
   const handleSubmit = async () => {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@/lib/server';
+import { createClient } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Edit, Package, Trash } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function ListingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     async function loadUserAndProducts() {

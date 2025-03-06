@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from '@/lib/server';
+import { createClient } from '@/lib/client';
 import { formatCurrency } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
 
@@ -16,7 +16,7 @@ export default function ProfilePage() {
     totalSales: 0,
   });
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   useEffect(() => {
     const checkUser = async () => {

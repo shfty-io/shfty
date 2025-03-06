@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@/lib/server';
+import { createClient } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Github, Mail } from 'lucide-react';
 import Link from 'next/link';
@@ -33,7 +33,7 @@ export default function PurchasesPage() {
   const [user, setUser] = useState<User | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     async function loadUserAndPurchases() {

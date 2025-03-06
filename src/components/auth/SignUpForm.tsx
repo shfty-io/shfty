@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { createClientComponentClient } from '@/lib/server'
+import { createClient } from '@/lib/client'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { useSearchParams } from 'next/navigation'
@@ -10,7 +10,7 @@ export function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   
   // Check if there's a redirect parameter
   const redirectPath = searchParams.get('redirect') || '/'

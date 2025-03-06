@@ -19,25 +19,35 @@ export default function SellerDashboard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [productData, setProductData] = useState<ProductFormData | null>(null);
+  const [isPaymentSetup, setIsPaymentSetup] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check payment setup status on load
   useEffect(() => {
     const checkPaymentStatus = async () => {
-      const supabase = createClient();
-      const { data: sellerAccount } = await supabase
-        .from('seller_accounts')
-        .select('stripe_account_id, is_onboarded, account_status')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      setIsLoading(true);
+      try {
+        const supabase = createClient();
+        const { data: sellerAccount } = await supabase
+          .from('seller_accounts')
+          .select('stripe_account_id, is_onboarded, account_status')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
 
-      if (!sellerAccount?.is_onboarded) {
-        router.push('/your/payment?returnTo=sell');
-        return;
+        setIsPaymentSetup(!!sellerAccount?.is_onboarded);
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkPaymentStatus();
-  }, [router]);
+  }, []);
+
+  const navigateToPaymentSetup = () => {
+    router.push('/your/payment?returnTo=sell');
+  };
 
   const handleProductSubmit = async (data: ProductFormData) => {
     try {
@@ -108,6 +118,41 @@ export default function SellerDashboard() {
     }
   }, []);
 
+  // If payment is not set up, show only the notification
+  if (!isPaymentSetup && !isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Seller Dashboard</h1>
+        
+        <div className="border border-destructive rounded-lg p-6 md:p-8 mb-6 bg-background">
+          <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
+            <AlertDescription className="text-lg text-destructive">
+              You need to set up payment details before you can sell products.
+            </AlertDescription>
+            <Button size="lg" onClick={navigateToPaymentSetup} className="mt-4">
+              Set Up Payment
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Seller Dashboard</h1>
+        <div className="border rounded-lg p-6 md:p-8 mb-6 bg-card shadow-sm">
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full page is only accessible if payment is set up
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Seller Dashboard</h1>

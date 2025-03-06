@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@/lib/server";
+import { createClient } from "@/lib/client";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { User } from '@supabase/supabase-js';
 
@@ -10,7 +10,7 @@ export default function AccountPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     async function loadUser() {
