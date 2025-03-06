@@ -1,6 +1,7 @@
-import { createClient } from "@/lib/client";
+import { createClient } from "@/lib/server";
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfToken } from '@/lib/csrf';
+import { cookies } from 'next/headers';
 
 interface DownloadAuthResponse {
   githubRepoUrl: string | null;
@@ -25,7 +26,7 @@ export async function GET(
     const pathParts = url.pathname.split('/');
     const id = pathParts[pathParts.length - 2]; // -2 because the last part is 'download-auth'
     
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
 
     // Get the session - required for all downloads (free or paid)
     const { data: { session } } = await supabase.auth.getSession();

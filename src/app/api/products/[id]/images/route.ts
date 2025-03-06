@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export async function POST(
   request: Request
@@ -10,7 +11,7 @@ export async function POST(
     const pathParts = url.pathname.split('/');
     const id = pathParts[pathParts.length - 2]; // -2 because the last part is 'images'
     
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 // URL-safe validation regex: only allows lowercase letters, numbers, and hyphens
 const BYLINE_REGEX = /^[a-z0-9-]+$/
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
       })
     }
 
-    const supabase = createClient()
+    const supabase = createClient(await cookies())
 
     const query = supabase
       .from('products')

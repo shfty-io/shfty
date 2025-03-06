@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: [] })
   }
 
-  const supabase = createClient()
+  const supabase = createClient(await cookies())
 
   const { data: products, error } = await supabase
     .from('products')

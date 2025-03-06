@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { cookies } from "next/headers";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
@@ -10,7 +11,7 @@ const PLATFORM_FEE_PERCENTAGE = Number(process.env.TRANSACTION_FEE_PERCENTAGE) |
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

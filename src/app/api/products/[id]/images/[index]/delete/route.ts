@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export async function POST(
   request: Request
@@ -11,7 +12,7 @@ export async function POST(
     const id = pathParts[pathParts.length - 4]; // -4 because the path is /products/[id]/images/[index]/delete
     const indexStr = pathParts[pathParts.length - 2]; // -2 because the path is /products/[id]/images/[index]/delete
     
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

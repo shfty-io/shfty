@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 // Add interface at the top of the file after imports
 interface GitHubRepository {
@@ -17,7 +18,8 @@ interface GitHubRepository {
 
 export async function GET() {
   try {
-    const supabase = createClient();
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

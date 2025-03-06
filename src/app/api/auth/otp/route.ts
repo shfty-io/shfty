@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = createClient(await cookies())
 
     const { error } = await supabase.auth.signInWithOtp({
       email,

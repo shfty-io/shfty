@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { createMiddlewareClient } from '@/lib/server';
-import { createServerClient } from '@supabase/ssr';
+import { createClient, createServiceClient } from '@/lib/server';
+import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 
 export async function POST(request: Request) {
-  // Create a response object that we'll modify and return
-  const response = new Response();
-  
   try {
-    // Create Supabase client with the request cookies for authentication
-    const supabase = createMiddlewareClient(request, response);
+    // Create Supabase client
+    const supabase = createClient(await cookies());
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -108,41 +105,22 @@ export async function POST(request: Request) {
       // Continue anyway since the profile and data are already deleted
     }
 
+    // Create a response to return
+    const redirectResponse = NextResponse.redirect(
+      new URL('/auth/login?message=Your+account+has+been+successfully+deleted', request.url)
+    );
+    
     // Clear all cookies to ensure the user is fully signed out
-    const cookies = request.headers.get('cookie')?.split(';') || [];
-    for (const cookie of cookies) {
+    const cookieList = request.headers.get('cookie')?.split(';') || [];
+    for (const cookie of cookieList) {
       const [name] = cookie.trim().split('=');
       if (name && (name.includes('supabase') || name.includes('auth') || name.includes('session'))) {
-        response.headers.append('Set-Cookie', `${name}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`);
+        redirectResponse.headers.append('Set-Cookie', `${name}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`);
       }
     }
 
     // Create a service role client to delete the auth user
-    const serviceClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            // Get the cookie from the request headers
-            const cookies = request.headers.get('cookie') || '';
-            const cookie = cookies
-              .split(';')
-              .find(c => c.trim().startsWith(`${name}=`));
-            
-            if (!cookie) return '';
-            const value = cookie.split('=')[1];
-            return decodeURIComponent(value);
-          },
-          set(name: string, value: string, options: any) {
-            // Not needed for this operation
-          },
-          remove(name: string, options: any) {
-            // Not needed for this operation
-          }
-        }
-      }
-    );
+    const serviceClient = createServiceClient();
 
     // Delete the auth user
     const { error: authError } = await serviceClient.auth.admin.deleteUser(user.id);
@@ -152,11 +130,8 @@ export async function POST(request: Request) {
       // Continue anyway since the profile and data are already deleted
     }
 
-    // Redirect to the login page instead of returning JSON
-    return NextResponse.redirect(
-      new URL('/auth/login?message=Your+account+has+been+successfully+deleted', request.url),
-      { headers: response.headers }
-    );
+    // Return the redirect response
+    return redirectResponse;
   } catch (error) {
     console.error('Unexpected error during account deletion:', error);
     return NextResponse.json(

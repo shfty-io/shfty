@@ -1,4 +1,4 @@
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/server';
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       webhookSecret
     );
 
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
     console.log(`Processing Stripe webhook event: ${event.type}`);
 
     switch (event.type) {

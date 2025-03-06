@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -12,7 +13,7 @@ export async function POST(
     const pathParts = url.pathname.split('/');
     const id = pathParts[pathParts.length - 2]; // -2 because the last part is 'video'
     
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

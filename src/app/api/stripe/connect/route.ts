@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { cookies } from "next/headers";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
@@ -8,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST() {
   try {
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -102,7 +103,7 @@ export async function POST() {
 export async function PUT(request: Request) {
   try {
     const { accountId } = await request.json();
-    const supabase = createClient();
+    const supabase = createClient(await cookies());
 
     // Get account details from Stripe
     const account = await stripe.accounts.retrieve(accountId);
