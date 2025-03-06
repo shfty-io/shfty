@@ -18,8 +18,11 @@ export function SignUpForm() {
   const handleGitHubSignIn = async () => {
     setIsLoading(true);
     try {
+      // Use the public environment variable for the site URL
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      
       // Construct the redirect URL with the final destination
-      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      const callbackUrl = new URL('/auth/callback', siteUrl)
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
       console.log('Starting GitHub sign-up flow with redirect to:', callbackUrl.toString())

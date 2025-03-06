@@ -248,11 +248,12 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         if (data.requiresReauth) {
           // Redirect to GitHub OAuth flow
           const supabase = createClient();
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
           const { error } = await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
               scopes: 'repo',
-              redirectTo: `${window.location.origin}/auth/callback`
+              redirectTo: `${siteUrl}/auth/callback`
             }
           });
           
