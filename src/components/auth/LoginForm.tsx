@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClientComponentClient } from '@/lib/server'
+import { createPagesClient } from '@/lib/auth-client'
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useSearchParams } from 'next/navigation'
@@ -14,7 +14,7 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
+  const supabase = createPagesClient()
   
   // Check if there's a redirect parameter
   const redirectPath = searchParams.get('redirect') || '/'

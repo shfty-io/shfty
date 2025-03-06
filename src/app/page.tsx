@@ -1,6 +1,6 @@
 import ProductList from '@/components/root/ProductList'
 import { Navbar } from '@/components/global/Navbar'
-import { createClient } from '@/lib/server'
+import { createClient, createServerComponentClient, createServiceClient } from '@/lib/server'
 import { AppSidebar } from "@/components/root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Hero } from '@/components/ui/hero'
@@ -26,62 +26,108 @@ interface Product {
 }
 
 async function getProducts(): Promise<Product[]> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      id,
-      name,
-      description,
-      price,
-      categories,
-      image_urls,
-      short_description,
-      byline,
-      status,
-      created_at,
-      view_count,
-      purchase_count,
-      trending_score,
-      likes_count,
-      profiles (
-        avatar_url,
-        full_name
-      )
-    `)
-    .eq('status', 'approved')
-    .order('created_at', { ascending: false })
-    .limit(12)
+  try {
+    // Use createServiceClient which doesn't rely on cookies
+    const supabase = createServiceClient()
+    
+    if (!supabase) {
+      console.error('Error fetching products: Supabase client is not initialized')
+      return []
+    }
+    
+    console.log('Fetching products with service client...')
+    
+    // Debug: Log the structure of the products table
+    const { error: tableError } = await supabase
+      .from('products')
+      .select('id')
+      .limit(1)
+    
+    if (tableError) {
+      console.error('Error accessing products table:', tableError)
+    }
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        description,
+        price,
+        image_urls,
+        short_description,
+        byline,
+        created_at,
+        view_count,
+        purchase_count,
+        trending_score,
+        likes_count,
+        user:profiles!products_user_id_fkey (
+          avatar_url,
+          full_name
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(12)
 
-  if (error) {
-    console.error('Error fetching products:', error)
+    if (error) {
+      console.error('Error fetching products:', error)
+      return []
+    }
+
+    // Log response for debugging
+    console.log('Products fetched successfully:', data ? data.length : 0)
+    
+    // If no products are found, return an empty array without error
+    if (!data || data.length === 0) {
+      console.log('No products found in the database')
+      return []
+    }
+
+    // Transform data to match Product interface
+    return data.map(item => ({
+      ...item,
+      // Add empty categories array since it's in the Product interface but not in the DB query result
+      categories: [],
+      user: Array.isArray(item.user) && item.user.length > 0 
+        ? { 
+            avatar_url: item.user[0]?.avatar_url || null,
+            full_name: item.user[0]?.full_name || null
+          }
+        : { avatar_url: null, full_name: null }
+    })) as Product[]
+  } catch (err) {
+    // Catch any unexpected errors
+    console.error('Unexpected error fetching products:', err)
     return []
   }
-
-  return (data || []).map(item => ({
-    ...item,
-    user: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
-  })) as Product[]
 }
 
 export default async function Home() {
-  // Not using cache for now since it causes issues with cookies in Next.js 15
-  const products = await getProducts()
-
-  return (
-    <>
-      <Hero />
-      <SidebarProvider defaultOpen={true}>
-        <div className="flex w-full">
-          <AppSidebar />
-          <SidebarInset className="w-full">
-            <Navbar />
-            <div className="flex-1 p-4">
-              <ProductList products={products} />
-            </div>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
-    </>
-  )
+  try {
+    console.log('Home component rendering...')
+    // Not using cache for now since it causes issues with cookies in Next.js 15
+    const products = await getProducts()
+    console.log('Products loaded:', products.length)
+    
+    return (
+      <>
+        <Hero />
+        <SidebarProvider defaultOpen={true}>
+          <div className="flex w-full">
+            <AppSidebar />
+            <SidebarInset className="w-full">
+              <Navbar />
+              <div className="flex-1 p-4">
+                <ProductList products={products} />
+              </div>
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
+      </>
+    )
+  } catch (err) {
+    console.error('Error in Home component:', err)
+    return <div>Error loading page. Please try again later.</div>
+  }
 }

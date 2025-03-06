@@ -1,36 +1,50 @@
-
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-export const createClient = (request: NextRequest) => {
+export async function middleware(request: NextRequest) {
   // Create an unmodified response
-  let supabaseResponse = NextResponse.next({
+  let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
+  // Create supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
+        get(name) {
+          return request.cookies.get(name)?.value;
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+        set(name, value, options) {
+          // This is used for setting cookies in the request to the server
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          // This is used for setting cookies in the response to the client
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name, options) {
+          // This is used for removing cookies from the request to the server
+          request.cookies.delete(name);
+          // This is used for removing cookies from the response to the client
+          response.cookies.delete(name);
         },
       },
-    },
+    }
   );
-
-  return supabaseResponse
-};
+  
+  // Optional: You can use the supabase client here to check auth status
+  // const { data: { session } } = await supabase.auth.getSession();
+  
+  return response;
+}
 
