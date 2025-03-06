@@ -2,6 +2,7 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { SignUpForm } from "@/components/auth/SignUpForm"
 import Link from "next/link"
 import Image from "next/image"
+import { Suspense } from "react"
 
 export default function SignUpPage() {
   return (
@@ -17,7 +18,9 @@ export default function SignUpPage() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <SignUpForm />
+            <Suspense fallback={<div className="text-center">Loading...</div>}>
+              <SignUpForm />
+            </Suspense>
           </div>
         </div>
       </div>

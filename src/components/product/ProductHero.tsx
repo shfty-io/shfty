@@ -18,6 +18,8 @@ type Product = Database['public']['Tables']['products']['Row'] & {
   updated_at: string | null
   github_repo_url?: string | null
   codebase_url?: string | null
+  categories?: string[]
+  technologies?: string[] | null
 }
 
 interface ProductHeroProps {

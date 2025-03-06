@@ -19,6 +19,8 @@ type Product = Database['public']['Tables']['products']['Row'] & {
   github_repo_url?: string | null;
   codebase_url?: string | null;
   hasPurchased: boolean;
+  categories?: string[];
+  technologies?: string[] | null;
 };
 
 interface ProductPageContentProps {
