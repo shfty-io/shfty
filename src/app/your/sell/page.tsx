@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,7 +16,7 @@ const steps = [
   { id: 2, name: "Submit Product" },
 ];
 
-export default function SellerDashboard() {
+function SellerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
@@ -349,4 +349,12 @@ export default function SellerDashboard() {
       </div>
     </div>
   );
-} 
+}
+
+export default function SellerDashboard() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+      <SellerDashboardContent />
+    </Suspense>
+  );
+}
