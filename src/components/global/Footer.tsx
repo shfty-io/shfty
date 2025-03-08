@@ -9,17 +9,14 @@ export function Footer() {
             © {new Date().getFullYear()} Software Marketplace. All rights reserved.
           </p>
           <nav className="flex gap-4 text-sm text-muted-foreground">
-            <Link href="/about" className="hover:underline hover:text-foreground transition-colors">
-              About
+            <Link href="/" className="hover:underline hover:text-foreground transition-colors">
+              Home
             </Link>
             <Link href="/terms" className="hover:underline hover:text-foreground transition-colors">
               Terms
             </Link>
             <Link href="/privacy" className="hover:underline hover:text-foreground transition-colors">
               Privacy
-            </Link>
-            <Link href="/contact" className="hover:underline hover:text-foreground transition-colors">
-              Contact
             </Link>
           </nav>
         </div>

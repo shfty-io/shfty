@@ -1,5 +1,4 @@
 import { Footer } from "@/components/global/Footer";
-import { Navbar } from "@/components/global/Navbar";
 
 export default function PrivacyLayout({
   children,
@@ -7,10 +6,9 @@ export default function PrivacyLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      {children}
-      <Footer />
-    </div>
+      <div className="min-h-screen bg-background flex flex-col">
+        {children}
+        <Footer />
+      </div>
   )
 } 
