@@ -106,7 +106,7 @@ export function PaymentSetupForm({ onSubmit }: PaymentSetupFormProps) {
                 {isLoading ? "Loading..." : "Complete Stripe Setup"}
               </Button>
               <p className="text-xs text-muted-foreground">
-                You'll be redirected to Stripe to provide the necessary information for receiving payments.
+                You&apos;ll be redirected to Stripe to provide the necessary information for receiving payments.
                 This includes business details, banking information, and identity verification.
               </p>
             </div>

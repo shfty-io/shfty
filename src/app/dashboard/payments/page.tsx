@@ -180,7 +180,7 @@ export default function PaymentsDashboard() {
     const statusConfig = statusMap[status] || { variant: 'outline', label: status };
     
     return (
-      <Badge variant={statusConfig.variant as any}>
+      <Badge variant={statusConfig.variant as React.ComponentProps<typeof Badge>['variant']}>
         {statusConfig.label}
       </Badge>
     );
@@ -357,7 +357,7 @@ export default function PaymentsDashboard() {
             <CardHeader>
               <CardTitle>Seller Payouts</CardTitle>
               <CardDescription>
-                Track payouts to sellers' bank accounts
+                Track payouts to sellers&apos; bank accounts
               </CardDescription>
             </CardHeader>
             <CardContent>

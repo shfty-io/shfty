@@ -45,7 +45,7 @@ export function PayoutHistory({ payouts, isLoading }: PayoutHistoryProps) {
     const statusConfig = statusMap[status] || { variant: 'outline', label: status };
     
     return (
-      <Badge variant={statusConfig.variant as any}>
+      <Badge variant={statusConfig.variant as React.ComponentProps<typeof Badge>['variant']}>
         {statusConfig.label}
       </Badge>
     );
@@ -102,7 +102,7 @@ export function PayoutHistory({ payouts, isLoading }: PayoutHistoryProps) {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-muted-foreground mb-4">
-              You don't have any payouts yet.
+              You don&apos;t have any payouts yet.
             </p>
             <p className="text-sm text-muted-foreground max-w-md">
               Payouts are processed automatically. Once you make sales, your earnings will be deposited to your bank account according to your payout schedule.
