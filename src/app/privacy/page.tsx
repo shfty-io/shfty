@@ -157,7 +157,7 @@ export default function PrivacyPolicyPage() {
         </section>
         
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">10. Children's Privacy</h2>
+          <h2 className="text-2xl font-semibold mb-4">10. Children&apos;s Privacy</h2>
           <p>
             Our marketplace is not intended for children under the age of 18. We do not knowingly collect personal
             information from children under 18. If you believe we have collected personal information from a child
@@ -178,7 +178,7 @@ export default function PrivacyPolicyPage() {
           <h2 className="text-2xl font-semibold mb-4">12. Changes to This Privacy Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new
-            Privacy Policy on this page and updating the "Last Updated" date. You are advised to review this Privacy
+            Privacy Policy on this page and updating the &quot;Last Updated&quot; date. You are advised to review this Privacy
             Policy periodically for any changes.
           </p>
         </section>

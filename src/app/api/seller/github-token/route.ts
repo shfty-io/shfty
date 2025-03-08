@@ -50,32 +50,38 @@ export async function POST(request: Request) {
       );
     }
 
-    // Add before the upsert call:
-    const { error: createError } = await supabase
+    // First, check if a seller account already exists for this user
+    const { data: existingAccount } = await supabase
       .from('seller_accounts')
-      .insert({ user_id: user.id })
-      .select()
+      .select('id')
+      .eq('user_id', user.id)
       .maybeSingle();
 
-    if (createError && createError.code !== '23505') { // Ignore duplicate errors
-      console.error('Error creating seller account:', createError);
-      return NextResponse.json(
-        { error: "Failed to initialize seller account" },
-        { status: 500 }
-      );
-    }
+    let error;
 
-    // Update or create seller account with the GitHub token
-    const { error } = await supabase
-      .from('seller_accounts')
-      .upsert({
-        user_id: user.id,
-        github_token: token,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      })
-      .eq('user_id', user.id);
+    if (existingAccount) {
+      // If account exists, update it
+      const { error: updateError } = await supabase
+        .from('seller_accounts')
+        .update({
+          github_token: token,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      error = updateError;
+    } else {
+      // If no account exists, create one
+      const { error: insertError } = await supabase
+        .from('seller_accounts')
+        .insert({
+          user_id: user.id,
+          github_token: token,
+          updated_at: new Date().toISOString()
+        });
+      
+      error = insertError;
+    }
 
     if (error) {
       console.error('Error saving GitHub token:', error);

@@ -17,7 +17,7 @@ export default function TermsPage() {
           <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
           <p>
             By accessing or using our marketplace services, you agree to be bound by these Terms of Service 
-            ("Terms"). If you do not agree to these Terms, please do not use our services.
+            (&quot;Terms&quot;). If you do not agree to these Terms, please do not use our services.
           </p>
         </section>
         
