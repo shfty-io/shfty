@@ -9,31 +9,60 @@ import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
 import { useSidebar } from '@/components/ui/sidebar'
 import { useTheme } from '@/components/theme/theme-provider'
+import { useRouter } from 'next/navigation'
 
 export function Navbar() {
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const { toggleSidebar, state } = useSidebar()
   const { theme, setTheme } = useTheme()
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
 
-    // Get initial user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-    })
+    async function loadUser() {
+      try {
+        setIsLoading(true)
+        // Force a fresh session check on mount
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error("Error fetching session:", error)
+          return
+        }
+        
+        if (session?.user) {
+          console.log("User authenticated:", session.user.id)
+          setUser(session.user)
+        } else {
+          console.log("No authenticated user found")
+          setUser(null)
+        }
+      } catch (err) {
+        console.error("Failed to load user:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUser()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event)
       setUser(session?.user ?? null)
+      
+      // Force router refresh to update server components
+      router.refresh()
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase.auth])
+  }, [supabase.auth, router])
 
   if (!mounted) return null
 
@@ -81,7 +110,11 @@ export function Navbar() {
           <Button variant="default" asChild>
             <Link href={user ? "/your/sell" : "/auth/login"}>Create listing</Link>
           </Button>
-          {user && <UserNav initialUser={user} />}
+          {isLoading ? (
+            <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
+          ) : (
+            user && <UserNav initialUser={user} />
+          )}
         </nav>
       </div>
     </header>

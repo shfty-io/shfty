@@ -43,11 +43,20 @@ export async function GET(request: NextRequest) {
             return cookie?.value
           },
           set(name, value, options) {
-            // Set the cookie on the response
+            // Set the cookie on the response with proper attributes
             response.cookies.set({
               name, 
               value,
-              ...options
+              ...options,
+              // Ensure cookies are accessible across the site
+              path: '/',
+              // Use secure in production
+              secure: process.env.NODE_ENV === 'production',
+              // Allow JavaScript access
+              httpOnly: false,
+              // Set a long expiry for session persistence
+              maxAge: 60 * 60 * 24 * 7, // 7 days
+              sameSite: 'lax'
             })
           },
           remove(name, options) {
@@ -85,8 +94,10 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Get the user to ensure profile creation
+    // Get the user to ensure profile creation and actively fetch the session
     const { data: { user } } = await supabase.auth.getUser();
+    // Force refresh the session
+    await supabase.auth.getSession();
     
     if (user) {
       // Check if user has a profile

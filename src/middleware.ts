@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   });
 
   // Create supabase client
-  createServerClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
             ...options,
           });
         },
-        remove(name) {
+        remove(name, options) {
           // This is used for removing cookies from the request to the server
           request.cookies.delete(name);
           // This is used for removing cookies from the response to the client
@@ -42,8 +42,8 @@ export async function middleware(request: NextRequest) {
     }
   );
   
-  // Optional: You can use the supabase client here to check auth status
-  // const { data: { session } } = await supabase.auth.getSession();
+  // Actually fetch the session to ensure proper auth state
+  await supabase.auth.getSession();
   
   return response;
 }

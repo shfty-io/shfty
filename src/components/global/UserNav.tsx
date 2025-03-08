@@ -27,18 +27,34 @@ export function UserNav({ initialUser }: UserNavProps) {
   const supabase = createClient()
 
   useEffect(() => {
+    if (initialUser) {
+      setUser(initialUser)
+    }
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("UserNav: Auth state changed", _event)
       setUser(session?.user ?? null)
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase.auth])
+  }, [supabase.auth, initialUser])
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.refresh()
+    try {
+      console.log("UserNav: Signing out...")
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error("UserNav: Sign out error:", error)
+        return
+      }
+      
+      router.refresh()
+    } catch (error) {
+      console.error("UserNav: Error during sign out:", error)
+    }
   }
 
   if (!user) {
