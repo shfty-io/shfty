@@ -36,7 +36,12 @@ export async function middleware(request: NextRequest) {
           // This is used for removing cookies from the request to the server
           request.cookies.delete(name);
           // This is used for removing cookies from the response to the client
-          response.cookies.delete(name);
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+            maxAge: 0
+          });
         },
       },
     }
