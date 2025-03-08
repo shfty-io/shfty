@@ -452,7 +452,7 @@ BEGIN
     SELECT 1 FROM pg_policies 
     WHERE schemaname = 'public' 
     AND tablename = 'products' 
-    AND policyname = 'Anyone can view approved products'
+    AND (policyname = 'Anyone can view approved products' OR policyname = 'Anyone can view products')
   ) THEN
     -- Check if status column exists first
     DO $inner$
@@ -463,16 +463,30 @@ BEGIN
         AND table_name = 'products' 
         AND column_name = 'status'
       ) THEN
-        CREATE POLICY "Anyone can view approved products"
-        ON products FOR SELECT
-        TO authenticated
-        USING (status = 'approved' OR user_id = auth.uid());
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies 
+          WHERE schemaname = 'public' 
+          AND tablename = 'products' 
+          AND policyname = 'Anyone can view approved products'
+        ) THEN
+          CREATE POLICY "Anyone can view approved products"
+          ON products FOR SELECT
+          TO authenticated
+          USING (status = 'approved' OR user_id = auth.uid());
+        END IF;
       ELSE
         -- Create a more permissive policy if status column doesn't exist
-        CREATE POLICY "Anyone can view products"
-        ON products FOR SELECT
-        TO authenticated
-        USING (true);
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies 
+          WHERE schemaname = 'public' 
+          AND tablename = 'products' 
+          AND policyname = 'Anyone can view products'
+        ) THEN
+          CREATE POLICY "Anyone can view products"
+          ON products FOR SELECT
+          TO authenticated
+          USING (true);
+        END IF;
       END IF;
     END $inner$;
   END IF;
@@ -759,6 +773,7 @@ END
 $$;
 
 -- Function to ensure a user profile exists
+DROP FUNCTION IF EXISTS ensure_user_profile(UUID);
 CREATE OR REPLACE FUNCTION ensure_user_profile(auth_user_id UUID)
 RETURNS UUID AS $$
 DECLARE
@@ -883,6 +898,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to delete a user and related data
+DROP FUNCTION IF EXISTS delete_user(UUID);
 CREATE OR REPLACE FUNCTION delete_user(input_profile_id UUID)
 RETURNS VOID AS $$
 BEGIN
@@ -911,10 +927,4 @@ EXCEPTION
         RAISE LOG 'Error in delete_user: %, Profile ID: %', SQLERRM, input_profile_id;
         RAISE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Trigger for handling new users
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION handle_new_user(); 
+$$ LANGUAGE plpgsql SECURITY DEFINER; 

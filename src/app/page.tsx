@@ -106,26 +106,29 @@ async function getProducts(): Promise<Product[]> {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | undefined };
+  searchParams?: { [key: string]: string | undefined } | Promise<{ [key: string]: string | undefined }>;
 }) {
   const products = await getProducts()
-  const message = searchParams?.message;
+  
+  // Handle both promise and non-promise searchParams
+  const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
+  const message = resolvedParams?.message;
 
   return (
-    <SidebarProvider>
-      <div className="flex-1 flex flex-col md:flex-row">
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex w-full">
         <AppSidebar />
-
-        <div className="flex-1 p-6 pb-0 md:p-8 lg:p-10 lg:pb-0">
-          {message && <MessageDisplay message={message} />}
-          <h1 className="text-3xl font-bold mb-2">Popular Products</h1>
-          <p className="text-muted-foreground mb-8">
-            Find top-rated tools, templates, and resources
-          </p>
-          <ProductList products={products} />
-        </div>
-        
-        <SidebarInset />
+        <SidebarInset className="w-full">
+          <Navbar />
+          <div className="flex-1 p-4">
+            {message && <MessageDisplay message={message} />}
+            <h1 className="text-3xl font-bold mb-2">Popular Products</h1>
+            <p className="text-muted-foreground mb-8">
+              Find top-rated tools, templates, and resources
+            </p>
+            <ProductList products={products} />
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   )
