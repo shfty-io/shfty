@@ -9,7 +9,7 @@ import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
 import { useSidebar } from '@/components/ui/sidebar'
 import { useTheme } from '@/components/theme/theme-provider'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export function Navbar() {
   const [mounted, setMounted] = useState(false)
@@ -19,6 +19,7 @@ export function Navbar() {
   const { theme, setTheme } = useTheme()
   const supabase = createClient()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     setMounted(true)
@@ -35,10 +36,10 @@ export function Navbar() {
         }
         
         if (session?.user) {
-          console.log("User authenticated:", session.user.id)
+          console.log("User authenticated:", session.user.id, "Environment:", process.env.NODE_ENV)
           setUser(session.user)
         } else {
-          console.log("No authenticated user found")
+          console.log("No authenticated user found", "Environment:", process.env.NODE_ENV)
           setUser(null)
         }
       } catch (err) {
@@ -51,9 +52,25 @@ export function Navbar() {
     loadUser()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event)
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, "Environment:", process.env.NODE_ENV)
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Force a manual refresh of the session after sign-in
+        try {
+          const { data, error } = await supabase.auth.getSession()
+          if (error) {
+            console.error("Error refreshing session:", error)
+          } else if (data.session) {
+            console.log("Session refreshed successfully after", event)
+            setUser(data.session.user)
+          }
+        } catch (err) {
+          console.error("Error in manual session refresh:", err)
+        }
+      } else {
+        setUser(session?.user ?? null)
+      }
       
       // Force router refresh to update server components
       router.refresh()
@@ -62,7 +79,7 @@ export function Navbar() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase.auth, router])
+  }, [supabase.auth, router, pathname])
 
   if (!mounted) return null
 

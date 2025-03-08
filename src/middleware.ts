@@ -30,6 +30,13 @@ export async function middleware(request: NextRequest) {
             name,
             value,
             ...options,
+            // Force path to be root to ensure cookies are accessible everywhere
+            path: '/',
+            // Use domain attribute based on environment
+            ...(process.env.NODE_ENV === 'production' && {
+              secure: true,
+              domain: process.env.VERCEL_URL ? `.${process.env.VERCEL_URL.split('://')[1]}` : undefined
+            })
           });
         },
         remove(name, options) {
@@ -40,7 +47,12 @@ export async function middleware(request: NextRequest) {
             name,
             value: '',
             ...options,
-            maxAge: 0
+            path: '/', // Ensure the path matches where cookies were set
+            maxAge: 0,
+            ...(process.env.NODE_ENV === 'production' && {
+              secure: true,
+              domain: process.env.VERCEL_URL ? `.${process.env.VERCEL_URL.split('://')[1]}` : undefined
+            })
           });
         },
       },

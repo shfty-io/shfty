@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
   // Log all parameters for debugging
   console.log('Auth callback params:', {
     code: code ? 'present' : 'missing',
-    returnTo
+    returnTo,
+    environment: process.env.NODE_ENV,
+    origin,
+    host: requestUrl.host
   })
   
   // Make sure we have the code parameter
@@ -32,6 +35,17 @@ export async function GET(request: NextRequest) {
   response.headers.set('Expires', '0');
   
   try {
+    // Determine domain settings for cookies
+    const isProduction = process.env.NODE_ENV === 'production';
+    const host = requestUrl.host;
+    
+    // Get domain for cookies in production
+    const cookieDomain = isProduction 
+      ? (process.env.VERCEL_URL ? `.${process.env.VERCEL_URL.split('://')[1]}` : host)
+      : undefined;
+      
+    console.log('Cookie domain:', cookieDomain);
+    
     // Create Supabase client using the native createServerClient
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,12 +65,14 @@ export async function GET(request: NextRequest) {
               // Ensure cookies are accessible across the site
               path: '/',
               // Use secure in production
-              secure: process.env.NODE_ENV === 'production',
+              secure: isProduction,
               // Allow JavaScript access
               httpOnly: false,
               // Set a long expiry for session persistence
               maxAge: 60 * 60 * 24 * 7, // 7 days
-              sameSite: 'lax'
+              sameSite: 'lax',
+              // Set domain in production
+              ...(isProduction && { domain: cookieDomain })
             })
           },
           remove(name, options) {
@@ -65,7 +81,12 @@ export async function GET(request: NextRequest) {
               name,
               value: '',
               ...options,
-              maxAge: 0
+              path: '/',
+              maxAge: 0,
+              // Use secure in production
+              secure: isProduction,
+              // Set domain in production
+              ...(isProduction && { domain: cookieDomain })
             })
           }
         }
