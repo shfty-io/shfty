@@ -27,6 +27,11 @@ export async function GET(request: NextRequest) {
   // Create a response early so we can use it for cookies
   const response = NextResponse.redirect(new URL(returnTo, origin))
   
+  // Add cache control headers to prevent caching
+  response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  
   try {
     // Create Supabase client using the native createServerClient
     const supabase = createServerClient(
@@ -83,6 +88,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(
         new URL(`/auth/login?error=${encodeURIComponent(errorMessage)}`, origin)
       )
+    }
+    
+    // Get the user to ensure profile creation
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      // Check if user has a profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profileError || !profile) {
+        console.log('Profile not found, ensuring it gets created');
+        
+        // Call RPC function to ensure user profile exists
+        const { error: rpcError } = await supabase.rpc(
+          'ensure_user_profile',
+          { auth_user_id: user.id }
+        );
+        
+        if (rpcError) {
+          console.error('Error ensuring user profile:', rpcError);
+        } else {
+          console.log('Successfully ensured user profile creation');
+        }
+      }
     }
     
     console.log('Session exchange successful, redirecting to:', returnTo)

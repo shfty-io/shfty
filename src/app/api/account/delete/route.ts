@@ -95,6 +95,17 @@ export async function POST(request: Request) {
       }
     }
 
+    // Create a service role client to delete the auth user BEFORE signing out
+    const serviceClient = createServiceClient();
+
+    // Delete the auth user
+    const { error: authError } = await serviceClient.auth.admin.deleteUser(user.id);
+    
+    if (authError) {
+      console.error('Error deleting auth user:', authError);
+      // Continue anyway since the profile and data are already deleted
+    }
+
     // Sign out the user
     const { error: signOutError } = await supabase.auth.signOut({
       scope: 'global' // Sign out from all devices
@@ -105,30 +116,25 @@ export async function POST(request: Request) {
       // Continue anyway since the profile and data are already deleted
     }
 
-    // Create a response to return
+    // Create a response to redirect to home page
     const redirectResponse = NextResponse.redirect(
-      new URL('/auth/login?message=Your+account+has+been+successfully+deleted', request.url)
+      new URL('/?message=Your+account+has+been+successfully+deleted', request.url)
     );
     
-    // Clear all cookies to ensure the user is fully signed out
+    // Clear all cookies to ensure the user is fully signed out and cache is cleared
     const cookieList = request.headers.get('cookie')?.split(';') || [];
     for (const cookie of cookieList) {
       const [name] = cookie.trim().split('=');
-      if (name && (name.includes('supabase') || name.includes('auth') || name.includes('session'))) {
+      if (name) {
+        // Clear all cookies, not just specific ones, to ensure complete cache clearing
         redirectResponse.headers.append('Set-Cookie', `${name}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`);
       }
     }
 
-    // Create a service role client to delete the auth user
-    const serviceClient = createServiceClient();
-
-    // Delete the auth user
-    const { error: authError } = await serviceClient.auth.admin.deleteUser(user.id);
-    
-    if (authError) {
-      console.error('Error deleting auth user:', authError);
-      // Continue anyway since the profile and data are already deleted
-    }
+    // Add cache control headers to prevent caching
+    redirectResponse.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    redirectResponse.headers.set('Pragma', 'no-cache');
+    redirectResponse.headers.set('Expires', '0');
 
     // Return the redirect response
     return redirectResponse;
