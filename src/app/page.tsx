@@ -3,6 +3,7 @@ import { Navbar } from '@/components/global/Navbar'
 import { createServiceClient } from '@/lib/server'
 import { AppSidebar } from "@/components/root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { MessageDisplay } from '@/components/global/MessageDisplay'
 
 interface Product {
   id: string
@@ -102,30 +103,30 @@ async function getProducts(): Promise<Product[]> {
   }
 }
 
-export default async function Home() {
-  try {
-    console.log('Home component rendering...')
-    // Not using cache for now since it causes issues with cookies in Next.js 15
-    const products = await getProducts()
-    console.log('Products loaded:', products.length)
-    
-    return (
-      <>
-        <SidebarProvider defaultOpen={true}>
-          <div className="flex w-full">
-            <AppSidebar />
-            <SidebarInset className="w-full">
-              <Navbar />
-              <div className="flex-1 p-4">
-                <ProductList products={products} />
-              </div>
-            </SidebarInset>
-          </div>
-        </SidebarProvider>
-      </>
-    )
-  } catch (err) {
-    console.error('Error in Home component:', err)
-    return <div>Error loading page. Please try again later.</div>
-  }
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | undefined };
+}) {
+  const products = await getProducts()
+  const message = searchParams?.message;
+
+  return (
+    <SidebarProvider>
+      <div className="flex-1 flex flex-col md:flex-row">
+        <AppSidebar />
+
+        <div className="flex-1 p-6 pb-0 md:p-8 lg:p-10 lg:pb-0">
+          {message && <MessageDisplay message={message} />}
+          <h1 className="text-3xl font-bold mb-2">Popular Products</h1>
+          <p className="text-muted-foreground mb-8">
+            Find top-rated tools, templates, and resources
+          </p>
+          <ProductList products={products} />
+        </div>
+        
+        <SidebarInset />
+      </div>
+    </SidebarProvider>
+  )
 }

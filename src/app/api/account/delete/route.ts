@@ -118,7 +118,8 @@ export async function POST(request: Request) {
 
     // Create a response to redirect to home page
     const redirectResponse = NextResponse.redirect(
-      new URL('/?message=Your+account+has+been+successfully+deleted', request.url)
+      `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/?message=Your+account+has+been+successfully+deleted`,
+      { status: 303 }
     );
     
     // Clear all cookies to ensure the user is fully signed out and cache is cleared
