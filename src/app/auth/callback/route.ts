@@ -53,7 +53,31 @@ export async function GET(request: NextRequest) {
     }
     
     // Get current user after session exchange
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error('Error getting user after session exchange:', userError)
+      return NextResponse.redirect(
+        new URL(`/auth/login?error=${encodeURIComponent('Failed to retrieve user details')}`, request.url)
+      )
+    }
+
+    // Ensure a proper session is established
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !sessionData.session) {
+      console.error('Session error after code exchange:', sessionError)
+      
+      // Try to explicitly sign in with OAuth credentials from user object
+      if (user.app_metadata && user.app_metadata.provider) {
+        const provider = user.app_metadata.provider
+        console.log(`Attempting explicit sign in with ${provider}`)
+        
+        // Redirect to OAuth flow again
+        return NextResponse.redirect(
+          new URL(`/auth/login?error=${encodeURIComponent('Session creation failed, please try again')}`, request.url)
+        )
+      }
+    }
     
     // Create/update profile if user exists
     if (user) {
@@ -93,6 +117,20 @@ export async function GET(request: NextRequest) {
           })
       }
     }
+    
+    // Verify one more time that we have a session before redirecting
+    const { data: finalSession } = await supabase.auth.getSession()
+    if (!finalSession.session) {
+      console.log('No session found after profile creation, redirecting to login')
+      return NextResponse.redirect(
+        new URL('/auth/login?error=Failed+to+create+session', request.url)
+      )
+    }
+    
+    // Add cache control headers to prevent issues with stale session data
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
     
     return response
   } catch (error) {

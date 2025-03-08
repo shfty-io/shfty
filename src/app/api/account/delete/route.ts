@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       // Continue anyway since the profile and data are already deleted
     }
 
-    // Sign out the user
+    // Sign out the user from Supabase
     const { error: signOutError } = await supabase.auth.signOut({
       scope: 'global' // Sign out from all devices
     });
@@ -122,13 +122,41 @@ export async function POST(request: Request) {
       { status: 303 }
     );
     
-    // Clear all cookies to ensure the user is fully signed out and cache is cleared
+    // Clear all auth-related cookies explicitly
+    const cookiesToClear = [
+      'sb-access-token',
+      'sb-refresh-token',
+      'supabase-auth-token',
+      'sb-provider-token',
+      'supabase-auth-provider-token',
+      '__session',
+      // Add any other auth-related cookies your app might use
+    ];
+    
+    for (const cookieName of cookiesToClear) {
+      redirectResponse.cookies.set({
+        name: cookieName,
+        value: '',
+        path: '/',
+        maxAge: 0,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+    }
+    
+    // Also clear any other cookies from the request
     const cookieList = request.headers.get('cookie')?.split(';') || [];
     for (const cookie of cookieList) {
       const [name] = cookie.trim().split('=');
-      if (name) {
-        // Clear all cookies, not just specific ones, to ensure complete cache clearing
-        redirectResponse.headers.append('Set-Cookie', `${name}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`);
+      if (name && !cookiesToClear.includes(name)) {
+        redirectResponse.cookies.set({
+          name,
+          value: '',
+          path: '/',
+          maxAge: 0,
+          httpOnly: true
+        });
       }
     }
 
