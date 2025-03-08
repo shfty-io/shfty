@@ -75,7 +75,7 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
         {!hasPurchased ? (
           <PurchaseButton 
             productId={product.id}
-            price={product.price}
+            price={product.price ?? 0}
           />
         ) : (
           <div className="flex gap-2.5">
