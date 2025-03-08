@@ -105,17 +105,85 @@ export async function GET(request: NextRequest) {
         console.log('Profile not found, ensuring it gets created');
         
         // Call RPC function to ensure user profile exists
-        const { error: rpcError } = await supabase.rpc(
+        const { data: rpcData, error: rpcError } = await supabase.rpc(
           'ensure_user_profile',
           { auth_user_id: user.id }
         );
         
         if (rpcError) {
           console.error('Error ensuring user profile:', rpcError);
+          
+          // Try inserting profile directly as a fallback if RPC fails
+          try {
+            console.log('Attempting direct profile creation as fallback');
+            
+            // Log user metadata to help with debugging
+            console.log('User metadata available:', JSON.stringify({
+              id: user.id,
+              email: user.email,
+              metadata: user.user_metadata
+            }));
+            
+            const { error: insertProfileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: user.id,
+                user_id: user.id,
+                email: user.email || '',
+                full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+                is_seller: false,
+                is_admin: false,
+                github_username: user.user_metadata?.user_name || user.user_metadata?.preferred_username || '',
+                email_notifications_enabled: true
+              });
+              
+            if (insertProfileError) {
+              console.error('Fallback profile creation failed:', insertProfileError);
+            } else {
+              console.log('Fallback profile creation succeeded');
+              
+              // Create seller account since RPC didn't do it
+              const { error: insertSellerError } = await supabase
+                .from('seller_accounts')
+                .insert({
+                  user_id: user.id,
+                  is_onboarded: false,
+                  account_status: 'pending',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+                
+              if (insertSellerError) {
+                console.error('Fallback seller account creation failed:', insertSellerError);
+              } else {
+                console.log('Fallback seller account creation succeeded');
+              }
+            }
+          } catch (fallbackError) {
+            console.error('Fallback error:', fallbackError);
+          }
         } else {
-          console.log('Successfully ensured user profile creation');
+          console.log('Successfully ensured user profile creation, RPC returned:', rpcData);
+          
+          // Verify profile was created
+          const { data: verifyProfile, error: verifyError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+            
+          if (verifyError || !verifyProfile) {
+            console.error('Verification failed - profile still not found after RPC call');
+          } else {
+            console.log('Verification succeeded - profile exists');
+          }
         }
+      } else {
+        console.log('Profile already exists for user');
       }
+    } else {
+      console.error('No user found after authentication');
     }
     
     console.log('Session exchange successful, redirecting to:', returnTo)
