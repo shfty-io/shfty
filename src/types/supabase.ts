@@ -135,6 +135,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment_reviews: {
@@ -173,6 +180,7 @@ export type Database = {
       products: {
         Row: {
           byline: string
+          categories: Database["public"]["Enums"]["product_category"][] | null
           created_at: string | null
           demo_url: string | null
           description: string | null
@@ -181,19 +189,24 @@ export type Database = {
           github_token: string | null
           id: string
           image_urls: string[] | null
-          likes_count: number
+          likes_count: number | null
           name: string
-          price: number
-          purchase_count: number
+          price: number | null
+          purchase_count: number | null
           short_description: string
-          trending_score: number
+          status: Database["public"]["Enums"]["product_status"] | null
+          technologies:
+            | Database["public"]["Enums"]["product_technology"][]
+            | null
+          trending_score: number | null
           updated_at: string | null
           user_id: string | null
           video_url: string | null
-          view_count: number
+          view_count: number | null
         }
         Insert: {
           byline: string
+          categories?: Database["public"]["Enums"]["product_category"][] | null
           created_at?: string | null
           demo_url?: string | null
           description?: string | null
@@ -202,19 +215,24 @@ export type Database = {
           github_token?: string | null
           id?: string
           image_urls?: string[] | null
-          likes_count?: number
+          likes_count?: number | null
           name: string
-          price?: number
-          purchase_count?: number
+          price?: number | null
+          purchase_count?: number | null
           short_description: string
-          trending_score?: number
+          status?: Database["public"]["Enums"]["product_status"] | null
+          technologies?:
+            | Database["public"]["Enums"]["product_technology"][]
+            | null
+          trending_score?: number | null
           updated_at?: string | null
           user_id?: string | null
           video_url?: string | null
-          view_count?: number
+          view_count?: number | null
         }
         Update: {
           byline?: string
+          categories?: Database["public"]["Enums"]["product_category"][] | null
           created_at?: string | null
           demo_url?: string | null
           description?: string | null
@@ -223,16 +241,20 @@ export type Database = {
           github_token?: string | null
           id?: string
           image_urls?: string[] | null
-          likes_count?: number
+          likes_count?: number | null
           name?: string
-          price?: number
-          purchase_count?: number
+          price?: number | null
+          purchase_count?: number | null
           short_description?: string
-          trending_score?: number
+          status?: Database["public"]["Enums"]["product_status"] | null
+          technologies?:
+            | Database["public"]["Enums"]["product_technology"][]
+            | null
+          trending_score?: number | null
           updated_at?: string | null
           user_id?: string | null
           video_url?: string | null
-          view_count?: number
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -249,6 +271,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           email: string | null
+          email_notifications_enabled: boolean | null
           full_name: string | null
           github_username: string | null
           id: string
@@ -262,6 +285,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           github_username?: string | null
           id: string
@@ -275,6 +299,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           github_username?: string | null
           id?: string
@@ -288,54 +313,27 @@ export type Database = {
       }
       purchases: {
         Row: {
-          created_at: string
-          dispute_status: string | null
-          failure_reason: string | null
-          fraud_warning: boolean | null
+          created_at: string | null
           github_username: string
           id: string
-          payment_details: Json | null
           product_id: string
-          refund_amount: number | null
-          refund_details: Json | null
-          refund_status: string | null
-          review_status: string | null
           status: string
-          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
-          dispute_status?: string | null
-          failure_reason?: string | null
-          fraud_warning?: boolean | null
+          created_at?: string | null
           github_username: string
           id?: string
-          payment_details?: Json | null
           product_id: string
-          refund_amount?: number | null
-          refund_details?: Json | null
-          refund_status?: string | null
-          review_status?: string | null
           status: string
-          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
-          dispute_status?: string | null
-          failure_reason?: string | null
-          fraud_warning?: boolean | null
+          created_at?: string | null
           github_username?: string
           id?: string
-          payment_details?: Json | null
           product_id?: string
-          refund_amount?: number | null
-          refund_details?: Json | null
-          refund_status?: string | null
-          review_status?: string | null
           status?: string
-          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -346,35 +344,45 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reports: {
         Row: {
-          created_at: string
+          created_at: string | null
           description: string | null
           id: string
           product_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
           reporter_id: string
           status: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           product_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
           reporter_id: string
           status?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           product_id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
           reporter_id?: string
           status?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -384,12 +392,19 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       repository_access: {
         Row: {
           access_key: string
-          created_at: string
+          created_at: string | null
           id: string
           product_id: string
           repository_url: string
@@ -397,7 +412,7 @@ export type Database = {
         }
         Insert: {
           access_key: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           product_id: string
           repository_url: string
@@ -405,7 +420,7 @@ export type Database = {
         }
         Update: {
           access_key?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           product_id?: string
           repository_url?: string
@@ -419,46 +434,55 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "repository_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       seller_accounts: {
         Row: {
-          account_details: Json | null
           account_status: string | null
           created_at: string | null
           github_token: string | null
           id: string
           is_onboarded: boolean | null
-          last_webhook_update: string | null
           stripe_account_id: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          account_details?: Json | null
           account_status?: string | null
           created_at?: string | null
           github_token?: string | null
           id?: string
           is_onboarded?: boolean | null
-          last_webhook_update?: string | null
           stripe_account_id?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          account_details?: Json | null
           account_status?: string | null
           created_at?: string | null
           github_token?: string | null
           id?: string
           is_onboarded?: boolean | null
-          last_webhook_update?: string | null
           stripe_account_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "seller_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seller_external_accounts: {
         Row: {
@@ -491,15 +515,7 @@ export type Database = {
           seller_account_id?: string
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_seller_account"
-            columns: ["seller_account_id"]
-            isOneToOne: false
-            referencedRelation: "seller_accounts"
-            referencedColumns: ["stripe_account_id"]
-          },
-        ]
+        Relationships: []
       }
       seller_payouts: {
         Row: {
@@ -544,15 +560,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_seller_account"
-            columns: ["seller_account_id"]
-            isOneToOne: false
-            referencedRelation: "seller_accounts"
-            referencedColumns: ["stripe_account_id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -571,13 +579,7 @@ export type Database = {
         Args: {
           input_profile_id: string
         }
-        Returns: boolean
-      }
-      ensure_user_profile: {
-        Args: {
-          auth_user_id: string
-        }
-        Returns: string
+        Returns: undefined
       }
       increment_product_purchase: {
         Args: {

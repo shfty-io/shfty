@@ -1,6 +1,32 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- First, drop all triggers
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS update_feedback_timestamp_trigger ON feedback;
+
+-- Drop all functions first
+DROP FUNCTION IF EXISTS handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS toggle_like(UUID, UUID) CASCADE;
+DROP FUNCTION IF EXISTS increment_product_view(UUID) CASCADE;
+DROP FUNCTION IF EXISTS increment_product_purchase(UUID) CASCADE;
+DROP FUNCTION IF EXISTS increment_view_count(UUID) CASCADE;
+DROP FUNCTION IF EXISTS cleanup_codebases_bucket() CASCADE;
+DROP FUNCTION IF EXISTS manage_codebases_bucket() CASCADE;
+DROP FUNCTION IF EXISTS update_feedback_timestamp() CASCADE;
+DROP FUNCTION IF EXISTS ensure_user_profile(UUID) CASCADE;
+DROP FUNCTION IF EXISTS delete_user(UUID) CASCADE;
+
+-- Drop all tables (in correct dependency order)
+DROP TABLE IF EXISTS reports CASCADE;
+DROP TABLE IF EXISTS repository_access CASCADE;
+DROP TABLE IF EXISTS feedback CASCADE;
+DROP TABLE IF EXISTS likes CASCADE;
+DROP TABLE IF EXISTS purchases CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS seller_accounts CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
 -- Drop existing types if they exist
 DROP TYPE IF EXISTS product_category CASCADE;
 DROP TYPE IF EXISTS product_status CASCADE;
@@ -42,6 +68,18 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   email_notifications_enabled BOOLEAN DEFAULT true
+);
+
+-- Create seller_accounts table first since products references profiles
+CREATE TABLE IF NOT EXISTS seller_accounts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  stripe_account_id TEXT,
+  github_token TEXT,
+  is_onboarded BOOLEAN DEFAULT false,
+  account_status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create products table
@@ -88,18 +126,6 @@ CREATE TABLE IF NOT EXISTS likes (
   PRIMARY KEY (user_id, product_id)
 );
 
--- Create seller_accounts table
-CREATE TABLE IF NOT EXISTS seller_accounts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  stripe_account_id TEXT,
-  github_token TEXT,
-  is_onboarded BOOLEAN DEFAULT false,
-  account_status TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
 -- Create repository_access table
 CREATE TABLE IF NOT EXISTS repository_access (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -137,99 +163,6 @@ CREATE INDEX IF NOT EXISTS feedback_user_id_idx ON feedback(user_id);
 
 -- Create index on status for filtering
 CREATE INDEX IF NOT EXISTS feedback_status_idx ON feedback(status);
-
--- Enable RLS (Row Level Security)
-ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
-
--- Create policies for feedback table with conditional checks
-DO $$
-BEGIN
-  -- Allow users to insert their own feedback
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'feedback' 
-    AND policyname = 'insert_own_feedback'
-  ) THEN
-    CREATE POLICY insert_own_feedback ON feedback
-      FOR INSERT TO authenticated
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
-
-  -- Allow users to read their own feedback
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'feedback' 
-    AND policyname = 'read_own_feedback'
-  ) THEN
-    CREATE POLICY read_own_feedback ON feedback
-      FOR SELECT TO authenticated
-      USING (auth.uid() = user_id);
-  END IF;
-
-  -- Allow admins to read all feedback
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'feedback' 
-    AND policyname = 'admin_read_all_feedback'
-  ) THEN
-    CREATE POLICY admin_read_all_feedback ON feedback
-      FOR SELECT TO authenticated
-      USING (
-        EXISTS (
-          SELECT 1 FROM profiles
-          WHERE profiles.id = auth.uid()
-          AND profiles.is_admin = true
-        )
-      );
-  END IF;
-
-  -- Allow admins to update all feedback (for status changes)
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'public' 
-    AND tablename = 'feedback' 
-    AND policyname = 'admin_update_all_feedback'
-  ) THEN
-    CREATE POLICY admin_update_all_feedback ON feedback
-      FOR UPDATE TO authenticated
-      USING (
-        EXISTS (
-          SELECT 1 FROM profiles
-          WHERE profiles.id = auth.uid()
-          AND profiles.is_admin = true
-        )
-      );
-  END IF;
-END
-$$;
-
--- Function to update timestamp on feedback update
-CREATE OR REPLACE FUNCTION update_feedback_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = CURRENT_TIMESTAMP;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to update timestamp on feedback update
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger 
-    WHERE tgname = 'update_feedback_timestamp_trigger' 
-    AND tgrelid = 'feedback'::regclass
-  ) THEN
-    CREATE TRIGGER update_feedback_timestamp_trigger
-      BEFORE UPDATE ON feedback
-      FOR EACH ROW
-      EXECUTE FUNCTION update_feedback_timestamp();
-  END IF;
-END
-$$;
 
 -- Functions
 CREATE OR REPLACE FUNCTION handle_new_user()
@@ -324,10 +257,24 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger for handling new users
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Function to update timestamp on feedback update
+CREATE OR REPLACE FUNCTION update_feedback_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update timestamp on feedback update
+CREATE TRIGGER update_feedback_timestamp_trigger
+  BEFORE UPDATE ON feedback
+  FOR EACH ROW
+  EXECUTE FUNCTION update_feedback_timestamp();
 
 -- Function to toggle product likes
 CREATE OR REPLACE FUNCTION toggle_like(_product_id UUID, _user_id UUID)
@@ -398,10 +345,52 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- RLS Policies
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Function to delete a user and related data
+CREATE OR REPLACE FUNCTION delete_user(input_profile_id UUID)
+RETURNS VOID AS $$
+BEGIN
+    -- First, get the user ID from the profile
+    DECLARE
+        user_id UUID;
+    BEGIN
+        SELECT profiles.user_id INTO user_id
+        FROM profiles
+        WHERE profiles.id = input_profile_id;
 
--- Create policies for profiles table with conditional checks
+        IF user_id IS NULL THEN
+            RAISE EXCEPTION 'Profile not found with ID %', input_profile_id;
+        END IF;
+    END;
+
+    -- Delete user data from various tables
+    -- The cascade should handle most dependencies
+    DELETE FROM profiles WHERE id = input_profile_id;
+    
+    -- Return success
+    RETURN;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log the error (this will appear in Supabase logs)
+        RAISE LOG 'Error in delete_user: %, Profile ID: %', SQLERRM, input_profile_id;
+        RAISE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- ENABLE ROW LEVEL SECURITY ON ALL TABLES
+-- ============================================================
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seller_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE repository_access ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- PROFILES TABLE POLICIES
+-- ============================================================
 DO $$
 BEGIN
   -- Public profiles are viewable by everyone
@@ -430,18 +419,6 @@ BEGIN
 END
 $$;
 
--- More RLS policies can be added here for other tables 
-
--- ============================================================
--- ENABLE ROW LEVEL SECURITY ON ALL REMAINING TABLES
--- ============================================================
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
-ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE seller_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE repository_access ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
-
 -- ============================================================
 -- PRODUCTS TABLE POLICIES
 -- ============================================================
@@ -452,43 +429,12 @@ BEGIN
     SELECT 1 FROM pg_policies 
     WHERE schemaname = 'public' 
     AND tablename = 'products' 
-    AND (policyname = 'Anyone can view approved products' OR policyname = 'Anyone can view products')
+    AND policyname = 'Anyone can view approved products'
   ) THEN
-    -- Check if status column exists first
-    DO $inner$
-    BEGIN
-      IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'products' 
-        AND column_name = 'status'
-      ) THEN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_policies 
-          WHERE schemaname = 'public' 
-          AND tablename = 'products' 
-          AND policyname = 'Anyone can view approved products'
-        ) THEN
-          CREATE POLICY "Anyone can view approved products"
-          ON products FOR SELECT
-          TO authenticated
-          USING (status = 'approved' OR user_id = auth.uid());
-        END IF;
-      ELSE
-        -- Create a more permissive policy if status column doesn't exist
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_policies 
-          WHERE schemaname = 'public' 
-          AND tablename = 'products' 
-          AND policyname = 'Anyone can view products'
-        ) THEN
-          CREATE POLICY "Anyone can view products"
-          ON products FOR SELECT
-          TO authenticated
-          USING (true);
-        END IF;
-      END IF;
-    END $inner$;
+    CREATE POLICY "Anyone can view approved products"
+    ON products FOR SELECT
+    TO authenticated
+    USING (status = 'approved' OR user_id = auth.uid());
   END IF;
 
   -- Sellers can create their own products
@@ -772,159 +718,69 @@ BEGIN
 END
 $$;
 
--- Function to ensure a user profile exists
-DROP FUNCTION IF EXISTS ensure_user_profile(UUID);
-CREATE OR REPLACE FUNCTION ensure_user_profile(auth_user_id UUID)
-RETURNS UUID AS $$
-DECLARE
-    meta_data JSONB;
-    user_name TEXT;
-    full_name TEXT;
-    avatar_url TEXT;
-    user_email TEXT;
-    profile_id UUID;
+-- ============================================================
+-- FEEDBACK TABLE POLICIES
+-- ============================================================
+DO $$
 BEGIN
-    -- Check if profile already exists
-    SELECT id INTO profile_id FROM profiles WHERE user_id = auth_user_id;
-    
-    IF profile_id IS NOT NULL THEN
-        -- Profile already exists
-        RETURN profile_id;
-    END IF;
-    
-    -- Get user data from auth.users
-    DECLARE
-        user_raw_meta JSONB;
-        user_app_meta JSONB;
-    BEGIN
-        SELECT 
-            raw_user_meta_data, 
-            raw_app_meta_data,
-            email
-        INTO 
-            user_raw_meta,
-            user_app_meta,
-            user_email
-        FROM auth.users 
-        WHERE id = auth_user_id;
-        
-        -- Combine metadata
-        meta_data := COALESCE(user_raw_meta, '{}'::JSONB) || COALESCE(user_app_meta, '{}'::JSONB);
-        
-        -- If user not found
-        IF user_raw_meta IS NULL AND user_app_meta IS NULL THEN
-            RAISE EXCEPTION 'User not found with ID %', auth_user_id;
-        END IF;
-    END;
-    
-    -- Extract user information with fallbacks for different auth providers
-    -- GitHub typically uses 'user_name', 'name', Google uses 'name', 'picture', etc.
-    user_name := COALESCE(
-        meta_data->>'user_name',
-        meta_data->>'preferred_username',
-        meta_data->>'username',
-        meta_data->>'nickname',
-        meta_data->>'email',
-        ''
-    );
-    
-    full_name := COALESCE(
-        meta_data->>'full_name',
-        meta_data->>'name',
-        meta_data->>'given_name' || ' ' || meta_data->>'family_name',
-        user_name,
-        ''
-    );
-    
-    avatar_url := COALESCE(
-        meta_data->>'avatar_url',
-        meta_data->>'picture',
-        meta_data->>'avatar',
-        NULL
-    );
-    
-    -- Create new profile
-    INSERT INTO public.profiles (
-        id,
-        user_id,
-        email,
-        full_name,
-        avatar_url,
-        is_seller,
-        is_admin,
-        stripe_customer_id,
-        created_at,
-        updated_at,
-        github_username,
-        email_notifications_enabled
-    ) VALUES (
-        auth_user_id,
-        auth_user_id,
-        COALESCE(user_email, ''),
-        full_name,
-        avatar_url,
-        false,
-        false,
-        NULL,
-        NOW(),
-        NOW(),
-        user_name,
-        true
-    )
-    RETURNING id INTO profile_id;
-    
-    -- Create seller account entry (initially inactive)
-    INSERT INTO public.seller_accounts (
-        user_id,
-        is_onboarded,
-        account_status,
-        created_at,
-        updated_at
-    ) VALUES (
-        profile_id,
-        false,
-        'pending',
-        NOW(),
-        NOW()
-    );
-    
-    RETURN profile_id;
-EXCEPTION
-    WHEN OTHERS THEN
-        -- Log the error (this will appear in Supabase logs)
-        RAISE LOG 'Error in ensure_user_profile: %, User ID: %', SQLERRM, auth_user_id;
-        RAISE;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+  -- Allow users to insert their own feedback
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'insert_own_feedback'
+  ) THEN
+    CREATE POLICY insert_own_feedback ON feedback
+      FOR INSERT TO authenticated
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
 
--- Function to delete a user and related data
-DROP FUNCTION IF EXISTS delete_user(UUID);
-CREATE OR REPLACE FUNCTION delete_user(input_profile_id UUID)
-RETURNS VOID AS $$
-BEGIN
-    -- First, get the user ID from the profile
-    DECLARE
-        user_id UUID;
-    BEGIN
-        SELECT profiles.user_id INTO user_id
-        FROM profiles
-        WHERE profiles.id = input_profile_id;
+  -- Allow users to read their own feedback
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'read_own_feedback'
+  ) THEN
+    CREATE POLICY read_own_feedback ON feedback
+      FOR SELECT TO authenticated
+      USING (auth.uid() = user_id);
+  END IF;
 
-        IF user_id IS NULL THEN
-            RAISE EXCEPTION 'Profile not found with ID %', input_profile_id;
-        END IF;
-    END;
+  -- Allow admins to read all feedback
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'admin_read_all_feedback'
+  ) THEN
+    CREATE POLICY admin_read_all_feedback ON feedback
+      FOR SELECT TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.is_admin = true
+        )
+      );
+  END IF;
 
-    -- Delete user data from various tables
-    -- The cascade should handle most dependencies
-    DELETE FROM profiles WHERE id = input_profile_id;
-    
-    -- Return success
-    RETURN;
-EXCEPTION
-    WHEN OTHERS THEN
-        -- Log the error (this will appear in Supabase logs)
-        RAISE LOG 'Error in delete_user: %, Profile ID: %', SQLERRM, input_profile_id;
-        RAISE;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER; 
+  -- Allow admins to update all feedback (for status changes)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'feedback' 
+    AND policyname = 'admin_update_all_feedback'
+  ) THEN
+    CREATE POLICY admin_update_all_feedback ON feedback
+      FOR UPDATE TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.is_admin = true
+        )
+      );
+  END IF;
+END
+$$; 

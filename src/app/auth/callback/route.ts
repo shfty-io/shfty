@@ -12,13 +12,12 @@ export async function GET(request: NextRequest) {
   // Log all parameters for debugging
   console.log('Auth callback params:', {
     code: code ? 'present' : 'missing',
-    returnTo,
-    allParams: Object.fromEntries(requestUrl.searchParams.entries())
+    returnTo
   })
   
   // Make sure we have the code parameter
   if (!code) {
-    console.error('No code provided in callback. URL params:', Object.fromEntries(requestUrl.searchParams.entries()))
+    console.error('No code provided in callback')
     return NextResponse.redirect(
       new URL(`/auth/login?error=${encodeURIComponent('No authentication code provided')}`, origin)
     )
@@ -41,12 +40,10 @@ export async function GET(request: NextRequest) {
         cookies: {
           get(name) {
             const cookie = request.cookies.get(name)
-            console.log(`Getting cookie ${name}:`, cookie ? 'found' : 'not found')
             return cookie?.value
           },
           set(name, value, options) {
-            console.log(`Setting cookie ${name}`)
-            // Set the cookie on both the request and response
+            // Set the cookie on the response
             response.cookies.set({
               name, 
               value,
@@ -54,8 +51,7 @@ export async function GET(request: NextRequest) {
             })
           },
           remove(name, options) {
-            console.log(`Removing cookie ${name}`)
-            // Remove the cookie from both the request and response
+            // Remove the cookie from the response
             response.cookies.set({
               name,
               value: '',
@@ -67,7 +63,6 @@ export async function GET(request: NextRequest) {
       }
     )
     
-    console.log('Exchanging code for session...')
     // Exchange the code for a session
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
@@ -101,93 +96,72 @@ export async function GET(request: NextRequest) {
         .eq('user_id', user.id)
         .single();
       
-      if (profileError || !profile) {
-        console.log('Profile not found, ensuring it gets created');
+      // If no profile exists, create one
+      if (profileError?.code === 'PGRST116' || !profile) {
+        console.log('Creating profile for user:', user.id);
         
-        // Call RPC function to ensure user profile exists
-        const { data: rpcData, error: rpcError } = await supabase.rpc(
-          'ensure_user_profile',
-          { auth_user_id: user.id }
-        );
-        
-        if (rpcError) {
-          console.error('Error ensuring user profile:', rpcError);
+        // Create profile
+        const { error: insertProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            user_id: user.id,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+            is_seller: false,
+            is_admin: false,
+            github_username: user.user_metadata?.user_name || user.user_metadata?.preferred_username || '',
+            email_notifications_enabled: true
+          });
           
-          // Try inserting profile directly as a fallback if RPC fails
-          try {
-            console.log('Attempting direct profile creation as fallback');
-            
-            // Log user metadata to help with debugging
-            console.log('User metadata available:', JSON.stringify({
-              id: user.id,
-              email: user.email,
-              metadata: user.user_metadata
-            }));
-            
-            const { error: insertProfileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: user.id,
-                user_id: user.id,
-                email: user.email || '',
-                full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-                is_seller: false,
-                is_admin: false,
-                github_username: user.user_metadata?.user_name || user.user_metadata?.preferred_username || '',
-                email_notifications_enabled: true
-              });
-              
-            if (insertProfileError) {
-              console.error('Fallback profile creation failed:', insertProfileError);
-            } else {
-              console.log('Fallback profile creation succeeded');
-              
-              // Create seller account since RPC didn't do it
-              const { error: insertSellerError } = await supabase
-                .from('seller_accounts')
-                .insert({
-                  user_id: user.id,
-                  is_onboarded: false,
-                  account_status: 'pending',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                });
-                
-              if (insertSellerError) {
-                console.error('Fallback seller account creation failed:', insertSellerError);
-              } else {
-                console.log('Fallback seller account creation succeeded');
-              }
-            }
-          } catch (fallbackError) {
-            console.error('Fallback error:', fallbackError);
-          }
+        if (insertProfileError) {
+          console.error('Profile creation failed:', insertProfileError);
         } else {
-          console.log('Successfully ensured user profile creation, RPC returned:', rpcData);
+          console.log('Profile created successfully');
           
-          // Verify profile was created
-          const { data: verifyProfile, error: verifyError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('user_id', user.id)
-            .single();
+          // Create seller account
+          const { error: insertSellerError } = await supabase
+            .from('seller_accounts')
+            .insert({
+              user_id: user.id,
+              is_onboarded: false,
+              account_status: 'pending'
+            });
             
-          if (verifyError || !verifyProfile) {
-            console.error('Verification failed - profile still not found after RPC call');
+          if (insertSellerError) {
+            console.error('Seller account creation failed:', insertSellerError);
           } else {
-            console.log('Verification succeeded - profile exists');
+            console.log('Seller account created successfully');
           }
         }
       } else {
-        console.log('Profile already exists for user');
+        // Check if seller account exists
+        const { data: sellerAccount, error: sellerError } = await supabase
+          .from('seller_accounts')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (sellerError?.code === 'PGRST116' || !sellerAccount) {
+          console.log('Creating seller account for existing profile');
+          
+          const { error: createSellerError } = await supabase
+            .from('seller_accounts')
+            .insert({
+              user_id: user.id,
+              is_onboarded: false,
+              account_status: 'pending'
+            });
+            
+          if (createSellerError) {
+            console.error('Seller account creation failed:', createSellerError);
+          }
+        }
       }
-    } else {
-      console.error('No user found after authentication');
     }
     
-    console.log('Session exchange successful, redirecting to:', returnTo)
-    // Success! Return the response with cookies already set
+    // Return the response with cookies already set
     return response
   } catch (error: unknown) {
     console.error('Auth callback error:', error)
