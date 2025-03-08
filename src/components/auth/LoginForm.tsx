@@ -19,12 +19,22 @@ export function LoginForm({
   // Check if there's a redirect parameter
   const redirectPath = searchParams.get('redirect') || '/'
 
+  // Handle errors from OAuth redirects
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
+    }
+  }, [searchParams])
+
   // Handle GitHub login
   const handleGitHubLogin = async () => {
     setIsLoading(true);
     try {
       // Use the public environment variable for the site URL
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      
+      console.log('Site URL for OAuth redirect:', siteUrl)
       
       // Construct the redirect URL with the final destination
       const callbackUrl = new URL('/auth/callback', siteUrl)
@@ -54,14 +64,6 @@ export function LoginForm({
       setIsLoading(false);
     }
   };
-
-  // If there's an error message from a redirect (like failed auth)
-  useEffect(() => {
-    const errorMsg = searchParams.get('error')
-    if (errorMsg) {
-      setError(decodeURIComponent(errorMsg))
-    }
-  }, [searchParams])
 
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>

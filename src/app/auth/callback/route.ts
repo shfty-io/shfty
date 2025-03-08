@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     returnTo,
     environment: process.env.NODE_ENV,
     origin,
-    host: requestUrl.host
+    host: requestUrl.host,
+    url: request.url
   })
   
   // Make sure we have the code parameter
@@ -40,9 +41,21 @@ export async function GET(request: NextRequest) {
     const host = requestUrl.host;
     
     // Get domain for cookies in production
-    const cookieDomain = isProduction 
-      ? (process.env.VERCEL_URL ? `.${process.env.VERCEL_URL.split('://')[1]}` : host)
-      : undefined;
+    let cookieDomain = undefined;
+    
+    if (isProduction) {
+      // Extract the domain without port
+      const hostParts = host.split(':')[0];
+      
+      if (hostParts === 'localhost') {
+        cookieDomain = undefined;
+      } else if (hostParts.includes('.')) {
+        // For custom domains like shfty.io, we include the dot to allow subdomains
+        cookieDomain = hostParts;
+      } else if (process.env.VERCEL_URL) {
+        cookieDomain = process.env.VERCEL_URL.split('://')[1];
+      }
+    }
       
     console.log('Cookie domain:', cookieDomain);
     
@@ -71,8 +84,8 @@ export async function GET(request: NextRequest) {
               // Set a long expiry for session persistence
               maxAge: 60 * 60 * 24 * 7, // 7 days
               sameSite: 'lax',
-              // Set domain in production
-              ...(isProduction && { domain: cookieDomain })
+              // Set domain in production without the dot prefix
+              ...(cookieDomain && { domain: cookieDomain })
             })
           },
           remove(name, options) {
@@ -85,8 +98,8 @@ export async function GET(request: NextRequest) {
               maxAge: 0,
               // Use secure in production
               secure: isProduction,
-              // Set domain in production
-              ...(isProduction && { domain: cookieDomain })
+              // Set domain in production without the dot prefix
+              ...(cookieDomain && { domain: cookieDomain })
             })
           }
         }
@@ -94,6 +107,7 @@ export async function GET(request: NextRequest) {
     )
     
     // Exchange the code for a session
+    console.log('Exchanging code for session...');
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (error) {
@@ -116,7 +130,25 @@ export async function GET(request: NextRequest) {
     }
     
     // Get the user to ensure profile creation and actively fetch the session
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('Code exchange successful, fetching user...');
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error fetching user after auth:', userError);
+      return NextResponse.redirect(
+        new URL(`/auth/login?error=${encodeURIComponent('Failed to fetch user data')}`, origin)
+      )
+    }
+    
+    if (!user) {
+      console.error('No user found after authentication');
+      return NextResponse.redirect(
+        new URL(`/auth/login?error=${encodeURIComponent('No user found after authentication')}`, origin)
+      )
+    }
+    
+    console.log('Authentication successful for user:', user.id);
+    
     // Force refresh the session
     await supabase.auth.getSession();
     
