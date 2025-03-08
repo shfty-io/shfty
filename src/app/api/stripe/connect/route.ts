@@ -105,10 +105,44 @@ export async function PUT(request: Request) {
     const { accountId } = await request.json();
     const supabase = createClient(await cookies());
 
+    // Check if account ID is provided
+    if (!accountId) {
+      return NextResponse.json(
+        { error: "Account ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify user is authenticated and owns this account
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Verify this account belongs to the user
+    const { data: sellerAccount, error: sellerError } = await supabase
+      .from('seller_accounts')
+      .select('stripe_account_id')
+      .eq('user_id', user.id)
+      .eq('stripe_account_id', accountId)
+      .single();
+      
+    if (sellerError || !sellerAccount) {
+      return NextResponse.json(
+        { error: "Invalid account ID or account doesn't belong to user" },
+        { status: 403 }
+      );
+    }
+
     // Get account details from Stripe
     const account = await stripe.accounts.retrieve(accountId);
     
     // Check if the account is fully set up
+    // In production, we require both details_submitted AND charges_enabled to be true
     const isComplete = account.details_submitted && account.charges_enabled;
     
     // Update onboarding status
@@ -120,16 +154,24 @@ export async function PUT(request: Request) {
       })
       .eq('stripe_account_id', accountId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
 
     return NextResponse.json({ 
       status: isComplete ? 'complete' : 'pending',
-      isOnboarded: isComplete
+      isOnboarded: isComplete,
+      accountDetails: {
+        id: account.id,
+        details_submitted: account.details_submitted,
+        charges_enabled: account.charges_enabled
+      }
     });
   } catch (error) {
     console.error('Error updating account status:', error);
     return NextResponse.json(
-      { error: "Failed to update account status" },
+      { error: "Failed to update account status", details: (error as Error).message },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from '@/lib/client';
 import { formatCurrency } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
+import { EarningsPanel } from '@/components/earnings/EarningsPanel';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -87,44 +88,49 @@ export default function ProfilePage() {
   if (!user) return null; // User redirected, don't render anything
   
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Profile</h1>
-      
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Personal Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground">Email</label>
-              <p className="mt-1">{user?.email}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground">Member Since</label>
-              <p className="mt-1">{new Date(user?.created_at || "").toLocaleDateString()}</p>
+    <div className="container mx-auto p-6 space-y-10">
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Profile</h1>
+        
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Personal Information</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground">Email</label>
+                <p className="mt-1">{user?.email}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground">Member Since</label>
+                <p className="mt-1">{new Date(user?.created_at || "").toLocaleDateString()}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Account Statistics</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4">
-              <p className="text-sm text-muted-foreground">Total Sales</p>
-              <p className="text-2xl font-semibold">
-                {formatCurrency(stats.totalSales)}
-              </p>
-            </div>
-            <div className="p-4">
-              <p className="text-sm text-muted-foreground">Products Listed</p>
-              <p className="text-2xl font-semibold">{stats.productsListed}</p>
-            </div>
-            <div className="p-4">
-              <p className="text-sm text-muted-foreground">Total Purchases</p>
-              <p className="text-2xl font-semibold">{stats.totalPurchases}</p>
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Account Statistics</h2>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-4">
+                <p className="text-sm text-muted-foreground">Total Sales</p>
+                <p className="text-2xl font-semibold">
+                  {formatCurrency(stats.totalSales)}
+                </p>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-muted-foreground">Products Listed</p>
+                <p className="text-2xl font-semibold">{stats.productsListed}</p>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-muted-foreground">Total Purchases</p>
+                <p className="text-2xl font-semibold">{stats.totalPurchases}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Earnings Panel */}
+      <EarningsPanel />
     </div>
   );
 } 

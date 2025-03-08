@@ -1,0 +1,27 @@
+-- Auth Security Fixes
+--
+-- This script addresses Supabase authentication security warnings:
+-- 1. Auth OTP long expiry
+-- 2. Leaked Password Protection Disabled
+--
+-- IMPORTANT: These settings cannot be changed directly via SQL.
+-- You need to update them through the Supabase Dashboard.
+--
+-- Follow these steps:
+--
+-- 1. For "Auth OTP long expiry" warning:
+--    a. Go to the Supabase Dashboard
+--    b. Navigate to Authentication > Settings
+--    c. Find the "Email OTP expiry" setting
+--    d. Set it to 3600 seconds (1 hour) or less
+--
+-- 2. For "Leaked Password Protection Disabled" warning:
+--    a. Go to the Supabase Dashboard
+--    b. Navigate to Authentication > Settings
+--    c. Find the "Password Security" section
+--    d. Enable "Prevent use of leaked passwords (HIBP)"
+--
+-- After making these changes, the security warnings should be resolved.
+--
+-- Note: The auth configuration in Supabase is not directly accessible through SQL.
+-- The settings must be changed through the Dashboard interface. 

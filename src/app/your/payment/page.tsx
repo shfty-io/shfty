@@ -132,6 +132,10 @@ function PaymentPageContent() {
         body: JSON.stringify({ token }),
       });
       
+      // Note: You can create a new token in your GitHub Developer Settings
+      // at https://github.com/settings/tokens with 'repo' scope permissions
+      // to enable repository access for automatic deployment.
+      
       if (!response.ok) {
         throw new Error('Failed to save GitHub token');
       }

@@ -96,14 +96,20 @@ export function PaymentSetupForm({ onSubmit }: PaymentSetupFormProps) {
           <AlertTitle>Complete Your Setup</AlertTitle>
           <AlertDescription className="space-y-4">
             <p>Your Stripe account setup is incomplete. Please complete the onboarding process to start receiving payments.</p>
-            <Button
-              onClick={handleStripeConnect}
-              disabled={isLoading}
-              variant="outline"
-              className="w-full"
-            >
-              {isLoading ? "Loading..." : "Complete Stripe Setup"}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleStripeConnect}
+                disabled={isLoading}
+                variant="outline"
+                className="w-full"
+              >
+                {isLoading ? "Loading..." : "Complete Stripe Setup"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                You'll be redirected to Stripe to provide the necessary information for receiving payments.
+                This includes business details, banking information, and identity verification.
+              </p>
+            </div>
           </AlertDescription>
         </Alert>
       ) : (
@@ -113,13 +119,19 @@ export function PaymentSetupForm({ onSubmit }: PaymentSetupFormProps) {
             To start selling on our platform, you need to connect your Stripe account.
             This allows you to receive payments securely.
           </p>
-          <Button
-            onClick={handleStripeConnect}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? "Connecting..." : "Connect with Stripe"}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={handleStripeConnect}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? "Connecting..." : "Connect with Stripe"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Stripe is our payment processor that allows you to accept credit cards and receive 
+              payouts directly to your bank account. Your account will need to be verified by Stripe.
+            </p>
+          </div>
         </div>
       )}
     </div>

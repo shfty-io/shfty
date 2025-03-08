@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductForm, type ProductFormData } from "@/components/seller/ProductForm";
 import { toast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 const steps = [
   { id: 1, name: "Create Product" },
@@ -17,11 +18,14 @@ const steps = [
 
 export default function SellerDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [productData, setProductData] = useState<ProductFormData | null>(null);
   const [isPaymentSetup, setIsPaymentSetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [isVerifying, setIsVerifying] = useState(false);
+  const setupParam = searchParams.get('setup');
+  
   // Check payment setup status on load
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -34,7 +38,13 @@ export default function SellerDashboard() {
           .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
           .single();
 
+        // Set payment setup status
         setIsPaymentSetup(!!sellerAccount?.is_onboarded);
+        
+        // If we're coming back from Stripe Connect onboarding
+        if (setupParam === 'complete' && sellerAccount?.stripe_account_id && !sellerAccount?.is_onboarded) {
+          verifyStripeAccountStatus(sellerAccount.stripe_account_id);
+        }
       } catch (error) {
         console.error('Error checking payment status:', error);
       } finally {
@@ -43,7 +53,55 @@ export default function SellerDashboard() {
     };
 
     checkPaymentStatus();
-  }, []);
+  }, [setupParam]);
+
+  const verifyStripeAccountStatus = async (accountId: string) => {
+    setIsVerifying(true);
+    try {
+      // Call our API to check the account status directly with Stripe
+      const response = await fetch('/api/stripe/connect', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accountId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to verify account status');
+      }
+      
+      const data = await response.json();
+      
+      if (data.isOnboarded) {
+        setIsPaymentSetup(true);
+        toast({
+          title: "Payment Setup Complete",
+          description: "Your Stripe account is now connected and ready to receive payments.",
+        });
+        
+        // Clean up URL parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('setup');
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        toast({
+          title: "Payment Setup Incomplete",
+          description: "Please complete all steps in the Stripe onboarding process.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying Stripe account:', error);
+      toast({
+        title: "Verification Error",
+        description: "Unable to verify your Stripe account status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const navigateToPaymentSetup = () => {
     router.push('/your/payment?returnTo=sell');
@@ -126,12 +184,34 @@ export default function SellerDashboard() {
         
         <div className="border border-destructive rounded-lg p-6 md:p-8 mb-6 bg-background">
           <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-            <AlertDescription className="text-lg text-destructive">
-              You need to set up payment details before you can sell products.
-            </AlertDescription>
-            <Button size="lg" onClick={navigateToPaymentSetup} className="mt-4">
-              Set Up Payment
-            </Button>
+            {setupParam === 'complete' && isVerifying ? (
+              <>
+                <AlertTitle className="text-lg">Verifying Your Stripe Account</AlertTitle>
+                <AlertDescription className="text-base text-muted-foreground">
+                  Please wait while we verify your Stripe Connect account status...
+                </AlertDescription>
+                <Loader2 className="h-8 w-8 animate-spin text-primary mt-2" />
+              </>
+            ) : setupParam === 'refresh' ? (
+              <>
+                <AlertTitle className="text-lg">Stripe Setup Expired</AlertTitle>
+                <AlertDescription className="text-base text-muted-foreground mt-2">
+                  Your Stripe setup session has expired. Please try again.
+                </AlertDescription>
+                <Button size="lg" onClick={navigateToPaymentSetup} className="mt-4">
+                  Restart Payment Setup
+                </Button>
+              </>
+            ) : (
+              <>
+                <AlertDescription className="text-lg text-destructive">
+                  You need to set up payment details before you can sell products.
+                </AlertDescription>
+                <Button size="lg" onClick={navigateToPaymentSetup} className="mt-4">
+                  Set Up Payment
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

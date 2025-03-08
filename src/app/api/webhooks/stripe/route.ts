@@ -33,27 +33,102 @@ export async function POST(request: Request) {
     console.log(`Processing Stripe webhook event: ${event.type}`);
 
     switch (event.type) {
+      // ACCOUNT EVENTS
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
         console.log('Account updated:', account.id, account.details_submitted, account.charges_enabled);
         
         // Update seller account status
-        const { error } = await supabase
+        const isComplete = account.details_submitted && account.charges_enabled;
+        
+        const { data, error } = await supabase
           .from('seller_accounts')
           .update({
-            is_onboarded: account.details_submitted && account.charges_enabled,
-            account_status: (account.details_submitted && account.charges_enabled) ? 'complete' : 'pending'
+            is_onboarded: isComplete,
+            account_status: isComplete ? 'complete' : 'pending',
+            last_webhook_update: new Date().toISOString(),
+            account_details: {
+              details_submitted: account.details_submitted,
+              charges_enabled: account.charges_enabled,
+              payouts_enabled: account.payouts_enabled
+            }
           })
-          .eq('stripe_account_id', account.id);
+          .eq('stripe_account_id', account.id)
+          .select();
 
         if (error) {
           console.error('Error updating seller account:', error);
           return createExternalServiceError('Supabase', 'Failed to update seller account');
         }
         
+        console.log('Seller account updated via webhook:', { 
+          account_id: account.id, 
+          is_onboarded: isComplete,
+          account_status: isComplete ? 'complete' : 'pending',
+          db_records_updated: data?.length || 0
+        });
+        
         break;
       }
 
+      case 'account.application.deauthorized': {
+        const account = event.data.object as unknown as Stripe.Account;
+        console.log('Account disconnected:', account.id);
+        
+        // Update seller account status to disconnected
+        const { error } = await supabase
+          .from('seller_accounts')
+          .update({
+            is_onboarded: false,
+            account_status: 'disconnected',
+            last_webhook_update: new Date().toISOString()
+          })
+          .eq('stripe_account_id', account.id);
+
+        if (error) {
+          console.error('Error updating disconnected account:', error);
+          return createExternalServiceError('Supabase', 'Failed to update disconnected account');
+        }
+        
+        // TODO: Send notification to admin about disconnected account
+        
+        break;
+      }
+
+      case 'account.external_account.created': 
+      case 'account.external_account.updated':
+      case 'account.external_account.deleted': {
+        const externalAccount = event.data.object as Stripe.BankAccount | Stripe.Card;
+        const accountId = externalAccount.account as string;
+        
+        console.log(`External account ${event.type.split('.').pop()}:`, 
+          accountId, 
+          externalAccount.id, 
+          externalAccount.object);
+        
+        // Store bank account change in database
+        const { error } = await supabase
+          .from('seller_external_accounts')
+          .insert({
+            seller_account_id: accountId,
+            external_account_id: externalAccount.id,
+            account_type: externalAccount.object,
+            event_type: event.type,
+            status: event.type.includes('deleted') ? 'deleted' : 'active',
+            metadata: externalAccount,
+            created_at: new Date().toISOString()
+          })
+          .select();
+
+        if (error) {
+          // If the table doesn't exist yet, log but don't fail
+          console.error('Error recording external account change:', error);
+        }
+        
+        break;
+      }
+
+      // CHECKOUT & PAYMENT EVENTS
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log('Checkout session completed:', session.id);
@@ -122,7 +197,25 @@ export async function POST(request: Request) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log('Payment intent succeeded:', paymentIntent.id);
         
-        // Additional payment processing logic can be added here
+        // Update purchase status if it exists
+        const { error } = await supabase
+          .from('purchases')
+          .update({
+            status: 'succeeded',
+            updated_at: new Date().toISOString(),
+            payment_details: {
+              amount: paymentIntent.amount,
+              currency: paymentIntent.currency,
+              payment_method: paymentIntent.payment_method_types,
+              payment_method_id: paymentIntent.payment_method as string
+            }
+          })
+          .eq('payment_intent', paymentIntent.id);
+        
+        if (error) {
+          console.error('Error updating payment status:', error);
+          // Don't return error as this might be a duplicate event
+        }
         
         break;
       }
@@ -131,8 +224,291 @@ export async function POST(request: Request) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log('Payment intent failed:', paymentIntent.id, paymentIntent.last_payment_error?.message);
         
-        // Handle failed payment
-        // You might want to notify the user or update the purchase status
+        // Update purchase status if it exists
+        const { error } = await supabase
+          .from('purchases')
+          .update({
+            status: 'failed',
+            updated_at: new Date().toISOString(),
+            failure_reason: paymentIntent.last_payment_error?.message,
+            payment_details: {
+              error_code: paymentIntent.last_payment_error?.code,
+              error_message: paymentIntent.last_payment_error?.message,
+              decline_code: paymentIntent.last_payment_error?.decline_code
+            }
+          })
+          .eq('payment_intent', paymentIntent.id);
+        
+        if (error) {
+          console.error('Error updating failed payment:', error);
+        }
+        
+        // TODO: Send notification to buyer about failed payment
+        
+        break;
+      }
+
+      // DISPUTE & REFUND EVENTS
+      case 'charge.dispute.created': {
+        const dispute = event.data.object as Stripe.Dispute;
+        console.log('Dispute created:', dispute.id, dispute.status, dispute.amount);
+        
+        // Get the payment intent from the charge
+        const charge = await stripe.charges.retrieve(dispute.charge as string);
+        const paymentIntentId = charge.payment_intent as string;
+        
+        // Create dispute record
+        try {
+          const { error } = await supabase
+            .from('disputes')
+            .insert({
+              dispute_id: dispute.id,
+              payment_intent_id: paymentIntentId, 
+              charge_id: dispute.charge,
+              amount: dispute.amount,
+              currency: dispute.currency,
+              status: dispute.status,
+              reason: dispute.reason,
+              evidence_due_by: dispute.evidence_details?.due_by ? 
+                new Date(dispute.evidence_details.due_by * 1000).toISOString() : null,
+              created_at: new Date().toISOString()
+            });
+            
+          if (error) {
+            console.error('Error recording dispute:', error);
+          }
+          
+          // Update purchase status
+          const { error: updateError } = await supabase
+            .from('purchases')
+            .update({
+              dispute_status: 'open',
+              status: 'disputed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('payment_intent', paymentIntentId);
+            
+          if (updateError) {
+            console.error('Error updating purchase dispute status:', updateError);
+          }
+        } catch (err) {
+          console.error('Error processing dispute:', err);
+        }
+        
+        // TODO: Send notification to seller and admin about dispute
+        
+        break;
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        console.log('Charge refunded:', charge.id, charge.amount_refunded, charge.refunded);
+        
+        // Get payment intent id
+        const paymentIntentId = charge.payment_intent as string;
+        
+        // Update purchase status
+        try {
+          const { error } = await supabase
+            .from('purchases')
+            .update({
+              status: charge.refunded ? 'refunded' : 'partially_refunded',
+              refund_amount: charge.amount_refunded,
+              updated_at: new Date().toISOString(),
+              refund_details: {
+                amount_refunded: charge.amount_refunded,
+                is_full_refund: charge.refunded,
+                refund_reason: charge.refunds?.data[0]?.reason || null
+              }
+            })
+            .eq('payment_intent', paymentIntentId);
+            
+          if (error) {
+            console.error('Error updating refund status:', error);
+          }
+        } catch (err) {
+          console.error('Error processing refund:', err);
+        }
+        
+        break;
+      }
+
+      case 'charge.refund.updated': {
+        const refund = event.data.object as Stripe.Refund;
+        console.log('Refund updated:', refund.id, refund.status);
+        
+        // Get the charge and payment intent
+        const chargeId = refund.charge as string;
+        const charge = await stripe.charges.retrieve(chargeId);
+        const paymentIntentId = charge.payment_intent as string;
+        
+        // Update refund status
+        try {
+          const { error } = await supabase
+            .from('purchases')
+            .update({
+              refund_status: refund.status,
+              updated_at: new Date().toISOString(),
+              refund_details: {
+                refund_id: refund.id,
+                status: refund.status,
+                failure_reason: refund.failure_reason,
+                amount: refund.amount
+              }
+            })
+            .eq('payment_intent', paymentIntentId);
+            
+          if (error) {
+            console.error('Error updating refund status:', error);
+          }
+        } catch (err) {
+          console.error('Error processing refund update:', err);
+        }
+        
+        break;
+      }
+
+      // PAYOUT EVENTS
+      case 'payout.created':
+      case 'payout.paid':
+      case 'payout.failed': {
+        const payout = event.data.object as Stripe.Payout;
+        console.log(`Payout ${event.type.split('.').pop()}:`, payout.id, payout.amount, payout.status);
+        
+        const status = event.type === 'payout.paid' ? 'paid' :
+                      event.type === 'payout.failed' ? 'failed' : 'pending';
+        
+        // Get seller account from connected account
+        const { data: sellerData, error: sellerError } = await supabase
+          .from('seller_accounts')
+          .select('user_id')
+          .eq('stripe_account_id', payout.destination)
+          .single();
+          
+        if (sellerError) {
+          console.error('Error finding seller for payout:', sellerError);
+        }
+        
+        // Upsert payout record
+        const { error } = await supabase
+          .from('seller_payouts')
+          .upsert({
+            payout_id: payout.id,
+            seller_account_id: payout.destination,
+            user_id: sellerData?.user_id || null,
+            amount: payout.amount,
+            currency: payout.currency,
+            status: status,
+            arrival_date: payout.arrival_date ? 
+              new Date(payout.arrival_date * 1000).toISOString() : null,
+            failure_code: payout.failure_code || null,
+            failure_message: payout.failure_message || null,
+            created_at: new Date(payout.created * 1000).toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'payout_id' });
+          
+        if (error) {
+          console.error('Error recording payout:', error);
+        }
+        
+        // TODO: Send notification to seller about payout status
+        
+        break;
+      }
+
+      // FRAUD & REVIEW EVENTS
+      case 'radar.early_fraud_warning.created': {
+        const fraudWarning = event.data.object as Stripe.Radar.EarlyFraudWarning;
+        console.log('Fraud warning:', fraudWarning.id, fraudWarning.charge);
+        
+        // Get the payment intent from the charge
+        const charge = await stripe.charges.retrieve(fraudWarning.charge as string);
+        const paymentIntentId = charge.payment_intent as string;
+        
+        // Record fraud warning
+        try {
+          const { error } = await supabase
+            .from('fraud_warnings')
+            .insert({
+              warning_id: fraudWarning.id,
+              payment_intent_id: paymentIntentId,
+              charge_id: fraudWarning.charge,
+              actionable: fraudWarning.actionable,
+              fraud_type: fraudWarning.fraud_type,
+              created_at: new Date().toISOString()
+            });
+            
+          if (error) {
+            console.error('Error recording fraud warning:', error);
+          }
+          
+          // Update purchase status
+          const { error: updateError } = await supabase
+            .from('purchases')
+            .update({
+              fraud_warning: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('payment_intent', paymentIntentId);
+            
+          if (updateError) {
+            console.error('Error updating purchase fraud status:', updateError);
+          }
+        } catch (err) {
+          console.error('Error processing fraud warning:', err);
+        }
+        
+        // TODO: Send notification to admin about fraud warning
+        
+        break;
+      }
+
+      case 'review.opened':
+      case 'review.closed': {
+        const review = event.data.object as Stripe.Review;
+        console.log(`Review ${event.type.split('.').pop()}:`, review.id, review.reason);
+        
+        // Get the payment intent
+        const paymentIntentId = review.payment_intent as string;
+        
+        // Check if review is closed based on event type
+        const isClosed = event.type === 'review.closed';
+        
+        // Upsert review record
+        try {
+          const { error } = await supabase
+            .from('payment_reviews')
+            .upsert({
+              review_id: review.id,
+              payment_intent_id: paymentIntentId,
+              reason: review.reason,
+              status: isClosed ? 'closed' : 'open',
+              outcome: isClosed ? review.reason : null,
+              created_at: new Date(review.created * 1000).toISOString(),
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: 'review_id' });
+            
+          if (error) {
+            console.error('Error recording review:', error);
+          }
+          
+          // Update purchase status
+          const { error: updateError } = await supabase
+            .from('purchases')
+            .update({
+              review_status: isClosed ? 'closed' : 'open',
+              updated_at: new Date().toISOString()
+            })
+            .eq('payment_intent', paymentIntentId);
+            
+          if (updateError) {
+            console.error('Error updating purchase review status:', updateError);
+          }
+        } catch (err) {
+          console.error('Error processing review:', err);
+        }
         
         break;
       }
