@@ -106,13 +106,13 @@ async function getProducts(): Promise<Product[]> {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | undefined } | Promise<{ [key: string]: string | undefined }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const products = await getProducts()
-  
-  // Handle both promise and non-promise searchParams
-  const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
-  const message = resolvedParams?.message;
+  // Wait for searchParams to resolve
+  const resolvedParams = searchParams ? await searchParams : {};
+  const message = resolvedParams.message as string | undefined;
+
+  const products = await getProducts();
 
   return (
     <SidebarProvider defaultOpen={true}>
