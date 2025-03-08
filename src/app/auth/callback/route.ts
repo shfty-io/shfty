@@ -1,238 +1,104 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const origin = requestUrl.origin
   
-  // Get the returnTo path (where to redirect after successful auth)
-  const returnTo = requestUrl.searchParams.get('returnTo') || '/'
-  
-  // Log all parameters for debugging
-  console.log('Auth callback params:', {
-    code: code ? 'present' : 'missing',
-    returnTo,
-    environment: process.env.NODE_ENV,
-    origin,
-    host: requestUrl.host,
-    url: request.url
-  })
-  
-  // Make sure we have the code parameter
   if (!code) {
-    console.error('No code provided in callback')
-    return NextResponse.redirect(
-      new URL(`/auth/login?error=${encodeURIComponent('No authentication code provided')}`, origin)
-    )
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
+
+  const redirectTo = requestUrl.searchParams.get('returnTo') || '/'
+  const response = NextResponse.redirect(new URL(redirectTo, request.url))
   
-  // Create a response early so we can use it for cookies
-  const response = NextResponse.redirect(new URL(returnTo, origin))
-  
-  // Add cache control headers to prevent caching
-  response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
-  response.headers.set('Pragma', 'no-cache');
-  response.headers.set('Expires', '0');
-  
-  try {
-    // Determine domain settings for cookies
-    const isProduction = process.env.NODE_ENV === 'production';
-    const host = requestUrl.host;
-    
-    // Get domain for cookies in production
-    let cookieDomain = undefined;
-    
-    if (isProduction) {
-      // Extract the domain without port
-      const hostParts = host.split(':')[0];
-      
-      if (hostParts === 'localhost') {
-        cookieDomain = undefined;
-      } else if (hostParts.includes('.')) {
-        // For custom domains like shfty.io, we include the dot to allow subdomains
-        cookieDomain = hostParts;
-      } else if (process.env.VERCEL_URL) {
-        cookieDomain = process.env.VERCEL_URL.split('://')[1];
-      }
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return request.cookies.get(name)?.value
+        },
+        set(name, value, options) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+            path: '/',
+          })
+        },
+        remove(name, options) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+            path: '/',
+            maxAge: 0,
+          })
+        },
+      },
     }
-      
-    console.log('Cookie domain:', cookieDomain);
-    
-    // Create Supabase client using the native createServerClient
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name) {
-            const cookie = request.cookies.get(name)
-            return cookie?.value
-          },
-          set(name, value, options) {
-            // Set the cookie on the response with proper attributes
-            response.cookies.set({
-              name, 
-              value,
-              ...options,
-              // Ensure cookies are accessible across the site
-              path: '/',
-              // Use secure in production
-              secure: isProduction,
-              // Allow JavaScript access
-              httpOnly: false,
-              // Set a long expiry for session persistence
-              maxAge: 60 * 60 * 24 * 7, // 7 days
-              sameSite: 'lax',
-              // Set domain in production without the dot prefix
-              ...(cookieDomain && { domain: cookieDomain })
-            })
-          },
-          remove(name, options) {
-            // Remove the cookie from the response
-            response.cookies.set({
-              name,
-              value: '',
-              ...options,
-              path: '/',
-              maxAge: 0,
-              // Use secure in production
-              secure: isProduction,
-              // Set domain in production without the dot prefix
-              ...(cookieDomain && { domain: cookieDomain })
-            })
-          }
-        }
-      }
-    )
-    
-    // Exchange the code for a session
-    console.log('Exchanging code for session...');
+  )
+
+  try {
+    // Exchange code for session
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (error) {
-      console.error('Session exchange error:', error)
-      
-      let errorMessage = 'Authentication failed'
-      
-      // Handle known error types
-      if (error.message.includes('code verifier')) {
-        errorMessage = 'Authentication verification failed - Please try again'
-      } else if (error.status === 401) {
-        errorMessage = 'Invalid authentication credentials'
-      } else if (error.message) {
-        errorMessage = `Auth error: ${error.message}`
-      }
-      
+      console.error('Error exchanging code for session:', error.message)
       return NextResponse.redirect(
-        new URL(`/auth/login?error=${encodeURIComponent(errorMessage)}`, origin)
+        new URL(`/auth/login?error=${encodeURIComponent(error.message)}`, request.url)
       )
     }
     
-    // Get the user to ensure profile creation and actively fetch the session
-    console.log('Code exchange successful, fetching user...');
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Get current user after session exchange
+    const { data: { user } } = await supabase.auth.getUser()
     
-    if (userError) {
-      console.error('Error fetching user after auth:', userError);
-      return NextResponse.redirect(
-        new URL(`/auth/login?error=${encodeURIComponent('Failed to fetch user data')}`, origin)
-      )
-    }
-    
-    if (!user) {
-      console.error('No user found after authentication');
-      return NextResponse.redirect(
-        new URL(`/auth/login?error=${encodeURIComponent('No user found after authentication')}`, origin)
-      )
-    }
-    
-    console.log('Authentication successful for user:', user.id);
-    
-    // Force refresh the session
-    await supabase.auth.getSession();
-    
+    // Create/update profile if user exists
     if (user) {
-      // Check if user has a profile
-      const { data: profile, error: profileError } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      // If no profile exists, create one
-      if (profileError?.code === 'PGRST116' || !profile) {
-        console.log('Creating profile for user:', user.id);
-        
-        // Create profile
-        const { error: insertProfileError } = await supabase
-          .from('profiles')
-          .insert({
+        .upsert(
+          {
             id: user.id,
             user_id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
             avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-            is_seller: false,
-            is_admin: false,
             github_username: user.user_metadata?.user_name || user.user_metadata?.preferred_username || '',
             email_notifications_enabled: true
-          });
-          
-        if (insertProfileError) {
-          console.error('Profile creation failed:', insertProfileError);
-        } else {
-          console.log('Profile created successfully');
-          
-          // Create seller account
-          const { error: insertSellerError } = await supabase
-            .from('seller_accounts')
-            .insert({
-              user_id: user.id,
-              is_onboarded: false,
-              account_status: 'pending'
-            });
-            
-          if (insertSellerError) {
-            console.error('Seller account creation failed:', insertSellerError);
-          } else {
-            console.log('Seller account created successfully');
-          }
-        }
-      } else {
-        // Check if seller account exists
-        const { data: sellerAccount, error: sellerError } = await supabase
+          },
+          { onConflict: 'user_id' }
+        )
+      
+      if (profileError) {
+        console.error('Error updating profile:', profileError)
+      }
+      
+      // Check/create seller account
+      const { data: sellerAccount } = await supabase
+        .from('seller_accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (!sellerAccount) {
+        await supabase
           .from('seller_accounts')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (sellerError?.code === 'PGRST116' || !sellerAccount) {
-          console.log('Creating seller account for existing profile');
-          
-          const { error: createSellerError } = await supabase
-            .from('seller_accounts')
-            .insert({
-              user_id: user.id,
-              is_onboarded: false,
-              account_status: 'pending'
-            });
-            
-          if (createSellerError) {
-            console.error('Seller account creation failed:', createSellerError);
-          }
-        }
+          .insert({
+            user_id: user.id,
+            is_onboarded: false,
+            account_status: 'pending'
+          })
       }
     }
     
-    // Return the response with cookies already set
     return response
-  } catch (error: unknown) {
-    console.error('Auth callback error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown authentication error occurred'
-    
+  } catch (error) {
+    console.error('Unexpected error in auth callback:', error)
     return NextResponse.redirect(
-      new URL(`/auth/login?error=${encodeURIComponent(errorMessage)}`, origin)
+      new URL('/auth/login?error=Unexpected+error+during+authentication', request.url)
     )
   }
 } 

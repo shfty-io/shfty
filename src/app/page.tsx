@@ -4,7 +4,6 @@ import { createServiceClient } from '@/lib/server'
 import { AppSidebar } from "@/components/root/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { MessageDisplay } from '@/components/global/MessageDisplay'
-import { OAuthRedirector } from '@/components/auth/OAuthRedirector'
 
 interface Product {
   id: string
@@ -117,8 +116,6 @@ export default async function Home({
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <OAuthRedirector />
-      
       <div className="flex w-full">
         <AppSidebar />
         <SidebarInset className="w-full">

@@ -12,9 +12,8 @@ export function SignOutButton() {
   async function handleSignOut() {
     try {
       setIsLoading(true);
-      console.log("Signing out user...");
       
-      // Sign out using the client-side supabase instance
+      // Sign out the user
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -22,13 +21,13 @@ export function SignOutButton() {
         return;
       }
       
-      console.log("User signed out successfully");
-      
-      // Force router refresh and redirect to login
+      // Force refresh
       router.refresh();
+      
+      // Redirect to login page
       router.push('/auth/login');
     } catch (err) {
-      console.error("Unexpected error during sign-out:", err);
+      console.error("Error during sign out:", err);
     } finally {
       setIsLoading(false);
     }
