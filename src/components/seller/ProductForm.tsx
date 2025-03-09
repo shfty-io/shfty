@@ -759,9 +759,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       tempDiv.innerHTML = formData.description;
       const plainText = tempDiv.textContent || '';
       
-      // Save original text to revert if needed
-      const originalText = formData.description;
-      
       // Show a toast for the process
       toast({
         title: "Enhancing description...",

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse the request body
-    const { text, type, html, maxLength = 5000 } = await request.json();
+    const { text, type, maxLength = 5000 } = await request.json();
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
