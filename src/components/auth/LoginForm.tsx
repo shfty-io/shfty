@@ -44,6 +44,7 @@ export function LoginForm({
         provider: 'github',
         options: {
           redirectTo: callbackUrl.toString(),
+          scopes: 'repo',
         }
       })
 
