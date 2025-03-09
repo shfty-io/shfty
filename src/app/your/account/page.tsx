@@ -19,7 +19,6 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -66,9 +65,6 @@ export default function AccountPage() {
     // Optimistic UI update - update the state immediately before the API call
     setProfile(prev => prev ? {...prev, email_notifications_enabled: isEnabled} : null);
     
-    // Set loading state (but don't disable the toggle)
-    setIsUpdatingNotifications(true);
-    
     try {
       // Create form data
       const formData = new FormData();
@@ -87,8 +83,6 @@ export default function AccountPage() {
       console.error('Error updating notifications:', error);
       // Revert the checkbox state in case of an error
       setProfile(prev => prev ? {...prev, email_notifications_enabled: !isEnabled} : null);
-    } finally {
-      setIsUpdatingNotifications(false);
     }
   };
   

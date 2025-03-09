@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from '@/lib/client';
-import { formatCurrency } from '@/lib/utils';
 import { User } from '@supabase/supabase-js';
 import { EarningsPanel } from '@/components/earnings/EarningsPanel';
 
