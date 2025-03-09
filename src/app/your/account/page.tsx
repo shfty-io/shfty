@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 
 interface Profile {
   email_notifications_enabled: boolean;
+  created_at?: string;
 }
 
 export default function AccountPage() {
@@ -37,7 +38,7 @@ export default function AccountPage() {
         // Load profile data including notification preferences
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('email_notifications_enabled')
+          .select('email_notifications_enabled, created_at')
           .eq('id', user.id)
           .single();
         
@@ -102,6 +103,26 @@ export default function AccountPage() {
       <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
       
       <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
+          <div className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="font-medium">{user.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Member Since</p>
+                <p className="font-medium">
+                  {profile.created_at 
+                    ? new Date(profile.created_at).toLocaleDateString() 
+                    : new Date(user.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h2 className="text-lg font-semibold mb-4">Notifications</h2>
           <div className="space-y-4">
