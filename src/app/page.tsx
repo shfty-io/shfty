@@ -19,6 +19,8 @@ interface Product {
   purchase_count: number
   trending_score: number
   likes_count: number
+  github_repo_url: string | null
+  github_token: string | null
   user: {
     avatar_url: string | null
     full_name: string | null
@@ -62,6 +64,8 @@ async function getProducts(): Promise<Product[]> {
         purchase_count,
         trending_score,
         likes_count,
+        github_repo_url,
+        github_token,
         user:profiles!products_user_id_fkey (
           avatar_url,
           full_name
@@ -84,8 +88,18 @@ async function getProducts(): Promise<Product[]> {
       return []
     }
 
+    // Filter out products that have GitHub repo URL but no valid GitHub token
+    const filteredProducts = data.filter(product => {
+      // If product has a GitHub repo URL, it must also have a GitHub token
+      if (product.github_repo_url) {
+        return !!product.github_token;
+      }
+      // Keep products without GitHub repo URLs (they might use direct download)
+      return true;
+    });
+
     // Transform data to match Product interface
-    return data.map(item => ({
+    return filteredProducts.map(item => ({
       ...item,
       // Add empty categories array since it's in the Product interface but not in the DB query result
       categories: [],

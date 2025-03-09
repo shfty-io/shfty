@@ -16,6 +16,7 @@ type TagsSelectorProps = {
   setSelectedTags: (tags: Tag[]) => void;
   title: string;
   maxTags?: number;
+  onOpenChange?: (isOpen: boolean) => void;
 };
 
 export function TagsSelector({ 
@@ -23,7 +24,8 @@ export function TagsSelector({
   selectedTags, 
   setSelectedTags, 
   title, 
-  maxTags = Infinity 
+  maxTags = Infinity,
+  onOpenChange
 }: TagsSelectorProps) {
   const selectedsContainerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +38,12 @@ export function TagsSelector({
   const addSelectedTag = (tag: Tag) => {
     if (selectedTags.length < maxTags) {
       setSelectedTags([...selectedTags, tag]);
+      
+      // Close dropdown if reached max tags
+      if (selectedTags.length + 1 >= maxTags) {
+        setIsOpen(false);
+        onOpenChange?.(false);
+      }
     }
   };
 
@@ -53,6 +61,7 @@ export function TagsSelector({
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        onOpenChange?.(false);
       }
     };
 
@@ -60,10 +69,23 @@ export function TagsSelector({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [onOpenChange]);
+
+  // Call onOpenChange when isOpen changes
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
+
+  // Modify onClick handler for the dropdown toggle
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+  };
 
   return (
-    <div className="w-full flex flex-col relative z-[100]" ref={containerRef}>
+    <div 
+      className={`w-full flex flex-col relative ${isOpen ? 'z-[100]' : 'z-0'}`} 
+      ref={containerRef}
+    >
       <motion.h2 layout className="text-sm font-medium mb-2">
         {title}
         {maxTags !== Infinity && (
@@ -79,7 +101,7 @@ export function TagsSelector({
         }}
         ref={selectedsContainerRef}
         layout
-        onClick={() => setIsOpen(true)}
+        onClick={toggleDropdown}
       >
         {selectedTags.length === 0 && (
           <div className="flex justify-between items-center w-full px-2">
@@ -130,13 +152,13 @@ export function TagsSelector({
       <AnimatePresence>
         {isOpen && tags.length > 0 && (
           <motion.div
-            className="bg-background shadow-md border w-full z-[100] absolute top-[calc(100%-10px)] left-0"
+            className="bg-background shadow-md border w-full z-[100] absolute top-[calc(100%-10px)] left-0 pointer-events-auto"
             style={{
               borderRadius: 8,
             }}
             initial={{ opacity: 0, y: -10, scaleY: 0.8 }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            exit={{ opacity: 0, y: -10, scaleY: 0.8 }}
+            exit={{ opacity: 0, y: -10, scaleY: 0.8, pointerEvents: 'none' }}
             transition={{ duration: 0.15 }}
           >
             <motion.div className="flex flex-wrap gap-2 p-3 max-h-[200px] overflow-y-auto">
@@ -156,6 +178,7 @@ export function TagsSelector({
                         addSelectedTag(tag);
                         if (selectedTags.length + 1 >= maxTags) {
                           setIsOpen(false);
+                          onOpenChange?.(false);
                         }
                       }
                     }}

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { createClient } from "@/lib/client";
-import { Github, Upload, X, Check } from "lucide-react";
+import { Github, Upload, X, Check, Wand2, Loader2 } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -85,6 +85,11 @@ const technologies = [
   { id: "redis", label: "Redis" },
   { id: "websocket", label: "WebSocket" },
 ];
+
+const MAX_NAME_LENGTH = 25;
+const MAX_BYLINE_LENGTH = 25;
+const MAX_SHORT_DESCRIPTION_LENGTH = 150;
+const MAX_DESCRIPTION_LENGTH = 5000;
 
 export type ProductFormData = {
   id?: string;
@@ -185,6 +190,13 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       : []
   );
 
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [isTechnologiesOpen, setIsTechnologiesOpen] = useState(false);
+
+  // Add new state variables for AI enhancement
+  const [isEnhancingShortDesc, setIsEnhancingShortDesc] = useState(false);
+  const [isEnhancingFullDesc, setIsEnhancingFullDesc] = useState(false);
+
   const addFaqItem = () => {
     setFaqItems([...faqItems, { question: '', answer: '' }]);
   };
@@ -201,6 +213,84 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required text fields
+    if (!formData.name || formData.name.trim() === '') {
+      toast({
+        title: "Validation Error",
+        description: "Please provide a product name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.name.length > MAX_NAME_LENGTH) {
+      toast({
+        title: "Validation Error",
+        description: `Product name must be ${MAX_NAME_LENGTH} characters or less`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.byline || formData.byline.trim() === '') {
+      toast({
+        title: "Validation Error",
+        description: "Please provide a product slug (URL name)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.byline.length > MAX_BYLINE_LENGTH) {
+      toast({
+        title: "Validation Error",
+        description: `Slug must be ${MAX_BYLINE_LENGTH} characters or less`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.shortDescription || formData.shortDescription.trim() === '') {
+      toast({
+        title: "Validation Error",
+        description: "Please provide a short description",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.shortDescription.length > MAX_SHORT_DESCRIPTION_LENGTH) {
+      toast({
+        title: "Validation Error",
+        description: `Short description must be ${MAX_SHORT_DESCRIPTION_LENGTH} characters or less`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.description || formData.description.trim() === '') {
+      toast({
+        title: "Validation Error",
+        description: "Please provide a full description",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check description length by extracting plain text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = formData.description;
+    const descriptionLength = tempDiv.textContent?.length || 0;
+
+    if (descriptionLength > MAX_DESCRIPTION_LENGTH) {
+      toast({
+        title: "Validation Error",
+        description: `Full description must be ${MAX_DESCRIPTION_LENGTH} characters or less`,
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (formData.imageUrls.length < 2) {
       toast({
@@ -518,6 +608,216 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     }));
   }, [selectedTechnologies]);
 
+  // Add these handlers for the TagsSelector components
+  const handleCategoriesOpenChange = (isOpen: boolean) => {
+    setIsCategoriesOpen(isOpen);
+  };
+
+  const handleTechnologiesOpenChange = (isOpen: boolean) => {
+    setIsTechnologiesOpen(isOpen);
+  };
+
+  // Update the enhanceShortDescription function to use streaming
+  const enhanceShortDescription = async () => {
+    if (!formData.shortDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter some text to enhance",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsEnhancingShortDesc(true);
+      
+      // Prepare a copy of the original text in case we need to revert
+      const originalText = formData.shortDescription;
+      let enhancedText = '';
+      
+      // Use the streaming API endpoint
+      const response = await fetch('/api/ai/enhance-text/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: formData.shortDescription,
+          type: 'short',
+          maxLength: MAX_SHORT_DESCRIPTION_LENGTH
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to enhance text');
+      }
+      
+      // Set up event source for streaming
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get stream reader');
+      }
+      
+      // Create a toast that we can update
+      const { dismiss } = toast({
+        title: "Enhancing description...",
+        description: "AI is working on your text",
+        duration: 10000, // Long duration since we'll dismiss it manually
+      });
+      
+      // Process the streaming response
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          // Decode the chunk
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('event: chunk')) {
+              const dataLine = line.split('\n')[1];
+              if (dataLine && dataLine.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(dataLine.slice(6));
+                  if (data.text) {
+                    enhancedText += data.text;
+                    // Update the form data in real-time as we receive chunks
+                    setFormData(prev => ({
+                      ...prev,
+                      shortDescription: enhancedText.substring(0, MAX_SHORT_DESCRIPTION_LENGTH)
+                    }));
+                  }
+                } catch (e) {
+                  console.error('Error parsing chunk data:', e);
+                }
+              }
+            } else if (line.startsWith('event: error')) {
+              const dataLine = line.split('\n')[1];
+              if (dataLine && dataLine.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(dataLine.slice(6));
+                  throw new Error(data.error || 'Unknown error from AI service');
+                } catch (e) {
+                  throw e;
+                }
+              }
+            } else if (line.startsWith('event: complete')) {
+              // Processing is complete, the full text is now in enhancedText
+            }
+          }
+        }
+        
+        // Success notification
+        dismiss();
+        toast({
+          title: "Success",
+          description: "Description enhanced with AI",
+        });
+        
+      } catch (streamError) {
+        console.error('Stream processing error:', streamError);
+        // Revert to original text on error
+        setFormData(prev => ({
+          ...prev,
+          shortDescription: originalText
+        }));
+        throw streamError;
+      } finally {
+        reader.releaseLock();
+      }
+      
+    } catch (error) {
+      console.error('Error enhancing text:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to enhance text",
+        variant: "destructive"
+      });
+    } finally {
+      setIsEnhancingShortDesc(false);
+    }
+  };
+  
+  // Add this completely new implementation of enhanceFullDescription
+  const enhanceFullDescription = async () => {
+    if (!formData.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter some text to enhance",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsEnhancingFullDesc(true);
+      
+      // Extract plain text from HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = formData.description;
+      const plainText = tempDiv.textContent || '';
+      
+      // Save original text to revert if needed
+      const originalText = formData.description;
+      
+      // Show a toast for the process
+      toast({
+        title: "Enhancing description...",
+        description: "AI is working on your text",
+        duration: 10000,
+      });
+      
+      // Use the non-streaming endpoint
+      const response = await fetch('/api/ai/enhance-text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: plainText,
+          type: 'full',
+          maxLength: MAX_DESCRIPTION_LENGTH
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to enhance text');
+      }
+      
+      const data = await response.json();
+      
+      if (data.enhancedText) {
+        // Format the enhanced text as HTML with proper paragraphs
+        const formattedText = data.enhancedText
+          .split('\n\n')
+          .map((paragraph: string) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+          .join('');
+        
+        // Update the form with the formatted HTML
+        setFormData(prev => ({
+          ...prev,
+          description: formattedText
+        }));
+        
+        toast({
+          title: "Success",
+          description: "Description enhanced with AI",
+        });
+      }
+    } catch (error) {
+      console.error('Error enhancing text:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to enhance text",
+        variant: "destructive"
+      });
+    } finally {
+      setIsEnhancingFullDesc(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8 relative z-[50]">
       <div className="space-y-6">
@@ -525,7 +825,10 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2 relative z-[70]">
             <div className="h-6 flex items-center">
-              <Label htmlFor="name" className="text-sm font-medium">Name</Label>
+              <Label htmlFor="name" className="text-sm font-medium">
+                Name
+                <span className="text-destructive ml-1">*</span>
+              </Label>
             </div>
             <div className="relative">
               <Input
@@ -535,11 +838,12 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 className="h-10"
-                maxLength={25}
+                maxLength={MAX_NAME_LENGTH}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              The display name of your product (max 25 characters)
+            <p className="text-xs text-muted-foreground mt-1 flex justify-between">
+              <span>The display name of your product</span>
+              <span>{formData.name.length}/{MAX_NAME_LENGTH}</span>
             </p>
           </div>
 
@@ -561,7 +865,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 }}
                 required
                 className={`h-10 ${formData.byline ? (isAvailable === false ? "border-red-500" : isAvailable === true ? "border-green-500" : "") : ""}`}
-                maxLength={25}
+                maxLength={MAX_BYLINE_LENGTH}
               />
               {formData.byline && (
                 <div className="absolute right-3 top-2.5">
@@ -576,8 +880,9 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               )}
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Used in the URL and imports, can&apos;t be changed later (max 25 characters)
+              <p className="text-xs text-muted-foreground mt-1 flex justify-between">
+                <span>Used in the URL and imports, can&apos;t be changed later</span>
+                <span>{formData.byline.length}/{MAX_BYLINE_LENGTH}</span>
               </p>
               {message && (
                 <p className={`text-xs ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
@@ -620,22 +925,24 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2 relative z-[150]">
+          <div className={`space-y-2 relative ${isCategoriesOpen ? 'z-[150]' : 'z-0'}`}>
             <TagsSelector 
               tags={categories}
               selectedTags={selectedCategories}
               setSelectedTags={setSelectedCategories}
               title="Categories"
               maxTags={3}
+              onOpenChange={handleCategoriesOpenChange}
             />
           </div>
 
-          <div className="space-y-2 relative z-[150]">
+          <div className={`space-y-2 relative ${isTechnologiesOpen ? 'z-[150]' : 'z-0'}`}>
             <TagsSelector 
               tags={technologies}
               selectedTags={selectedTechnologies}
               setSelectedTags={setSelectedTechnologies}
               title="Technologies Used"
+              onOpenChange={handleTechnologiesOpenChange}
             />
           </div>
         </div>
@@ -810,33 +1117,106 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div className="space-y-2 relative z-[70]">
-          <Label htmlFor="shortDescription" className="text-sm font-medium">Short Description</Label>
+          <div className="flex justify-between items-center mb-2">
+            <Label htmlFor="shortDescription" className="text-sm font-medium">
+              Short Description
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={enhanceShortDescription}
+              disabled={isEnhancingShortDesc || !formData.shortDescription.trim()}
+              className="flex items-center gap-1"
+            >
+              {isEnhancingShortDesc ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Enhancing...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-4 w-4" />
+                  <span>Enhance with AI</span>
+                </>
+              )}
+            </Button>
+          </div>
           <div className="relative">
             <Textarea
               id="shortDescription"
               placeholder="Used in search results and as an intro at the top of your template's page."
               value={formData.shortDescription}
-              onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                if (newValue.length <= MAX_SHORT_DESCRIPTION_LENGTH) {
+                  setFormData({ ...formData, shortDescription: newValue });
+                }
+              }}
               required
               className="min-h-[80px] resize-y"
+              maxLength={MAX_SHORT_DESCRIPTION_LENGTH}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Brief description of your product
+          <p className="text-xs text-muted-foreground mt-1 flex justify-between">
+            <span>Brief description of your product</span>
+            <span>{formData.shortDescription.length}/{MAX_SHORT_DESCRIPTION_LENGTH}</span>
           </p>
         </div>
 
         <div className="space-y-2 relative z-[70]">
-          <Label htmlFor="description" className="text-sm font-medium">Full Description</Label>
+          <div className="flex justify-between items-center mb-2">
+            <Label htmlFor="description" className="text-sm font-medium">
+              Full Description
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={enhanceFullDescription}
+              disabled={isEnhancingFullDesc || !formData.description.trim()}
+              className="flex items-center gap-1"
+            >
+              {isEnhancingFullDesc ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Enhancing...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-4 w-4" />
+                  <span>Enhance with AI</span>
+                </>
+              )}
+            </Button>
+          </div>
           <div className="relative w-full">
             <RichTextEditor
               value={formData.description}
-              onChange={(value: string) => setFormData({ ...formData, description: value })}
+              onChange={(value: string) => {
+                // For rich text editor, we need to check the plain text length
+                // This is a simple approach - you might need a better HTML stripping logic
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = value;
+                const textLength = tempDiv.textContent?.length || 0;
+                
+                if (textLength <= MAX_DESCRIPTION_LENGTH) {
+                  setFormData({ ...formData, description: value });
+                }
+              }}
               placeholder="Provide as much detail as possible to significantly increase sales."
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Detailed information about your product
+          <p className="text-xs text-muted-foreground mt-1 flex justify-between">
+            <span>Detailed information about your product</span>
+            <span>{(() => {
+              // Calculate plain text length for the rich text
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = formData.description;
+              return `${tempDiv.textContent?.length || 0}/${MAX_DESCRIPTION_LENGTH}`;
+            })()}</span>
           </p>
         </div>
 

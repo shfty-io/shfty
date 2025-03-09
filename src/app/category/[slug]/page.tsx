@@ -18,6 +18,8 @@ interface Product {
   purchase_count: number;
   trending_score: number;
   likes_count: number;
+  github_repo_url: string | null;
+  github_token: string | null;
   user: {
     avatar_url: string | null;
     full_name: string | null;
@@ -56,6 +58,8 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
       purchase_count,
       trending_score,
       likes_count,
+      github_repo_url,
+      github_token,
       user:profiles!inner(avatar_url, full_name)
     `)
     .eq('status', 'approved')
@@ -67,11 +71,21 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
     return [];
   }
 
+  // Filter out products that have GitHub repo URL but no valid GitHub token
+  const filteredProducts = products?.filter(product => {
+    // If product has a GitHub repo URL, it must also have a GitHub token
+    if (product.github_repo_url) {
+      return !!product.github_token;
+    }
+    // Keep products without GitHub repo URLs (they might use direct download)
+    return true;
+  }) || [];
+
   // Transform the user array into a single object
-  const transformedProducts = products?.map(product => ({
+  const transformedProducts = filteredProducts.map(product => ({
     ...product,
     user: product.user[0]
-  })) || [];
+  }));
 
   return transformedProducts as Product[];
 }
