@@ -17,11 +17,12 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const emailNotifications = formData.get("emailNotifications") === "on";
 
-  const { error } = await supabase.auth.updateUser({
-    data: {
-      email_notifications: emailNotifications,
-    },
-  });
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      email_notifications_enabled: emailNotifications,
+    })
+    .eq('id', user.id);
 
   if (error) {
     return NextResponse.json(

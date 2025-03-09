@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/client';
 import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,12 +35,11 @@ export function SignOutButton() {
   }
 
   return (
-    <button
+    <Button
       onClick={handleSignOut}
       disabled={isLoading}
-      className="bg-red-100 text-red-600 px-4 py-2 rounded-md hover:bg-red-200 transition-colors disabled:opacity-50"
     >
       {isLoading ? 'Signing Out...' : 'Sign Out'}
-    </button>
+    </Button>
   );
 } 
