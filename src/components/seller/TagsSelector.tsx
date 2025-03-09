@@ -63,7 +63,7 @@ export function TagsSelector({
   }, []);
 
   return (
-    <div className="w-full flex flex-col relative" ref={containerRef}>
+    <div className="w-full flex flex-col relative z-[100]" ref={containerRef}>
       <motion.h2 layout className="text-sm font-medium mb-2">
         {title}
         {maxTags !== Infinity && (
@@ -130,7 +130,7 @@ export function TagsSelector({
       <AnimatePresence>
         {isOpen && tags.length > 0 && (
           <motion.div
-            className="bg-background shadow-md border w-full z-50 absolute top-[calc(100%-10px)] left-0"
+            className="bg-background shadow-md border w-full z-[100] absolute top-[calc(100%-10px)] left-0"
             style={{
               borderRadius: 8,
             }}

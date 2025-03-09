@@ -79,6 +79,29 @@ export async function POST(request: Request) {
       }
     }
 
+    // Check if the user has a Stripe Connected Account and delete it
+    try {
+      // Get the user's seller account
+      const { data: sellerAccount } = await supabase
+        .from('seller_accounts')
+        .select('stripe_account_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (sellerAccount?.stripe_account_id) {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: '2025-02-24.acacia',
+        });
+        
+        // Use the Stripe Delete API to delete the connected account
+        await stripe.accounts.del(sellerAccount.stripe_account_id);
+        console.log(`Deleted Stripe connected account ${sellerAccount.stripe_account_id} for user ${user.id}`);
+      }
+    } catch (stripeError) {
+      console.error('Error deleting Stripe connected account:', stripeError);
+      // Continue with account deletion even if connected account deletion fails
+    }
+
     // Only call delete_user function if we found a profile
     if (profileId) {
       // Call the database function to delete the user with the profile ID

@@ -519,7 +519,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   }, [selectedTechnologies]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 relative z-40">
+    <form onSubmit={handleSubmit} className="space-y-8 relative z-[50]">
       <div className="space-y-6">
         {/* Two column layout for name and byline */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -620,7 +620,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2 relative z-[70]">
+          <div className="space-y-2 relative z-[150]">
             <TagsSelector 
               tags={categories}
               selectedTags={selectedCategories}
@@ -630,7 +630,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             />
           </div>
 
-          <div className="space-y-2 relative z-[70]">
+          <div className="space-y-2 relative z-[150]">
             <TagsSelector 
               tags={technologies}
               selectedTags={selectedTechnologies}
