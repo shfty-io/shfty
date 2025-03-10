@@ -132,7 +132,7 @@ async function getProducts(): Promise<Product[]> {
       // Ensure all required fields are present
       const requiredFields = ['id', 'name', 'description', 'price', 'image_urls', 'short_description', 'byline', 'created_at', 'view_count', 'purchase_count', 'trending_score', 'likes_count'];
       const missingFields = requiredFields.filter(field => {
-        return (transformedProduct as any)[field] === undefined;
+        return (transformedProduct as Partial<Product>)[field as keyof Product] === undefined;
       });
       
       if (missingFields.length > 0) {

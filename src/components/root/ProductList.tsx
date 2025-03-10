@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProductCard } from '@/components/product/ProductCard'
 import ProductFilters from './ProductFilters'
 
@@ -37,6 +37,7 @@ interface ProductListProps {
 }
 
 export default function ProductList({ products }: ProductListProps) {
+  // These state variables are used in the ProductFilters component
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<{
     sortBy: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
@@ -47,6 +48,12 @@ export default function ProductList({ products }: ProductListProps) {
   // Log products for debugging
   console.log('ProductList received products:', products);
   console.log('ProductList received products length:', products.length);
+  
+  // For debugging - log current filter state
+  useEffect(() => {
+    console.log('Current filters:', filters);
+    console.log('Current search query:', searchQuery);
+  }, [filters, searchQuery]);
 
   // SIMPLIFIED: Just display all products without filtering or sorting
   if (products.length === 0) {

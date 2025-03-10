@@ -21,6 +21,7 @@ import { UrlInput } from "@/components/ui/url-input";
 import { useDebounce } from "@/hooks/use-debounce";
 import { TagsSelector } from "./TagsSelector";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { migrateRichTextFormatting } from "@/lib/utils";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -169,7 +170,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     name: initialData?.name ?? "",
     byline: initialData?.byline ?? "",
     shortDescription: initialData?.shortDescription ?? "",
-    description: initialData?.description ?? "",
+    description: initialData?.description ? migrateRichTextFormatting(initialData.description) : "",
     price: initialData?.price ?? 0,
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
@@ -938,23 +939,28 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
   // Add this helper function to convert markdown to HTML
   const convertMarkdownToHtml = (text: string): string => {
-    // Convert bold: **text** or __text__ to <strong>text</strong>
-    let html = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, (_, g1, g2) => `<strong>${g1 || g2}</strong>`);
+    // Convert bold: **text** or __text__ to <strong class="rich-text-strong">text</strong>
+    let html = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, (_, g1, g2) => `<strong class="rich-text-strong">${g1 || g2}</strong>`);
     
-    // Convert italic: *text* or _text_ to <em>text</em>
+    // Convert italic: *text* or _text_ to <em class="rich-text-em">text</em>
     html = html.replace(/\*(.*?)\*|_(.*?)_/g, (_, g1, g2) => {
       // Skip if this is part of a bold pattern that was already processed
       if ((g1 && !g1.includes('*')) || (g2 && !g2.includes('_'))) {
-        return `<em>${g1 || g2}</em>`;
+        return `<em class="rich-text-em">${g1 || g2}</em>`;
       }
       return _;
     });
     
-    // Convert inline code: `code` to <code>code</code>
-    html = html.replace(/`(.*?)`/g, (_, g1) => `<code style="background-color: #f0f0f0; padding: 0.1rem 0.2rem; border-radius: 0.2rem;">${g1}</code>`);
+    // Convert inline code: `code` to <code class="rich-text-code">code</code>
+    html = html.replace(/`(.*?)`/g, (_, g1) => `<code class="rich-text-code">${g1}</code>`);
     
-    // Convert links: [text](url) to <a href="url">text</a>
-    html = html.replace(/\[(.*?)\]\((.*?)\)/g, (_, text, url) => `<a href="${url}" style="color: #3b82f6; text-decoration: underline;">${text}</a>`);
+    // Convert links: [text](url) to <a href="url" class="rich-text-a">text</a>
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, (_, text, url) => `<a href="${url}" class="rich-text-a">${text}</a>`);
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!html.startsWith('<p') && !html.startsWith('<h')) {
+      html = `<p class="rich-text-p">${html}</p>`;
+    }
     
     return html;
   };

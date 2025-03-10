@@ -30,28 +30,33 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
     const applyStylesToElements = React.useCallback(() => {
       if (!editorRef.current) return;
       
-      const styleMap: Record<string, React.CSSProperties> = {
-        h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
-        h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
-        h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' },
-        p: { marginBottom: '1rem' },
-        ul: { listStyleType: 'disc', paddingLeft: '2rem', marginBottom: '1rem' },
-        ol: { listStyleType: 'decimal', paddingLeft: '2rem', marginBottom: '1rem' },
-        li: { marginBottom: '0.25rem' },
-        strong: { fontWeight: 'bold' },
-        em: { fontStyle: 'italic' },
-        code: { backgroundColor: '#f0f0f0', padding: '0.1rem 0.2rem', borderRadius: '0.2rem', fontFamily: 'monospace' },
-        a: { color: '#3b82f6', textDecoration: 'underline' }
-      };
-      
-      // Apply styles to all elements
-      Object.keys(styleMap).forEach(tag => {
-        const elements = editorRef.current?.querySelectorAll(tag);
-        elements?.forEach(el => {
-          if (el instanceof HTMLElement && styleMap[tag]) {
-            Object.assign(el.style, styleMap[tag]);
-          }
-        });
+      // Instead of applying inline styles, add CSS classes to elements
+      const elements = editorRef.current.querySelectorAll('h1, h2, h3, p, ul, ol, li, strong, em, code, a');
+      elements.forEach(el => {
+        // Add appropriate classes based on element type
+        if (el.tagName.toLowerCase() === 'h1') {
+          el.classList.add('rich-text-h1');
+        } else if (el.tagName.toLowerCase() === 'h2') {
+          el.classList.add('rich-text-h2');
+        } else if (el.tagName.toLowerCase() === 'h3') {
+          el.classList.add('rich-text-h3');
+        } else if (el.tagName.toLowerCase() === 'p') {
+          el.classList.add('rich-text-p');
+        } else if (el.tagName.toLowerCase() === 'ul') {
+          el.classList.add('rich-text-ul');
+        } else if (el.tagName.toLowerCase() === 'ol') {
+          el.classList.add('rich-text-ol');
+        } else if (el.tagName.toLowerCase() === 'li') {
+          el.classList.add('rich-text-li');
+        } else if (el.tagName.toLowerCase() === 'strong') {
+          el.classList.add('rich-text-strong');
+        } else if (el.tagName.toLowerCase() === 'em') {
+          el.classList.add('rich-text-em');
+        } else if (el.tagName.toLowerCase() === 'code') {
+          el.classList.add('rich-text-code');
+        } else if (el.tagName.toLowerCase() === 'a') {
+          el.classList.add('rich-text-a');
+        }
       });
       
       // Log the current HTML content for debugging
@@ -119,9 +124,13 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
       if (editorRef.current) {
         const content = editorRef.current.innerHTML;
         if (content !== prevValueRef.current) {
-          onChange(content);
-          prevValueRef.current = content;
+          // Apply styles to ensure new content has the right classes
           applyStylesToElements();
+          
+          // Now get the updated content with classes
+          const updatedContent = editorRef.current.innerHTML;
+          onChange(updatedContent);
+          prevValueRef.current = updatedContent;
           
           // Check if we need to ensure format after deletion
           if (content.trim() === '' || content === '<br>') {
@@ -200,50 +209,51 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
     return (
       <div className="space-y-2">
         <style jsx global>{`
-          .editor-content h1 {
+          /* Editor styles for editing */
+          .editor-content h1, .rich-text-h1 {
             font-size: 1.875rem !important;
             font-weight: bold !important;
             margin-bottom: 1rem !important;
           }
-          .editor-content h2 {
+          .editor-content h2, .rich-text-h2 {
             font-size: 1.5rem !important;
             font-weight: bold !important;
             margin-bottom: 0.75rem !important;
           }
-          .editor-content h3 {
+          .editor-content h3, .rich-text-h3 {
             font-size: 1.25rem !important;
             font-weight: semibold !important;
             margin-bottom: 0.5rem !important;
           }
-          .editor-content p {
+          .editor-content p, .rich-text-p {
             margin-bottom: 1rem !important;
           }
-          .editor-content ul {
+          .editor-content ul, .rich-text-ul {
             list-style-type: disc !important;
             padding-left: 2rem !important;
             margin-bottom: 1rem !important;
           }
-          .editor-content ol {
+          .editor-content ol, .rich-text-ol {
             list-style-type: decimal !important;
             padding-left: 2rem !important;
             margin-bottom: 1rem !important;
           }
-          .editor-content li {
+          .editor-content li, .rich-text-li {
             margin-bottom: 0.25rem !important;
           }
-          .editor-content strong {
+          .editor-content strong, .rich-text-strong {
             font-weight: bold !important;
           }
-          .editor-content em {
+          .editor-content em, .rich-text-em {
             font-style: italic !important;
           }
-          .editor-content code {
+          .editor-content code, .rich-text-code {
             background-color: #f0f0f0 !important;
             padding: 0.1rem 0.2rem !important;
             border-radius: 0.2rem !important;
             font-family: monospace !important;
           }
-          .editor-content a {
+          .editor-content a, .rich-text-a {
             color: #3b82f6 !important;
             text-decoration: underline !important;
           }
