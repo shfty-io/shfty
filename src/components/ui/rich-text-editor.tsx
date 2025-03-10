@@ -21,107 +21,181 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
   ({ className, value, onChange, placeholder, ...props }, ref) => {
     const editorRef = React.useRef<HTMLDivElement>(null);
     const [isInitialized, setIsInitialized] = React.useState(false);
+    const [currentFormat, setCurrentFormat] = React.useState<string>("p");
+    const prevValueRef = React.useRef<string>(value);
 
     React.useImperativeHandle(ref, () => editorRef.current as HTMLDivElement);
 
+    // Apply styles to elements whenever content changes
+    const applyStylesToElements = React.useCallback(() => {
+      if (!editorRef.current) return;
+      
+      const styleMap: Record<string, React.CSSProperties> = {
+        h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
+        h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
+        h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' },
+        p: { marginBottom: '1rem' },
+        ul: { listStyleType: 'disc', paddingLeft: '2rem', marginBottom: '1rem' },
+        ol: { listStyleType: 'decimal', paddingLeft: '2rem', marginBottom: '1rem' },
+        li: { marginBottom: '0.25rem' },
+        strong: { fontWeight: 'bold' },
+        em: { fontStyle: 'italic' },
+        code: { backgroundColor: '#f0f0f0', padding: '0.1rem 0.2rem', borderRadius: '0.2rem', fontFamily: 'monospace' },
+        a: { color: '#3b82f6', textDecoration: 'underline' }
+      };
+      
+      // Apply styles to all elements
+      Object.keys(styleMap).forEach(tag => {
+        const elements = editorRef.current?.querySelectorAll(tag);
+        elements?.forEach(el => {
+          if (el instanceof HTMLElement && styleMap[tag]) {
+            Object.assign(el.style, styleMap[tag]);
+          }
+        });
+      });
+      
+      // Log the current HTML content for debugging
+      console.log('Current editor HTML:', editorRef.current.innerHTML);
+    }, []);
+
+    // Initialize the editor with the provided value
     React.useEffect(() => {
       if (editorRef.current && !isInitialized) {
         editorRef.current.innerHTML = value;
-        
-        // Apply styles to any existing headings
-        const styleMap: Record<string, React.CSSProperties> = {
-          h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
-          h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
-          h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' }
-        };
-        
-        // Apply styles to all heading elements
-        ['h1', 'h2', 'h3'].forEach(tag => {
-          const elements = editorRef.current?.querySelectorAll(tag);
-          elements?.forEach(el => {
-            if (el instanceof HTMLElement && styleMap[tag]) {
-              Object.assign(el.style, styleMap[tag]);
-            }
-          });
-        });
-        
         setIsInitialized(true);
       }
     }, [value, isInitialized]);
 
+    // Update the editor content when value prop changes externally
+    React.useEffect(() => {
+      if (editorRef.current && isInitialized && value !== prevValueRef.current) {
+        // Only update if the value has actually changed and is different from current editor content
+        if (value !== editorRef.current.innerHTML) {
+          editorRef.current.innerHTML = value;
+          prevValueRef.current = value;
+          
+          // Apply styles after updating content
+          applyStylesToElements();
+        }
+      }
+    }, [value, isInitialized, applyStylesToElements]);
+
+    // Ensure the current format is maintained
+    const ensureFormat = React.useCallback(() => {
+      if (!editorRef.current) return;
+      
+      // If the editor is empty or contains only a <br> tag, ensure it has the current format
+      const content = editorRef.current.innerHTML.trim();
+      if (content === '' || content === '<br>') {
+        // Create a new element with the current format
+        const newElement = document.createElement(currentFormat);
+        newElement.innerHTML = '<br>';
+        
+        // Clear the editor and add the new element
+        editorRef.current.innerHTML = '';
+        editorRef.current.appendChild(newElement);
+        
+        // Set cursor inside the new element
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.setStart(newElement, 0);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        
+        // Apply styles to the newly created element
+        applyStylesToElements();
+        
+        // Notify about the change
+        onChange(editorRef.current.innerHTML);
+        prevValueRef.current = editorRef.current.innerHTML;
+      }
+    }, [currentFormat, onChange, prevValueRef, applyStylesToElements]);
+
+    // Handle input changes
     const handleInput = React.useCallback(() => {
       if (editorRef.current) {
         const content = editorRef.current.innerHTML;
-        if (content !== value) {
+        if (content !== prevValueRef.current) {
           onChange(content);
+          prevValueRef.current = content;
+          applyStylesToElements();
+          
+          // Check if we need to ensure format after deletion
+          if (content.trim() === '' || content === '<br>') {
+            ensureFormat();
+          }
         }
       }
-    }, [onChange, value]);
+    }, [onChange, applyStylesToElements, ensureFormat, prevValueRef]);
 
+    // Format text with execCommand
     const formatText = React.useCallback((command: string, value?: string) => {
       document.execCommand(command, false, value);
       handleInput();
       editorRef.current?.focus();
     }, [handleInput]);
 
-    const handleHeadingChange = React.useCallback((value: string) => {
-      const selection = window.getSelection();
-      if (!selection || !selection.rangeCount || !editorRef.current) return;
-
-      // Style map for headings
-      const styleMap: Record<string, React.CSSProperties> = {
-        h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
-        h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
-        h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' },
-        p: { fontSize: '1rem', fontWeight: 'normal', marginBottom: '0.5rem' }
-      };
-
-      // Apply appropriate styles based on the element type
-      const applyStyles = (el: HTMLElement, tagName: string) => {
-        if (styleMap[tagName]) {
-          Object.assign(el.style, styleMap[tagName]);
-        }
-      };
-
-      const range = selection.getRangeAt(0);
-      const container = range.commonAncestorContainer;
-      let element = container.nodeType === 3 ? container.parentElement : container as HTMLElement;
-
-      // If no specific element is selected, wrap the entire selection in the new element
-      if (!element || element === editorRef.current) {
-        const newElement = document.createElement(value);
-        applyStyles(newElement, value);
-        try {
-          range.surroundContents(newElement);
-        } catch {
-          // If surroundContents fails, try a different approach
-          newElement.appendChild(range.extractContents());
-          range.insertNode(newElement);
-        }
-      } else {
-        // Find the closest block-level element
-        while (element && element !== editorRef.current) {
-          if (element.matches('p, h1, h2, h3, h4, h5, h6')) {
-            const newElement = document.createElement(value);
-            newElement.innerHTML = element.innerHTML;
-            applyStyles(newElement, value);
-            element.replaceWith(newElement);
-            break;
-          }
-          element = element.parentElement as HTMLElement;
-        }
+    // Handle format changes (h1, h2, h3, p)
+    const handleFormatChange = React.useCallback((format: string) => {
+      setCurrentFormat(format);
+      
+      // Use execCommand to format the current selection or line
+      if (format === 'p') {
+        formatText('formatBlock', '<p>');
+      } else if (format === 'h1') {
+        formatText('formatBlock', '<h1>');
+      } else if (format === 'h2') {
+        formatText('formatBlock', '<h2>');
+      } else if (format === 'h3') {
+        formatText('formatBlock', '<h3>');
       }
+      
+      // If the editor is empty, ensure the format is applied
+      if (editorRef.current && (editorRef.current.innerHTML.trim() === '' || editorRef.current.innerHTML === '<br>')) {
+        ensureFormat();
+      }
+    }, [formatText, ensureFormat]);
 
-      handleInput();
-      editorRef.current.focus();
-    }, [handleInput]);
-
+    // Handle key presses
     const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        formatText('insertParagraph');
+      // Handle Backspace and Delete keys
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        // Check if we're about to delete the last character
+        const selection = window.getSelection();
+        if (selection && editorRef.current) {
+          // Get the current block element
+          const range = selection.getRangeAt(0);
+          const container = range.commonAncestorContainer;
+          let currentElement = container.nodeType === 3 ? container.parentElement : container as HTMLElement;
+          
+          // Find the closest block element
+          while (currentElement && currentElement !== editorRef.current) {
+            if (currentElement.matches('p, h1, h2, h3, h4, h5, h6')) {
+              break;
+            }
+            currentElement = currentElement.parentElement as HTMLElement;
+          }
+          
+          // If we found a block element and it's almost empty
+          if (currentElement && currentElement !== editorRef.current) {
+            const text = currentElement.textContent || '';
+            if (text.length <= 1) {
+              // After the keypress, check if we need to restore the format
+              setTimeout(() => {
+                ensureFormat();
+              }, 0);
+            }
+          }
+        }
       }
-    }, [formatText]);
+      
+      // Let the browser handle Enter key naturally
+      // We'll just make sure styles are applied after any changes
+      setTimeout(applyStylesToElements, 0);
+    }, [applyStylesToElements, ensureFormat]);
 
     return (
       <div className="space-y-2">
@@ -141,11 +215,46 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
             font-weight: semibold !important;
             margin-bottom: 0.5rem !important;
           }
+          .editor-content p {
+            margin-bottom: 1rem !important;
+          }
+          .editor-content ul {
+            list-style-type: disc !important;
+            padding-left: 2rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .editor-content ol {
+            list-style-type: decimal !important;
+            padding-left: 2rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .editor-content li {
+            margin-bottom: 0.25rem !important;
+          }
+          .editor-content strong {
+            font-weight: bold !important;
+          }
+          .editor-content em {
+            font-style: italic !important;
+          }
+          .editor-content code {
+            background-color: #f0f0f0 !important;
+            padding: 0.1rem 0.2rem !important;
+            border-radius: 0.2rem !important;
+            font-family: monospace !important;
+          }
+          .editor-content a {
+            color: #3b82f6 !important;
+            text-decoration: underline !important;
+          }
         `}</style>
         <div className="flex items-center gap-2">
           <Select
-            defaultValue="p"
-            onValueChange={handleHeadingChange}
+            value={currentFormat}
+            onValueChange={(value) => {
+              console.log('Format changed to:', value);
+              handleFormatChange(value);
+            }}
           >
             <SelectTrigger className="w-[140px] h-8">
               <SelectValue placeholder="Paragraph" />
@@ -202,22 +311,11 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
           onInput={handleInput}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            // Reapply styles to ensure they're visible
-            const styleMap: Record<string, React.CSSProperties> = {
-              h1: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' },
-              h2: { fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' },
-              h3: { fontSize: '1.25rem', fontWeight: 'semibold', marginBottom: '0.5rem' }
-            };
-            
-            // Check and apply styles to all heading elements
-            ['h1', 'h2', 'h3'].forEach(tag => {
-              const elements = editorRef.current?.querySelectorAll(tag);
-              elements?.forEach(el => {
-                if (el instanceof HTMLElement && styleMap[tag]) {
-                  Object.assign(el.style, styleMap[tag]);
-                }
-              });
-            });
+            applyStylesToElements();
+            // Ensure format when focusing on an empty editor
+            if (editorRef.current && (editorRef.current.innerHTML.trim() === '' || editorRef.current.innerHTML === '<br>')) {
+              ensureFormat();
+            }
           }}
           className={cn(
             "editor-content min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:pl-4 [&>ol]:list-decimal [&>ol]:pl-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:text-xl [&>h3]:font-semibold",

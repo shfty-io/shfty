@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/server';
+import { createClient, createServerComponentClient } from '@/lib/server';
 import { ProductFormData } from '@/components/seller/ProductForm';
 import { revalidatePath } from 'next/cache';
 import { EditPageContent } from './page.client';
@@ -16,11 +16,11 @@ interface PageProps {
 export default async function EditProductPage({ params }: PageProps) {
   const { id } = await params;
   
-  const supabase = createClient();
+  const supabase = await createServerComponentClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return redirect('/auth/login');
+    return redirect(`/auth/login?redirect=/your/listings/${id}/edit`);
   }
 
   // Fetch product details
@@ -38,7 +38,7 @@ export default async function EditProductPage({ params }: PageProps) {
   async function handleSubmit(formData: ProductFormData) {
     'use server';
     
-    const supabase = createClient();
+    const supabase = await createServerComponentClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {

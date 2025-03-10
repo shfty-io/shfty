@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server'
+import { createClient, createServerComponentClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
 import { SuccessPageContent } from './page.client'
@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 async function getSessionAndProduct(sessionId: string, byline: string) {
   try {
-    const supabase = createClient()
+    const supabase = await createServerComponentClient()
 
     // 1. Verify the Stripe session
     const session = await stripe.checkout.sessions.retrieve(sessionId)
@@ -195,7 +195,7 @@ export default async function SuccessPage({
     return <SuccessPageContent status="download-error" byline={byline} />;
   }
 
-  const supabase = createClient()
+  const supabase = await createServerComponentClient()
   const { data, error } = await supabase
     .storage
     .from('products')

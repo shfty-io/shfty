@@ -1,7 +1,7 @@
 import { Navbar } from '@/components/global/Navbar';
 import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/server';
+import { createClient, createServerComponentClient } from '@/lib/server';
 import { CategoryPageContent } from './page.client';
 
 interface Product {
@@ -36,7 +36,7 @@ interface PageProps {
 }
 
 async function getProductsByCategory(category: string): Promise<Product[]> {
-  const supabase = createClient();
+  const supabase = await createServerComponentClient();
   
   // Convert hyphens to underscores for database query
   const dbCategory = category.replace(/-/g, '_');

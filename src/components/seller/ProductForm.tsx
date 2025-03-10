@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { createClient } from "@/lib/client";
 import { Github, Upload, X, Check, Wand2, Loader2 } from "lucide-react";
 import { 
@@ -21,6 +20,7 @@ import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
 import { useDebounce } from "@/hooks/use-debounce";
 import { TagsSelector } from "./TagsSelector";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
@@ -50,26 +50,45 @@ const technologies = [
   { id: "vue", label: "Vue" },
   { id: "angular", label: "Angular" },
   { id: "svelte", label: "Svelte" },
-  { id: "next.js", label: "Next.js" },
+  { id: "next_js", label: "Next.js" },
   { id: "nuxt", label: "Nuxt" },
   { id: "tailwind", label: "Tailwind" },
+  { id: "remix", label: "Remix" },
+  { id: "astro", label: "Astro" },
+  { id: "solid_js", label: "Solid.js" },
+  { id: "qwik", label: "Qwik" },
+  // Languages
+  { id: "typescript", label: "TypeScript" },
+  { id: "javascript", label: "JavaScript" },
   // Backend
-  { id: "node.js", label: "Node.js" },
+  { id: "node_js", label: "Node.js" },
   { id: "python", label: "Python" },
   { id: "java", label: "Java" },
   { id: "php", label: "PHP" },
   { id: "ruby", label: "Ruby" },
   { id: "go", label: "Go" },
   { id: "rust", label: "Rust" },
+  { id: "c_sharp", label: "C#" },
+  { id: "dotnet", label: ".NET" },
+  { id: "deno", label: "Deno" },
+  // Frameworks
+  { id: "express", label: "Express" },
+  { id: "fastapi", label: "FastAPI" },
+  { id: "django", label: "Django" },
+  { id: "laravel", label: "Laravel" },
+  { id: "spring_boot", label: "Spring Boot" },
   // Databases
   { id: "postgresql", label: "PostgreSQL" },
   { id: "mysql", label: "MySQL" },
   { id: "mongodb", label: "MongoDB" },
   { id: "supabase", label: "Supabase" },
   { id: "firebase", label: "Firebase" },
+  { id: "prisma", label: "Prisma" },
+  { id: "drizzle", label: "Drizzle" },
+  { id: "redis", label: "Redis" },
   // Cloud & Infrastructure
   { id: "aws", label: "AWS" },
-  { id: "google-cloud", label: "Google Cloud" },
+  { id: "google_cloud", label: "Google Cloud" },
   { id: "azure", label: "Azure" },
   { id: "vercel", label: "Vercel" },
   { id: "docker", label: "Docker" },
@@ -78,12 +97,21 @@ const technologies = [
   { id: "clerk", label: "Clerk" },
   { id: "auth0", label: "Auth0" },
   { id: "nextauth", label: "NextAuth" },
+  // Mobile & Desktop
+  { id: "react_native", label: "React Native" },
+  { id: "flutter", label: "Flutter" },
+  { id: "swift", label: "Swift" },
+  { id: "kotlin", label: "Kotlin" },
+  { id: "electron", label: "Electron" },
+  { id: "tauri", label: "Tauri" },
+  { id: "capacitor", label: "Capacitor" },
   // Other
   { id: "stripe", label: "Stripe" },
   { id: "ngrok", label: "Ngrok" },
   { id: "graphql", label: "GraphQL" },
-  { id: "redis", label: "Redis" },
   { id: "websocket", label: "WebSocket" },
+  { id: "pwa", label: "PWA" },
+  { id: "webassembly", label: "WebAssembly" },
 ];
 
 const MAX_NAME_LENGTH = 25;
@@ -702,9 +730,9 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 } catch (e) {
                   throw e;
                 }
+              } else if (line.startsWith('event: complete')) {
+                // Processing is complete, the full text is now in enhancedText
               }
-            } else if (line.startsWith('event: complete')) {
-              // Processing is complete, the full text is now in enhancedText
             }
           }
         }
@@ -740,7 +768,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     }
   };
   
-  // Add this completely new implementation of enhanceFullDescription
+  // Update enhanceFullDescription to use streaming like enhanceShortDescription
   const enhanceFullDescription = async () => {
     if (!formData.description.trim()) {
       toast({
@@ -754,20 +782,17 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     try {
       setIsEnhancingFullDesc(true);
       
-      // Extract plain text from HTML
+      // Extract plain text from HTML for the AI to process
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = formData.description;
       const plainText = tempDiv.textContent || '';
       
-      // Show a toast for the process
-      toast({
-        title: "Enhancing description...",
-        description: "AI is working on your text",
-        duration: 10000,
-      });
+      // Prepare a copy of the original HTML in case we need to revert
+      const originalHtml = formData.description;
+      let enhancedText = '';
       
-      // Use the non-streaming endpoint
-      const response = await fetch('/api/ai/enhance-text', {
+      // Use the streaming API endpoint
+      const response = await fetch('/api/ai/enhance-text/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -780,29 +805,125 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to enhance text');
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
       
-      const data = await response.json();
+      // Set up event source for streaming
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get stream reader');
+      }
       
-      if (data.enhancedText) {
-        // Format the enhanced text as HTML with proper paragraphs
-        const formattedText = data.enhancedText
-          .split('\n\n')
-          .map((paragraph: string) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
-          .join('');
+      // Create a toast that we can update
+      const { dismiss } = toast({
+        title: "Enhancing description...",
+        description: "AI is working on your text",
+        duration: 30000, // Longer duration for full description
+      });
+      
+      // Process the streaming response
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          // Decode the chunk
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('event: chunk')) {
+              const dataLine = line.split('\n')[1];
+              if (dataLine && dataLine.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(dataLine.slice(6));
+                  if (data.text) {
+                    enhancedText += data.text;
+                    
+                    // Format the enhanced text with proper HTML structure
+                    // Split by double newlines to identify paragraphs
+                    const paragraphs = enhancedText.split('\n\n');
+                    let formattedHtml = '';
+                    
+                    // Process each paragraph to identify headings and format accordingly
+                    paragraphs.forEach((paragraph: string) => {
+                      if (!paragraph.trim()) return;
+                      
+                      // Check for heading patterns
+                      if (paragraph.startsWith('# ')) {
+                        formattedHtml += `<h1 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 1rem;">${convertMarkdownToHtml(paragraph.substring(2))}</h1>`;
+                      } else if (paragraph.startsWith('## ')) {
+                        formattedHtml += `<h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.75rem;">${convertMarkdownToHtml(paragraph.substring(3))}</h2>`;
+                      } else if (paragraph.startsWith('### ')) {
+                        formattedHtml += `<h3 style="font-size: 1.25rem; font-weight: semibold; margin-bottom: 0.5rem;">${convertMarkdownToHtml(paragraph.substring(4))}</h3>`;
+                      } else if (paragraph.startsWith('* ') || paragraph.startsWith('- ')) {
+                        // Convert bullet points to HTML list
+                        const listItems = paragraph.split('\n').map(line => {
+                          // Remove the bullet point marker and trim
+                          const itemText = line.replace(/^[*-]\s+/, '').trim();
+                          if (itemText) {
+                            return `<li>${convertMarkdownToHtml(itemText)}</li>`;
+                          }
+                          return '';
+                        }).filter(Boolean).join('');
+                        
+                        formattedHtml += `<ul style="list-style-type: disc; padding-left: 2rem; margin-bottom: 1rem;">${listItems}</ul>`;
+                      } else {
+                        // Regular paragraph with line breaks preserved
+                        formattedHtml += `<p style="margin-bottom: 1rem;">${convertMarkdownToHtml(paragraph.replace(/\n/g, '<br>'))}</p>`;
+                      }
+                    });
+                    
+                    // If no formatted HTML was created, wrap the entire text in a paragraph
+                    if (!formattedHtml && enhancedText.trim()) {
+                      formattedHtml = `<p style="margin-bottom: 1rem;">${convertMarkdownToHtml(enhancedText.replace(/\n/g, '<br>'))}</p>`;
+                    }
+                    
+                    // Update the form data in real-time as we receive chunks
+                    setFormData(prev => ({
+                      ...prev,
+                      description: formattedHtml
+                    }));
+                  }
+                } catch (e) {
+                  console.error('Error parsing chunk data:', e);
+                }
+              }
+            } else if (line.startsWith('event: error')) {
+              const dataLine = line.split('\n')[1];
+              if (dataLine && dataLine.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(dataLine.slice(6));
+                  throw new Error(data.error || 'Unknown error from AI service');
+                } catch (e) {
+                  throw e;
+                }
+              } else if (line.startsWith('event: complete')) {
+                // Processing is complete
+              }
+            }
+          }
+        }
         
-        // Update the form with the formatted HTML
-        setFormData(prev => ({
-          ...prev,
-          description: formattedText
-        }));
-        
+        // Success notification
+        dismiss();
         toast({
           title: "Success",
           description: "Description enhanced with AI",
         });
+        
+      } catch (streamError) {
+        console.error('Stream processing error:', streamError);
+        // Revert to original HTML on error
+        setFormData(prev => ({
+          ...prev,
+          description: originalHtml
+        }));
+        throw streamError;
+      } finally {
+        reader.releaseLock();
       }
+      
     } catch (error) {
       console.error('Error enhancing text:', error);
       toast({
@@ -813,6 +934,29 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     } finally {
       setIsEnhancingFullDesc(false);
     }
+  };
+
+  // Add this helper function to convert markdown to HTML
+  const convertMarkdownToHtml = (text: string): string => {
+    // Convert bold: **text** or __text__ to <strong>text</strong>
+    let html = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, (_, g1, g2) => `<strong>${g1 || g2}</strong>`);
+    
+    // Convert italic: *text* or _text_ to <em>text</em>
+    html = html.replace(/\*(.*?)\*|_(.*?)_/g, (_, g1, g2) => {
+      // Skip if this is part of a bold pattern that was already processed
+      if ((g1 && !g1.includes('*')) || (g2 && !g2.includes('_'))) {
+        return `<em>${g1 || g2}</em>`;
+      }
+      return _;
+    });
+    
+    // Convert inline code: `code` to <code>code</code>
+    html = html.replace(/`(.*?)`/g, (_, g1) => `<code style="background-color: #f0f0f0; padding: 0.1rem 0.2rem; border-radius: 0.2rem;">${g1}</code>`);
+    
+    // Convert links: [text](url) to <a href="url">text</a>
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, (_, text, url) => `<a href="${url}" style="color: #3b82f6; text-decoration: underline;">${text}</a>`);
+    
+    return html;
   };
 
   return (
@@ -1194,7 +1338,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               value={formData.description}
               onChange={(value: string) => {
                 // For rich text editor, we need to check the plain text length
-                // This is a simple approach - you might need a better HTML stripping logic
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = value;
                 const textLength = tempDiv.textContent?.length || 0;
@@ -1204,6 +1347,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 }
               }}
               placeholder="Provide as much detail as possible to significantly increase sales."
+              className="min-h-[300px]"
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1 flex justify-between">

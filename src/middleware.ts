@@ -45,9 +45,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session if it exists
-  await supabase.auth.getSession();
+  // Refresh session if it exists with error handling
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Error refreshing session in middleware:", error);
+    }
+  } catch (err) {
+    console.error("Failed to refresh session in middleware:", err);
+  }
 
   return response;
 }
+
+// Add middleware configuration to specify which routes it should run on
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};
 

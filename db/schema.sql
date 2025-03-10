@@ -49,7 +49,12 @@ CREATE TYPE product_technology AS ENUM (
   'go', 'rust', 'postgresql', 'mysql', 'mongodb', 'supabase',
   'firebase', 'aws', 'google_cloud', 'azure', 'vercel',
   'docker', 'kubernetes', 'clerk', 'auth0', 'nextauth',
-  'stripe', 'ngrok', 'graphql', 'redis', 'websocket'
+  'stripe', 'ngrok', 'graphql', 'redis', 'websocket',
+  'typescript', 'javascript', 'c_sharp', 'dotnet', 'flutter',
+  'react_native', 'swift', 'kotlin', 'laravel', 'django',
+  'express', 'fastapi', 'spring_boot', 'prisma', 'drizzle',
+  'remix', 'astro', 'solid_js', 'qwik', 'electron',
+  'tauri', 'capacitor', 'pwa', 'webassembly', 'deno'
 );
 
 CREATE TYPE report_reason AS ENUM ('copyright_infringement', 'other');

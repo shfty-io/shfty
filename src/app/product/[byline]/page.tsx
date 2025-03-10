@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/server'
+import { createClient, createServerComponentClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
 import { incrementViewCount } from '@/app/actions'
 import { ProductPageContent } from './page.client'
 
 async function getProduct(byline: string) {
-  const supabase = createClient();
+  const supabase = await createServerComponentClient();
   
   // Validate byline format first
   if (!byline || typeof byline !== 'string') {
