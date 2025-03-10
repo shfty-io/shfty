@@ -113,6 +113,35 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
         return
       }
       
+      if (response.status === 400) {
+        const data = await response.json().catch(() => ({}))
+        
+        // Check if this is the seller setup error
+        if (data.error && data.error.includes("seller hasn't completed their payment setup")) {
+          toast({
+            title: "Seller Not Ready",
+            description: data.details || "The seller needs to complete their payment setup before you can purchase this product.",
+            variant: "destructive"
+          })
+          setIsLoading(false)
+          return
+        }
+        
+        // Handle other Stripe errors
+        if (data.error) {
+          toast({
+            title: "Checkout Error",
+            description: data.error,
+            variant: "destructive"
+          })
+          setIsLoading(false)
+          return
+        }
+        
+        // Handle other 400 errors
+        throw new Error(data.error || 'Failed to initiate checkout')
+      }
+      
       const data = await response.json()
       
       if (!response.ok) {

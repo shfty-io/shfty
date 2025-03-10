@@ -29,7 +29,8 @@ export async function POST(request: Request) {
       .select(`
         *,
         seller:user_id (
-          seller_accounts (
+          id,
+          seller_accounts!inner (
             stripe_account_id
           )
         )
@@ -44,7 +45,35 @@ export async function POST(request: Request) {
       );
     }
 
-    const sellerStripeAccountId = product.seller.seller_accounts[0]?.stripe_account_id;
+    // Get seller's Stripe account ID - handle both array and object formats
+    let sellerStripeAccountId;
+    if (product.seller?.seller_accounts) {
+      if (Array.isArray(product.seller.seller_accounts)) {
+        // Handle array format
+        sellerStripeAccountId = product.seller.seller_accounts[0]?.stripe_account_id;
+      } else {
+        // Handle object format
+        sellerStripeAccountId = product.seller.seller_accounts.stripe_account_id;
+      }
+    }
+    
+    // If we couldn't get the seller account ID from the join, try a direct query
+    if (!sellerStripeAccountId) {
+      console.log('Trying direct query for seller account');
+      const { data: sellerAccount, error: sellerError } = await supabase
+        .from('seller_accounts')
+        .select('stripe_account_id')
+        .eq('user_id', product.user_id)
+        .single();
+        
+      if (!sellerError && sellerAccount?.stripe_account_id) {
+        sellerStripeAccountId = sellerAccount.stripe_account_id;
+        console.log('Found seller account ID from direct query:', sellerStripeAccountId);
+      } else if (sellerError) {
+        console.error('Error fetching seller account:', sellerError);
+      }
+    }
+
     if (!sellerStripeAccountId) {
       return NextResponse.json(
         { error: "Seller not properly configured" },
