@@ -41,12 +41,25 @@ export async function POST(
     // Get product details
     const { data: product, error: productError } = await supabase
       .from('products')
-      .select('*')
+      .select(`
+        *,
+        seller:user_id (
+          seller_accounts (
+            stripe_account_id
+          )
+        )
+      `)
       .eq('id', id)
       .single()
 
     if (productError || !product) {
       return createNotFoundError('Product')
+    }
+
+    // Get seller's Stripe account ID
+    const sellerStripeAccountId = product.seller?.seller_accounts?.[0]?.stripe_account_id;
+    if (!sellerStripeAccountId) {
+      return createExternalServiceError('Stripe', 'Seller not properly configured for payments')
     }
 
     // Get user - required for both free and paid products
@@ -161,6 +174,14 @@ export async function POST(
           product_id: product.id,
           seller_id: product.user_id,
           source: source,
+        },
+        payment_intent_data: {
+          application_fee_amount: source === 'category' 
+            ? 0 
+            : Math.round(product.price * 100 * (Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10) / 100),
+          transfer_data: {
+            destination: sellerStripeAccountId,
+          },
         },
       })
 
