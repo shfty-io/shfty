@@ -42,19 +42,19 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
         throw new Error(data.error || 'Failed to get download URL')
       }
 
-      // Since this is the download button handler, prioritize the direct download URL
-      if (data.downloadUrl) {
-        window.location.href = data.downloadUrl
-      } else if (data.githubRepoUrl) {
+      // Prioritize GitHub repository URL over download URL
+      if (data.githubRepoUrl) {
         window.open(data.githubRepoUrl, '_blank')
+      } else if (data.downloadUrl) {
+        window.location.href = data.downloadUrl
       } else {
-        throw new Error('No download URL available')
+        throw new Error('No GitHub repository or download URL available')
       }
     } catch (error) {
       console.error('Download error:', error)
       toast({
         title: "Error",
-        description: "Failed to generate download link. Please try again.",
+        description: "Failed to access the GitHub repository. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -99,8 +99,8 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
                 disabled={isLoading}
                 className="flex items-center gap-2"
               >
-                <Download className="h-5 w-5" />
-                {isLoading ? 'Processing...' : 'Download Files'}
+                <Github className="h-5 w-5" />
+                {isLoading ? 'Processing...' : 'View Code'}
               </Button>
             )}
           </div>

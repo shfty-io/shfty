@@ -24,6 +24,8 @@ interface Product {
   purchase_count: number
   trending_score: number
   likes_count: number
+  github_repo_url?: string | null
+  github_token?: string | null
   user: {
     avatar_url: string | null
     full_name: string | null
@@ -42,37 +44,11 @@ export default function ProductList({ products }: ProductListProps) {
     sortBy: 'downloaded'
   });
 
-  // Filter and sort products based on selected filters and search query
-  const filteredAndSortedProducts = [...products]
-    .filter(product => {
-      // Search filter
-      if (searchQuery) {
-        const searchLower = searchQuery.toLowerCase();
-        return (
-          product.name.toLowerCase().startsWith(searchLower)
-        );
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'downloaded':
-          return b.purchase_count - a.purchase_count;
-        case 'liked':
-          return b.trending_score - a.trending_score;
-        case 'newest':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'price_high':
-          return b.price - a.price;
-        case 'price_low':
-          return a.price - b.price;
-        default:
-          return 0;
-      }
-    });
+  // Log products for debugging
+  console.log('ProductList received products:', products);
+  console.log('ProductList received products length:', products.length);
 
+  // SIMPLIFIED: Just display all products without filtering or sorting
   if (products.length === 0) {
     return (
       <div>
@@ -106,31 +82,37 @@ export default function ProductList({ products }: ProductListProps) {
       </div>
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredAndSortedProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={{
-                id: product.id,
-                title: product.name,
-                description: product.short_description || stripHtml(product.description),
-                price: product.price,
-                images: product.image_urls || [],
-                view_count: product.view_count,
-                likes_count: product.likes_count,
-                byline: product.byline,
-                user: {
-                  avatar_url: product.user?.avatar_url || '/placeholder-avatar.jpg',
-                  full_name: product.user?.full_name || 'Anonymous'
-                }
-              }}
-            />
-          ))}
+          {products.map((product) => {
+            // Log each product being mapped
+            console.log('Mapping product to card:', product);
+            
+            // Create the product card props
+            const productCardProps = {
+              id: product.id,
+              title: product.name,
+              description: product.short_description || stripHtml(product.description),
+              price: product.price,
+              images: product.image_urls || [],
+              view_count: product.view_count,
+              likes_count: product.likes_count,
+              byline: product.byline,
+              user: {
+                avatar_url: product.user?.avatar_url || '/placeholder-avatar.jpg',
+                full_name: product.user?.full_name || 'Anonymous'
+              }
+            };
+            
+            // Log the props being passed to ProductCard
+            console.log('ProductCard props:', productCardProps);
+            
+            return (
+              <ProductCard
+                key={product.id}
+                product={productCardProps}
+              />
+            );
+          })}
         </div>
-        {filteredAndSortedProducts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No products match your selected filters.</p>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -139,7 +139,7 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
       disabled={isLoading}
       className={className}
     >
-      {isLoading ? 'Processing...' : price === 0 ? 'Download Now' : `Purchase for $${price}`}
+      {isLoading ? 'Processing...' : price === 0 ? 'View Repository' : `Purchase for $${price}`}
     </Button>
   )
 } 

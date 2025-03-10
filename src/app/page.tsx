@@ -82,34 +82,73 @@ async function getProducts(): Promise<Product[]> {
     // Log response for debugging
     console.log('Products fetched successfully:', data ? data.length : 0)
     
+    // Add detailed logging of the first product
+    if (data && data.length > 0) {
+      console.log('First product data:', JSON.stringify(data[0], null, 2))
+    }
+    
     // If no products are found, return an empty array without error
     if (!data || data.length === 0) {
       console.log('No products found in the database')
       return []
     }
 
-    // Filter out products that have GitHub repo URL but no valid GitHub token
-    const filteredProducts = data.filter(product => {
-      // If product has a GitHub repo URL, it must also have a GitHub token
-      if (product.github_repo_url) {
-        return !!product.github_token;
-      }
-      // Keep products without GitHub repo URLs (they might use direct download)
-      return true;
-    });
+    // TEMPORARILY DISABLED: Filter out products that have GitHub repo URL but no valid GitHub token
+    // Instead, keep all products regardless of GitHub token status
+    const filteredProducts = data;
+    
+    // Log the number of products after filtering
+    console.log('Products after filtering:', filteredProducts.length);
 
     // Transform data to match Product interface
-    return filteredProducts.map(item => ({
-      ...item,
-      // Add empty categories array since it's in the Product interface but not in the DB query result
-      categories: [],
-      user: Array.isArray(item.user) && item.user.length > 0 
-        ? { 
+    const transformedProducts = filteredProducts.map(item => {
+      // Handle user data with proper type checking
+      let userData = { avatar_url: null as string | null, full_name: null as string | null };
+      
+      if (item.user) {
+        if (Array.isArray(item.user) && item.user.length > 0) {
+          userData = {
             avatar_url: item.user[0]?.avatar_url || null,
             full_name: item.user[0]?.full_name || null
-          }
-        : { avatar_url: null, full_name: null }
-    })) as Product[]
+          };
+        } else if (typeof item.user === 'object') {
+          // Use type assertion to handle the object case
+          const userObj = item.user as { avatar_url?: string | null; full_name?: string | null };
+          userData = {
+            avatar_url: userObj.avatar_url || null,
+            full_name: userObj.full_name || null
+          };
+        }
+      }
+      
+      // Log the transformed product
+      const transformedProduct = {
+        ...item,
+        // Add empty categories array since it's in the Product interface but not in the DB query result
+        categories: [],
+        user: userData
+      };
+      
+      // Ensure all required fields are present
+      const requiredFields = ['id', 'name', 'description', 'price', 'image_urls', 'short_description', 'byline', 'created_at', 'view_count', 'purchase_count', 'trending_score', 'likes_count'];
+      const missingFields = requiredFields.filter(field => {
+        return (transformedProduct as any)[field] === undefined;
+      });
+      
+      if (missingFields.length > 0) {
+        console.error('Product is missing required fields:', missingFields);
+        console.error('Product data:', transformedProduct);
+      }
+      
+      console.log('Transformed product:', transformedProduct);
+      
+      return transformedProduct;
+    }) as Product[]
+    
+    // Log the final products array
+    console.log('Final products array length:', transformedProducts.map(item => item).length);
+    
+    return transformedProducts;
   } catch (err) {
     // Catch any unexpected errors
     console.error('Unexpected error fetching products:', err)
@@ -127,6 +166,12 @@ export default async function Home({
   const message = resolvedParams.message as string | undefined;
 
   const products = await getProducts();
+  
+  // Log products before passing to ProductList
+  console.log('Home component products:', products.length);
+  if (products.length > 0) {
+    console.log('First product in Home component:', products[0].id);
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>

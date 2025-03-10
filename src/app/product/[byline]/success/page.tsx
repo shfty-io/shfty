@@ -208,7 +208,11 @@ export default async function SuccessPage({
   return (
     <SuccessPageContent 
       status="success" 
-      product={{ id: product.id, name: product.name }}
+      product={{ 
+        id: product.id, 
+        name: product.name,
+        github_repo_url: product.github_repo_url 
+      }}
       downloadUrl={data.signedUrl}
       byline={byline}
     />

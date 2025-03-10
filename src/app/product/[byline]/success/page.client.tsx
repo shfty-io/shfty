@@ -158,17 +158,26 @@ export function SuccessPageContent({
               Thank you for your purchase!
             </h1>
             <p className="text-lg text-gray-600 mb-8">
-              Your purchase of {product?.name} was successful. You can now download your files.
+              Your purchase of {product?.name} was successful. You can now access the repository.
             </p>
           </div>
 
           <div className="space-y-4">
-            <Button asChild size="lg" className="w-full sm:w-auto">
-              <a href={downloadUrl} download className="inline-flex items-center justify-center gap-2">
-                <Download className="h-5 w-5" />
-                Download Files
-              </a>
-            </Button>
+            {product?.github_repo_url ? (
+              <Button asChild size="lg" className="w-full sm:w-auto">
+                <a href={product.github_repo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2">
+                  <Github className="h-5 w-5" />
+                  View Repository
+                </a>
+              </Button>
+            ) : downloadUrl ? (
+              <Button asChild size="lg" className="w-full sm:w-auto">
+                <a href={downloadUrl} download className="inline-flex items-center justify-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Download Files
+                </a>
+              </Button>
+            ) : null}
             <div className="pt-4">
               <Link 
                 href="/your/purchases" 
