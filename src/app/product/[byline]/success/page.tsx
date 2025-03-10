@@ -1,4 +1,4 @@
-import { createClient, createServerComponentClient } from '@/lib/server'
+import { createServerComponentClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
 import { SuccessPageContent } from './page.client'

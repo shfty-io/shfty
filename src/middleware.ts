@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if it exists with error handling
   try {
-    const { data, error } = await supabase.auth.getSession();
+    const { error } = await supabase.auth.getSession();
     if (error) {
       console.error("Error refreshing session in middleware:", error);
     }

@@ -1,7 +1,7 @@
 import { Navbar } from '@/components/global/Navbar';
 import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
-import { createClient, createServerComponentClient } from '@/lib/server';
+import { createServerComponentClient } from '@/lib/server';
 import { CategoryPageContent } from './page.client';
 
 interface Product {

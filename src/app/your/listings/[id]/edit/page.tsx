@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient, createServerComponentClient } from '@/lib/server';
+import { createServerComponentClient } from '@/lib/server';
 import { ProductFormData } from '@/components/seller/ProductForm';
 import { revalidatePath } from 'next/cache';
 import { EditPageContent } from './page.client';

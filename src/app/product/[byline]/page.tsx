@@ -1,4 +1,4 @@
-import { createClient, createServerComponentClient } from '@/lib/server'
+import { createServerComponentClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
 import { incrementViewCount } from '@/app/actions'
 import { ProductPageContent } from './page.client'
