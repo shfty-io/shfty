@@ -57,6 +57,7 @@ export default async function EditProductPage({ params }: PageProps) {
         faq: formData.faq,
         technologies: formData.technologies,
         image_urls: formData.imageUrls,
+        software_license: formData.softwareLicense,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

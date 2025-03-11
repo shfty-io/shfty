@@ -322,6 +322,21 @@ function SellerDashboardContent() {
                         </div>
                       </dd>
                     </div>
+                    {productData?.softwareLicense && (
+                      <div>
+                        <dt className="text-sm font-medium text-muted-foreground mb-1">Software License</dt>
+                        <dd>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            <span className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs">
+                              {productData.softwareLicense.replace(/-/g, ' ')
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')}
+                            </span>
+                          </div>
+                        </dd>
+                      </div>
+                    )}
                     <div>
                       <dt className="text-sm font-medium text-muted-foreground mb-1">Price</dt>
                       <dd className="text-base">

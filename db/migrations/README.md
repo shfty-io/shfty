@@ -25,6 +25,7 @@ You can also apply migrations manually through the Supabase SQL Editor:
 ## Migration Files
 
 - `add_new_technologies.sql`: Adds new technology options to the product_technology enum
+- `add_software_license_to_products.sql`: Adds a software_license column to the products table
 
 ## Important Notes
 

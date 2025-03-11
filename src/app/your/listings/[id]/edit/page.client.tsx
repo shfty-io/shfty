@@ -19,6 +19,7 @@ interface Product {
   faq: FaqItem[] | null;
   technologies: string[] | null;
   image_urls: string[] | null;
+  software_license: string | null;
 }
 
 interface EditPageContentProps {
@@ -41,7 +42,8 @@ export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
           categories: product.categories || [],
           faq: product.faq || [],
           technologies: product.technologies || [],
-          imageUrls: product.image_urls || []
+          imageUrls: product.image_urls || [],
+          softwareLicense: product.software_license || ''
         }}
       />
     </div>

@@ -18,7 +18,8 @@ async function getProduct(byline: string) {
     .select(`
       *,
       github_repo_url,
-      image_urls
+      image_urls,
+      software_license
     `)
     .eq('status', 'approved');
 

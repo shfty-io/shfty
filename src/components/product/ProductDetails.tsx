@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Mail } from "lucide-react"
 import { ProductDescription } from "./ProductDescription"
 import { ProductLanguages } from "./ProductLanguages"
+import { ProductLicense } from "./ProductLicense"
 
 interface ProductDetailsProps {
   productId: string
@@ -20,6 +21,7 @@ interface ProductDetailsProps {
   }> | null
   sellerEmail: string | null
   sellerFullName: string | null
+  softwareLicense: string | null
 }
 
 export function ProductDetails({ 
@@ -30,7 +32,8 @@ export function ProductDetails({
   description,
   faq, 
   sellerEmail, 
-  sellerFullName 
+  sellerFullName,
+  softwareLicense
 }: ProductDetailsProps) {
   return (
     <div className="mx-auto max-w-[1440px] flex flex-col gap-[60px] pb-[60px] md:flex-row md:gap-20 md:pb-0">
@@ -44,6 +47,8 @@ export function ProductDetails({
 
       {/* Sidebar */}
       <div className="w-full space-y-[60px] md:max-w-[300px] md:space-y-10">
+        <ProductLicense license={softwareLicense} />
+        
         <ProductLanguages technologies={technologies} />
         
         {categories && categories.length > 0 && (

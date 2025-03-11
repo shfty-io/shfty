@@ -32,6 +32,7 @@ DROP TYPE IF EXISTS product_category CASCADE;
 DROP TYPE IF EXISTS product_status CASCADE;
 DROP TYPE IF EXISTS product_technology CASCADE;
 DROP TYPE IF EXISTS report_reason CASCADE;
+DROP TYPE IF EXISTS product_license CASCADE;
 
 -- Product related enums
 CREATE TYPE product_category AS ENUM (
@@ -58,6 +59,23 @@ CREATE TYPE product_technology AS ENUM (
 );
 
 CREATE TYPE report_reason AS ENUM ('copyright_infringement', 'other');
+
+CREATE TYPE product_license AS ENUM (
+  'MIT',
+  'GPL-3.0',
+  'Apache-2.0',
+  'BSD-3-Clause',
+  'BSD-2-Clause',
+  'LGPL-3.0',
+  'MPL-2.0',
+  'AGPL-3.0',
+  'Unlicense',
+  'Proprietary',
+  'CC0-1.0',
+  'CC-BY-4.0',
+  'CC-BY-SA-4.0',
+  'Other'
+);
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS profiles (
@@ -101,6 +119,7 @@ CREATE TABLE IF NOT EXISTS products (
   demo_url TEXT,
   github_repo_url TEXT,
   github_token TEXT,
+  software_license product_license,
   categories product_category[],
   technologies product_technology[],
   status product_status DEFAULT 'draft',

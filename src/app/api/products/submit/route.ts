@@ -132,6 +132,7 @@ export async function POST(request: Request) {
         faq: productData.faq,
         github_repo_url: productData.githubRepoUrl,
         github_token: productData.github_token,
+        software_license: productData.softwareLicense,
         image_urls: productData.imageUrls,
         video_url: productData.videoUrl,
         demo_url: productData.demoUrl,

@@ -20,6 +20,7 @@ import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
 import { useDebounce } from "@/hooks/use-debounce";
 import { TagsSelector } from "./TagsSelector";
+import { LicenseSelector } from "./LicenseSelector";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { migrateRichTextFormatting } from "@/lib/utils";
 
@@ -132,6 +133,7 @@ export type ProductFormData = {
   faq?: FAQItem[];
   githubRepoUrl?: string | null;
   github_token?: string | null;
+  softwareLicense?: string | null;
   imageUrls: string[];
   videoUrl?: string | null;
   demoUrl?: string | null;
@@ -177,6 +179,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     faq: [],
     githubRepoUrl: initialData?.githubRepoUrl || null,
     github_token: initialData?.github_token || null,
+    softwareLicense: initialData?.softwareLicense || null,
     imageUrls: initialData?.imageUrls ?? [],
     videoUrl: initialData?.videoUrl || null,
     demoUrl: initialData?.demoUrl || null,
@@ -225,6 +228,34 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   // Add new state variables for AI enhancement
   const [isEnhancingShortDesc, setIsEnhancingShortDesc] = useState(false);
   const [isEnhancingFullDesc, setIsEnhancingFullDesc] = useState(false);
+
+  // License options
+  const licenses = [
+    { id: 'MIT', label: 'MIT License' },
+    { id: 'GPL-3.0', label: 'GNU General Public License v3.0' },
+    { id: 'Apache-2.0', label: 'Apache License 2.0' },
+    { id: 'BSD-3-Clause', label: 'BSD 3-Clause License' },
+    { id: 'BSD-2-Clause', label: 'BSD 2-Clause License' },
+    { id: 'LGPL-3.0', label: 'GNU Lesser General Public License v3.0' },
+    { id: 'MPL-2.0', label: 'Mozilla Public License 2.0' },
+    { id: 'AGPL-3.0', label: 'GNU Affero General Public License v3.0' },
+    { id: 'Unlicense', label: 'The Unlicense' },
+    { id: 'Proprietary', label: 'Proprietary License' },
+    { id: 'CC0-1.0', label: 'Creative Commons Zero v1.0 Universal' },
+    { id: 'CC-BY-4.0', label: 'Creative Commons Attribution 4.0' },
+    { id: 'CC-BY-SA-4.0', label: 'Creative Commons Attribution Share Alike 4.0' },
+    { id: 'Other', label: 'Other License' },
+  ];
+  
+  const [selectedLicense, setSelectedLicense] = useState<{ id: string; label: string } | null>(
+    formData.softwareLicense ? { id: formData.softwareLicense, label: licenses.find(l => l.id === formData.softwareLicense)?.label || formData.softwareLicense } : null
+  );
+  
+  const [isLicenseOpen, setIsLicenseOpen] = useState(false);
+  
+  const handleLicenseOpenChange = (isOpen: boolean) => {
+    setIsLicenseOpen(isOpen);
+  };
 
   const addFaqItem = () => {
     setFaqItems([...faqItems, { question: '', answer: '' }]);
@@ -1092,6 +1123,26 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               onOpenChange={handleTechnologiesOpenChange}
             />
           </div>
+        </div>
+
+        <div className={`space-y-2 relative ${isLicenseOpen ? 'z-[200]' : 'z-0'}`}>
+          <div className="h-6 flex items-center">
+            <Label htmlFor="softwareLicense" className="text-sm font-medium">Software License</Label>
+          </div>
+          <div className="relative">
+            <LicenseSelector
+              licenses={licenses}
+              selectedLicense={selectedLicense}
+              setSelectedLicense={(license) => {
+                setSelectedLicense(license);
+                setFormData({ ...formData, softwareLicense: license?.id || null });
+              }}
+              onOpenChange={handleLicenseOpenChange}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Specify the license under which your software is distributed
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
