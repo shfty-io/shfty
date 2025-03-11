@@ -59,7 +59,7 @@ export default function ProductList({ products }: ProductListProps) {
   if (products.length === 0) {
     return (
       <div>
-        <div className="pt-6">
+        <div>
           <div className="px-6">
             <ProductFilters 
               onFilterChange={setFilters}
@@ -79,7 +79,7 @@ export default function ProductList({ products }: ProductListProps) {
 
   return (
     <div>
-      <div className="pt-6">
+      <div className="">
         <div className="px-6">
           <ProductFilters 
             onFilterChange={setFilters}

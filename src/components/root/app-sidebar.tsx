@@ -1,6 +1,9 @@
+'use client';
+
 import * as React from "react"
 import { Plus, Minus, Home } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import {
   Collapsible,
@@ -53,6 +56,8 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+  
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -92,7 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenu>
                       {item.items.map((item) => (
                         <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild isActive={item.isActive}>
+                          <SidebarMenuButton asChild isActive={pathname === item.url}>
                             <a href={item.url}>{item.title}</a>
                           </SidebarMenuButton>
                         </SidebarMenuItem>

@@ -181,10 +181,6 @@ export default async function Home({
           <Navbar />
           <div className="flex-1 p-4">
             {message && <MessageDisplay message={message} />}
-            <h1 className="text-3xl font-bold mb-2">Popular Products</h1>
-            <p className="text-muted-foreground mb-8">
-              Find top-rated tools, templates, and resources
-            </p>
             <ProductList products={products} />
           </div>
         </SidebarInset>
