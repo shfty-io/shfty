@@ -1,6 +1,7 @@
 'use client';
 
-import { ProductForm, ProductFormData } from '@/components/seller/ProductForm';
+import { ProductEditForm } from '@/components/seller/ProductEditForm';
+import type { ProductFormData } from '@/components/seller/ProductEditForm';
 
 // Define a proper type for FAQ items
 interface FaqItem {
@@ -20,6 +21,11 @@ interface Product {
   technologies: string[] | null;
   image_urls: string[] | null;
   software_license: string | null;
+  github_repo_url?: string | null;
+  has_readme?: boolean;
+  has_database_migrations?: boolean;
+  video_url?: string | null;
+  demo_url?: string | null;
 }
 
 interface EditPageContentProps {
@@ -28,14 +34,17 @@ interface EditPageContentProps {
 }
 
 export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
+  // Add debugging to see what's coming from the database
+  console.log("Product from database:", product);
+  console.log("Demo URL from database:", product.demo_url);
+  
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Edit Product - {product.name}</h1>
-      <ProductForm
+      <ProductEditForm
         onSubmit={onSubmit}
         initialData={{
           name: product.name,
-          byline: product.byline,
           shortDescription: product.short_description,
           description: product.description || '',
           price: product.price,
@@ -43,7 +52,10 @@ export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
           faq: product.faq || [],
           technologies: product.technologies || [],
           imageUrls: product.image_urls || [],
-          softwareLicense: product.software_license || ''
+          softwareLicense: product.software_license || '',
+          githubRepoUrl: product.github_repo_url || null,
+          videoUrl: product.video_url || null,
+          demoUrl: product.demo_url || null
         }}
       />
     </div>

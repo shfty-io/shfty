@@ -17,9 +17,10 @@ export function formatCurrency(amount: number) {
  * This is useful for migrating existing product descriptions
  */
 export function migrateRichTextFormatting(html: string): string {
-  if (!html) return html;
+  if (typeof document === 'undefined') {
+    return html; // Return original during SSR
+  }
   
-  // Create a temporary div to parse the HTML
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
   

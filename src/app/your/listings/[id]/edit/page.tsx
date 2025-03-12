@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@/lib/server';
-import { ProductFormData } from '@/components/seller/ProductForm';
+import { ProductFormData } from '@/components/seller/ProductEditForm';
 import { revalidatePath } from 'next/cache';
 import { EditPageContent } from './page.client';
 
 // Define types for the page props
-type Params = Promise<{ id: string }>;
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+type Params = { id: string };
+type SearchParams = Record<string, string | string[] | undefined>;
 
 interface PageProps {
   params: Params;
@@ -14,7 +14,8 @@ interface PageProps {
 }
 
 export default async function EditProductPage({ params }: PageProps) {
-  const { id } = await params;
+  // Await the params object before accessing its properties
+  const id = params.id;
   
   const supabase = await createServerComponentClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -26,14 +27,19 @@ export default async function EditProductPage({ params }: PageProps) {
   // Fetch product details
   const { data: product, error: productError } = await supabase
     .from('products')
-    .select('*')
+    .select('*, demo_url')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
   if (productError || !product) {
+    console.error("Error fetching product:", productError);
     return redirect('/your/listings');
   }
+
+  // Log the product data for debugging
+  console.log("Product fetched from database:", product);
+  console.log("Demo URL from database:", product.demo_url);
 
   async function handleSubmit(formData: ProductFormData) {
     'use server';
@@ -49,7 +55,6 @@ export default async function EditProductPage({ params }: PageProps) {
       .from('products')
       .update({
         name: formData.name,
-        byline: formData.byline,
         short_description: formData.shortDescription,
         description: formData.description,
         price: formData.price,
@@ -58,6 +63,9 @@ export default async function EditProductPage({ params }: PageProps) {
         technologies: formData.technologies,
         image_urls: formData.imageUrls,
         software_license: formData.softwareLicense,
+        github_repo_url: formData.githubRepoUrl,
+        demo_url: formData.demoUrl,
+        video_url: formData.videoUrl,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
