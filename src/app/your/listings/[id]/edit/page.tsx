@@ -9,12 +9,13 @@ type Params = { id: string };
 type SearchParams = Record<string, string | string[] | undefined>;
 
 interface PageProps {
-  params: Params;
-  searchParams: SearchParams;
+  params: Promise<Params>;
+  searchParams: Promise<SearchParams>;
 }
 
-export default async function EditProductPage({ params }: PageProps) {
+export default async function EditProductPage(props: PageProps) {
   // Await the params object before accessing its properties
+  const params = await props.params;
   const id = params.id;
   
   const supabase = await createServerComponentClient();

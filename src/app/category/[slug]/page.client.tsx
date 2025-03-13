@@ -46,11 +46,25 @@ export function CategoryPageContent({
     }
   }, [title, products]);
 
+  // Create default pagination metadata for category pages
+  const pagination = {
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: products.length,
+    itemsPerPage: products.length
+  };
+
   return (
     <div className="flex-1 p-4">
       {/* Product Grid */}
       <div className="py-4">
-        <ProductList products={products} />
+        <ProductList 
+          products={products} 
+          pagination={pagination}
+          currentPage={1}
+          initialSearch=""
+          initialSortBy="newest"
+        />
       </div>
     </div>
   );
