@@ -13,10 +13,17 @@ interface ProductFiltersProps {
     sortBy: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
   }) => void;
   onSearch: (query: string) => void;
+  initialSearch?: string;
+  initialSortBy?: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
 }
 
-export default function ProductFilters({ onFilterChange, onSearch }: ProductFiltersProps) {
-  const [sortBy, setSortBy] = useState<'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest'>('downloaded');
+export default function ProductFilters({ 
+  onFilterChange, 
+  onSearch, 
+  initialSearch = '',
+  initialSortBy = 'downloaded' 
+}: ProductFiltersProps) {
+  const [sortBy, setSortBy] = useState<'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest'>(initialSortBy);
 
   const handleSortChange = (value: 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest') => {
     setSortBy(value);
@@ -26,7 +33,7 @@ export default function ProductFilters({ onFilterChange, onSearch }: ProductFilt
   return (
     <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 flex-1 max-w-[1800px] mx-auto">
       <div className="flex-1">
-        <ProductSearch onSearch={onSearch} />
+        <ProductSearch onSearch={onSearch} initialQuery={initialSearch} />
       </div>
       <div>
         <Select value={sortBy} onValueChange={handleSortChange}>

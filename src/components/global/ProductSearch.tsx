@@ -5,10 +5,11 @@ import { Search } from 'lucide-react';
 
 interface ProductSearchProps {
   onSearch: (query: string) => void;
+  initialQuery?: string;
 }
 
-export function ProductSearch({ onSearch }: ProductSearchProps) {
-  const [query, setQuery] = useState('');
+export function ProductSearch({ onSearch, initialQuery = '' }: ProductSearchProps) {
+  const [query, setQuery] = useState(initialQuery);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

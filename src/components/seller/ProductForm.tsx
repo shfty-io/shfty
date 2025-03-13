@@ -43,6 +43,7 @@ const categories = [
   { id: "communication_social", label: "Communication & Social" },
   { id: "ai", label: "AI" },
   { id: "finance", label: "Finance" },
+  { id: "database", label: "Database" },
   { id: "other", label: "Other" }
 ];
 
@@ -62,6 +63,7 @@ const technologies = [
   // Languages
   { id: "typescript", label: "TypeScript" },
   { id: "javascript", label: "JavaScript" },
+  { id: "dart", label: "Dart" },
   // Backend
   { id: "node_js", label: "Node.js" },
   { id: "python", label: "Python" },
@@ -79,6 +81,7 @@ const technologies = [
   { id: "django", label: "Django" },
   { id: "laravel", label: "Laravel" },
   { id: "spring_boot", label: "Spring Boot" },
+  { id: "symfony", label: "Symfony" },
   // Databases
   { id: "postgresql", label: "PostgreSQL" },
   { id: "mysql", label: "MySQL" },
@@ -88,6 +91,7 @@ const technologies = [
   { id: "prisma", label: "Prisma" },
   { id: "drizzle", label: "Drizzle" },
   { id: "redis", label: "Redis" },
+  { id: "mariadb", label: "MariaDB" },
   // Cloud & Infrastructure
   { id: "aws", label: "AWS" },
   { id: "google_cloud", label: "Google Cloud" },
@@ -114,6 +118,10 @@ const technologies = [
   { id: "websocket", label: "WebSocket" },
   { id: "pwa", label: "PWA" },
   { id: "webassembly", label: "WebAssembly" },
+  { id: "elixir", label: "Elixir" },
+  { id: "phoenix", label: "Phoenix" },
+  { id: "meteor", label: "Meteor" },
+  { id: "rails", label: "Ruby on Rails" },
 ];
 
 const MAX_NAME_LENGTH = 25;
@@ -762,8 +770,6 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                 } catch (e) {
                   throw e;
                 }
-              } else if (line.startsWith('event: complete')) {
-                // Processing is complete, the full text is now in enhancedText
               }
             }
           }
