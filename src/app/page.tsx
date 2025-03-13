@@ -40,11 +40,14 @@ export interface PaginationMetadata {
   itemsPerPage: number
 }
 
+// Define the type for sort options to match the ProductList component
+type SortOption = 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
+
 // Fetch products with pagination
 async function getProducts(
   page: number = 1, 
   search: string = '', 
-  sortBy: string = 'downloaded'
+  sortBy: SortOption = 'downloaded'
 ): Promise<{
   products: Product[],
   pagination: PaginationMetadata
@@ -257,7 +260,17 @@ export default async function Home({
   
   // Get search and sorting parameters
   const search = resolvedParams.search as string || '';
-  const sortBy = resolvedParams.sortBy as string || 'downloaded';
+  const sortByParam = resolvedParams.sortBy as string || 'downloaded';
+  
+  // Define the type for sort options to match the ProductList component
+  type SortOption = 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
+  
+  // Validate that sortBy is a valid option, default to 'downloaded' if not
+  const isValidSortOption = (option: string): option is SortOption => {
+    return ['downloaded', 'liked', 'newest', 'price_high', 'price_low', 'oldest'].includes(option);
+  };
+  
+  const sortBy: SortOption = isValidSortOption(sortByParam) ? sortByParam : 'downloaded';
 
   const { products, pagination } = await getProducts(page, search, sortBy);
   
@@ -282,7 +295,7 @@ export default async function Home({
               pagination={pagination} 
               currentPage={page}
               initialSearch={search}
-              initialSortBy={sortBy as any}
+              initialSortBy={sortBy}
             />
           </div>
         </SidebarInset>
