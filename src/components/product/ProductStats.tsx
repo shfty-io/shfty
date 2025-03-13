@@ -3,6 +3,8 @@ import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { LikeButton } from "./LikeButton"
+import { useState, useEffect, useCallback } from "react"
+import { createClient } from "@/lib/client"
 
 interface ProductStatsProps {
   productId: string
@@ -18,9 +20,57 @@ export function ProductStats({
   creatorName, 
   creatorAvatarUrl, 
   updatedAt, 
-  likesCount, 
+  likesCount: initialLikesCount, 
   viewCount 
 }: ProductStatsProps) {
+  const [likesCount, setLikesCount] = useState(initialLikesCount)
+  const supabase = createClient()
+
+  // Fetch the current likes count
+  const fetchLikesCount = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('product_id', productId)
+
+      if (!error && count !== null) {
+        console.log('Updated likes count:', count, 'for product:', productId)
+        setLikesCount(count)
+      }
+    } catch (error) {
+      console.error('Error fetching likes count:', error)
+    }
+  }, [productId, supabase]);
+
+  // Initial fetch and setup realtime subscription
+  useEffect(() => {
+    // Fetch initial count
+    fetchLikesCount()
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel(`likes-changes-${productId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'likes',
+          filter: `product_id=eq.${productId}`,
+        },
+        () => {
+          // When likes change, fetch the updated count
+          fetchLikesCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [productId, supabase, fetchLikesCount])
+
   return (
     <div className="space-y-6 w-full">
       <Separator />
@@ -61,7 +111,7 @@ export function ProductStats({
 
           {/* Likes */}
           <div className="flex flex-col items-center gap-2">
-            <LikeButton productId={productId} initialLikes={likesCount} />
+            <LikeButton productId={productId} />
             <div className="flex flex-col items-center text-sm">
               <span className="font-medium">{likesCount.toLocaleString()}</span>
               <span className="text-muted-foreground">Likes</span>

@@ -8,12 +8,10 @@ import { useToast } from '@/components/ui/use-toast'
 
 interface LikeButtonProps {
   productId: string
-  initialLikes: number
 }
 
-export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
+export function LikeButton({ productId }: LikeButtonProps) {
   const [isLiked, setIsLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(initialLikes)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
   const supabase = createClient()
@@ -47,7 +45,11 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
     checkLikeStatus()
   }, [productId, supabase])
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    // Prevent the event from bubbling up to parent elements
+    e.stopPropagation()
+    e.preventDefault()
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
@@ -76,7 +78,22 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
 
       // data will be true if liked, false if unliked
       setIsLiked(data)
-      setLikesCount(prev => prev + (data ? 1 : -1))
+
+      // Log the result for debugging
+      console.log('Toggle like result:', data, 'for product:', productId, 'by user:', user.id)
+
+      // Verify the like status after toggling
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('likes')
+        .select('product_id')
+        .eq('product_id', productId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!verifyError) {
+        console.log('Verified like status:', !!verifyData)
+        setIsLiked(!!verifyData)
+      }
 
       // Clear saved data after successful submission
       localStorage.removeItem('productData');
@@ -96,14 +113,14 @@ export function LikeButton({ productId, initialLikes }: LikeButtonProps) {
     <Button
       variant="ghost"
       size="sm"
-      className="flex items-center gap-1 py-1 px-2 rounded-full bg-gray-100 hover:bg-gray-100"
+      className="flex items-center justify-center p-2 rounded-full bg-gray-100 hover:bg-gray-100"
       onClick={handleLike}
       disabled={isLoading}
+      aria-label={isLiked ? "Unlike" : "Like"}
     >
       <Heart 
         className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'} transition-colors`} 
       />
-      <span className="text-xs font-medium">{likesCount}</span>
     </Button>
   )
 } 
