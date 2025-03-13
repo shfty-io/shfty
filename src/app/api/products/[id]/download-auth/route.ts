@@ -10,9 +10,12 @@ interface DownloadAuthResponse {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Wait for the params to resolve
+    const params = await props.params;
+    
     // Log the request for debugging
     console.log('Download auth request for product:', params.id);
 
