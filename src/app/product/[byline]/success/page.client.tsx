@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, AlertCircle, Github, Download } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ProductNavbar } from '@/components/product/ProductNavbar';
@@ -12,14 +12,12 @@ interface SuccessPageContentProps {
     name: string;
     github_repo_url?: string;
   };
-  downloadUrl?: string;
   byline?: string;
 }
 
 export function SuccessPageContent({
   status,
   product,
-  downloadUrl,
   byline
 }: SuccessPageContentProps) {
   if (status === 'session-not-found') {
@@ -146,7 +144,7 @@ export function SuccessPageContent({
     );
   }
 
-  // For downloadable products
+  // Default case - no repository available
   return (
     <>
       <ProductNavbar />
@@ -158,26 +156,11 @@ export function SuccessPageContent({
               Thank you for your purchase!
             </h1>
             <p className="text-lg text-gray-600 mb-8">
-              Your purchase of {product?.name} was successful. You can now access the repository.
+              Your purchase of {product?.name} was successful.
             </p>
           </div>
 
           <div className="space-y-4">
-            {product?.github_repo_url ? (
-              <Button asChild size="lg" className="w-full sm:w-auto">
-                <a href={product.github_repo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2">
-                  <Github className="h-5 w-5" />
-                  View Repository
-                </a>
-              </Button>
-            ) : downloadUrl ? (
-              <Button asChild size="lg" className="w-full sm:w-auto">
-                <a href={downloadUrl} download className="inline-flex items-center justify-center gap-2">
-                  <Download className="h-5 w-5" />
-                  Download Files
-                </a>
-              </Button>
-            ) : null}
             <div className="pt-4">
               <Link 
                 href="/your/purchases" 

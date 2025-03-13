@@ -8,6 +8,8 @@ interface CsrfResponse {
 
 export async function POST() {
   try {
+    console.log('Generating new CSRF token');
+    
     // Generate a new CSRF token and set it in a cookie
     const token = await setCsrfCookie();
     
@@ -15,6 +17,9 @@ export async function POST() {
     const response: CsrfResponse = { success: true };
     if (process.env.NODE_ENV !== 'production') {
       response.token = token;
+      console.log('CSRF token generated (development):', token.substring(0, 8) + '...');
+    } else {
+      console.log('CSRF token generated (production)');
     }
     
     // Create response with proper headers
@@ -35,4 +40,9 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// Also handle GET requests for better compatibility
+export async function GET() {
+  return POST();
 } 

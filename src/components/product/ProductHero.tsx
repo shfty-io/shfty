@@ -7,6 +7,7 @@ import { ProductStats } from "./ProductStats"
 import { PurchaseButton } from "./PurchaseButton"
 import { useState } from "react"
 import { toast } from "@/components/ui/use-toast"
+import { fetchWithCsrf, generateCsrfToken } from "@/lib/csrf-client"
 
 type Product = Database['public']['Tables']['products']['Row'] & {
   demo_url?: string | null
@@ -17,7 +18,6 @@ type Product = Database['public']['Tables']['products']['Row'] & {
   likes_count: number
   updated_at: string | null
   github_repo_url?: string | null
-  codebase_url?: string | null
   categories?: string[]
   technologies?: string[] | null
 }
@@ -30,28 +30,53 @@ interface ProductHeroProps {
 export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleDownload = async () => {
+  const handleGitHubAccess = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/products/${product.id}/download-auth`)
-      const data = await response.json()
-
-      console.log('Download response:', data) // Debug log
-
+      
+      // Generate CSRF token before making the request
+      await generateCsrfToken()
+      
+      // Use fetchWithCsrf to include the CSRF token header
+      const response = await fetchWithCsrf(`/api/products/${product.id}/download-auth`)
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get download URL')
+        if (response.status === 401) {
+          // Handle authentication errors
+          toast({
+            title: "Authentication Required",
+            description: "Please sign in to access this repository.",
+            variant: "destructive"
+          })
+          return
+        }
+        
+        if (response.status === 404) {
+          // Handle product not found
+          toast({
+            title: "Error",
+            description: "The repository could not be found. Please try again later.",
+            variant: "destructive"
+          })
+          return
+        }
+        
+        // Handle other errors
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errorData.error || 'Failed to get repository access')
       }
+      
+      const data = await response.json()
+      
+      console.log('GitHub access response:', data) // Debug log
 
-      // Prioritize GitHub repository URL over download URL
       if (data.githubRepoUrl) {
         window.open(data.githubRepoUrl, '_blank')
-      } else if (data.downloadUrl) {
-        window.location.href = data.downloadUrl
       } else {
-        throw new Error('No GitHub repository or download URL available')
+        throw new Error('No GitHub repository URL available')
       }
     } catch (error) {
-      console.error('Download error:', error)
+      console.error('GitHub access error:', error)
       toast({
         title: "Error",
         description: "Failed to access the GitHub repository. Please try again.",
@@ -80,27 +105,15 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
         ) : (
           <div className="flex gap-2.5">
             {product.github_repo_url && (
-              <Button size="lg" variant="outline" asChild>
-                <a 
-                  href={product.github_repo_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  <Github className="h-5 w-5" />
-                  View Repository
-                </a>
-              </Button>
-            )}
-            {product.codebase_url && (
               <Button 
-                size="lg"
-                onClick={handleDownload}
+                size="lg" 
+                variant="outline"
+                onClick={handleGitHubAccess}
                 disabled={isLoading}
                 className="flex items-center gap-2"
               >
                 <Github className="h-5 w-5" />
-                {isLoading ? 'Processing...' : 'View Code'}
+                {isLoading ? 'Processing...' : 'View Repository'}
               </Button>
             )}
           </div>

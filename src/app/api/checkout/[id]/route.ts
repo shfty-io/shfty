@@ -228,15 +228,25 @@ export async function POST(
 
     // If product is free, handle direct download
     if (product.price === 0) {
+      // Get user's github username from profile
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('github_username')
+        .eq('user_id', user.id)
+        .single();
+      
+      // Use the github username from profile, or default to a placeholder
+      const githubUsername = userProfile?.github_username || 'user-' + user.id.substring(0, 8);
+      
       // Record the free purchase first
       const { error: purchaseError } = await supabase
         .from('purchases')
         .insert({
           product_id: product.id,
           user_id: user.id,
-          amount: 0,
-          payment_method: 'free',
+          github_username: githubUsername, // Required field
           status: 'completed'
+          // No amount or payment_method fields - they don't exist in the schema
         })
 
       if (purchaseError) {
@@ -244,17 +254,11 @@ export async function POST(
         // Continue anyway as this isn't critical
       }
       
-      // Generate a download URL for the codebase
-      const { data: downloadUrl, error: downloadError } = await supabase
-        .storage
-        .from('products')
-        .createSignedUrl(product.codebase_url!, 60 * 60) // 1 hour expiry
-
-      if (downloadError) {
-        return createExternalServiceError('Supabase Storage', downloadError.message)
-      }
-
-      return NextResponse.json({ downloadUrl })
+      // GitHub repository access is handled client-side after redirecting
+      return NextResponse.json({ 
+        success: true,
+        redirect: `/product/${product.byline}/success`
+      })
     }
 
     // Get user's profile for customer details

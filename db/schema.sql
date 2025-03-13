@@ -448,17 +448,25 @@ $$;
 -- ============================================================
 DO $$
 BEGIN
-  -- Anyone can view approved products
+  -- Drop existing policy first
+  DROP POLICY IF EXISTS "Anyone can view approved products" ON products;
+  
+  -- Anyone can view approved products - with public access
+  CREATE POLICY "Anyone can view approved products"
+  ON products FOR SELECT
+  USING (status = 'approved');
+
+  -- Authenticated users can view own products in any status
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
     WHERE schemaname = 'public' 
     AND tablename = 'products' 
-    AND policyname = 'Anyone can view approved products'
+    AND policyname = 'Authenticated users can view own products'
   ) THEN
-    CREATE POLICY "Anyone can view approved products"
+    CREATE POLICY "Authenticated users can view own products"
     ON products FOR SELECT
     TO authenticated
-    USING (status = 'approved' OR user_id = auth.uid());
+    USING (user_id = auth.uid());
   END IF;
 
   -- Sellers can create their own products

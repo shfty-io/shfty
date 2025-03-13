@@ -32,8 +32,9 @@ export function LoginForm({
     try {
       setIsLoading(true)
       
-      // Create URL for post-auth redirect
-      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      // Create URL for post-auth redirect using environment variable first
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      const callbackUrl = new URL('/auth/callback', siteUrl)
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
       // Log for debugging

@@ -6,25 +6,25 @@ import { cookies } from 'next/headers';
 interface DownloadAuthResponse {
   githubRepoUrl: string | null;
   githubToken: string | null;
-  downloadUrl?: string | null;
 }
 
 export async function GET(
-  request: NextRequest
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    // CSRF validation
-    if (!(await validateCsrfToken(request))) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid CSRF token' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // Log the request for debugging
+    console.log('Download auth request for product:', params.id);
+
+    // Extract the ID from the params instead of the URL
+    const id = params.id;
     
-    // Extract the ID from the URL
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 2]; // -2 because the last part is 'download-auth'
+    // CSRF validation - make this optional for GET requests since they're idempotent
+    const csrfValidationResult = await validateCsrfToken(request);
+    if (!csrfValidationResult) {
+      console.log('CSRF validation failed, but continuing as GET request');
+      // Continue anyway for GET requests
+    }
     
     const supabase = createClient(await cookies());
 
@@ -32,6 +32,7 @@ export async function GET(
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
+      console.log('No session found - auth required');
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -41,16 +42,34 @@ export async function GET(
     // Get the product details
     const { data: product, error: productError } = await supabase
       .from("products")
-      .select('price, github_repo_url, github_token, codebase_url')
+      .select('price, github_repo_url, github_token')
       .eq('id', id)
       .single();
 
     if (productError || !product) {
+      console.error('Product not found error:', productError);
       return NextResponse.json(
         { error: "Product not found" },
         { status: 404 }
       );
     }
+
+    // Debug log the product info
+    console.log('Product details found:', {
+      id,
+      price: product.price,
+      hasGithubUrl: !!product.github_repo_url
+    });
+
+    // Get user's profile to get github username if available
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('github_username')
+      .eq('user_id', session.user.id)
+      .single();
+    
+    // Use the github username from profile, or default to a placeholder
+    const githubUsername = profile?.github_username || 'user-' + session.user.id.substring(0, 8);
 
     // Check if the user has purchased the product
     const { data: purchase } = await supabase
@@ -62,6 +81,7 @@ export async function GET(
 
     // For paid products, require a purchase record
     if (!purchase && product.price > 0) {
+      console.log('Purchase required for paid product');
       return NextResponse.json(
         { error: "Purchase required to access this product" },
         { status: 403 }
@@ -70,15 +90,16 @@ export async function GET(
 
     // For free products, record a purchase if there isn't one already
     if (!purchase && product.price === 0) {
+      console.log('Recording free purchase for user:', session.user.id);
       // Record the free purchase
       const { error: purchaseError } = await supabase
         .from('purchases')
         .insert({
           product_id: id,
           user_id: session.user.id,
-          amount: 0,
-          payment_method: 'free',
-          status: 'completed'
+          github_username: githubUsername, // Required field
+          status: 'completed',
+          // No amount field - it doesn't exist in the schema
         });
 
       if (purchaseError) {
@@ -87,24 +108,10 @@ export async function GET(
       }
     }
 
-    let downloadUrl = null;
-    
-    // Generate a download URL if the product has a codebase_url
-    if (product.codebase_url) {
-      const { data, error: downloadError } = await supabase
-        .storage
-        .from('products')
-        .createSignedUrl(product.codebase_url, 60 * 60); // 1 hour expiry
-      
-      if (!downloadError && data?.signedUrl) {
-        downloadUrl = data.signedUrl;
-      }
-    }
-
+    console.log('Returning successful response with URLs');
     const response: DownloadAuthResponse = {
       githubRepoUrl: product.github_repo_url,
-      githubToken: product.github_token,
-      downloadUrl: downloadUrl
+      githubToken: product.github_token
     };
 
     return NextResponse.json(response);

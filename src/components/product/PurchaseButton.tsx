@@ -15,43 +15,42 @@ interface PurchaseButtonProps {
 
 export function PurchaseButton({ productId, price, className = '', source }: PurchaseButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const pathname = usePathname()
   const router = useRouter()
+  const pathname = usePathname()
   
-  // Ensure CSRF token is available when component mounts
+  // Determine if on category page for analytics
+  const isFromCategory = source === 'category' || pathname?.includes('/category/')
+  
   useEffect(() => {
-    const prepareCsrfToken = async () => {
-      try {
-        // Check if token already exists
-        const token = getCsrfToken()
-        if (!token) {
-          await generateCsrfToken()
-        }
-      } catch (err) {
-        console.error('Failed to generate CSRF token:', err)
-        toast({
-          title: "Warning",
-          description: "Failed to set up security token. You may experience issues with checkout.",
-          variant: "destructive"
-        })
+    // Preemptively generate a CSRF token when component mounts
+    const preloadCsrf = async () => {
+      if (!getCsrfToken()) {
+        await generateCsrfToken()
       }
     }
     
-    prepareCsrfToken()
+    preloadCsrf()
   }, [])
-  
-  // Automatically detect if we're on a category page if source is not provided
-  const isFromCategory = source || (pathname && pathname.startsWith('/category/'))
   
   const handlePurchase = async () => {
     try {
       setIsLoading(true)
       
       // Always refresh the CSRF token before making a purchase request
-      await generateCsrfToken()
+      const csrfGenerated = await generateCsrfToken()
+      if (!csrfGenerated) {
+        toast({
+          title: "Error",
+          description: "Failed to generate security token. Please refresh the page and try again.",
+          variant: "destructive"
+        })
+        setIsLoading(false)
+        return
+      }
       
-      // For free products, handle direct download
+      // For free products, handle direct repository access
       if (price === 0) {
+        console.log('Initiating free product access:', productId)
         const response = await fetchWithCsrf(`/api/products/${productId}/download-auth`)
         
         if (response.status === 401) {
@@ -72,12 +71,32 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
           return
         }
         
+        if (response.status === 404) {
+          toast({
+            title: "Error",
+            description: "The repository could not be found. Please try again later.",
+            variant: "destructive"
+          })
+          setIsLoading(false)
+          return
+        }
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+          throw new Error(errorData.error || 'Failed to access repository')
+        }
+        
         const data = await response.json()
+        console.log('Repository access successful:', data)
 
         if (data.githubRepoUrl) {
           window.open(data.githubRepoUrl, '_blank')
-        } else if (data.downloadUrl) {
-          window.location.href = data.downloadUrl
+        } else {
+          toast({
+            title: "Error",
+            description: "No GitHub repository URL available.",
+            variant: "destructive"
+          })
         }
         return
       }
@@ -89,7 +108,7 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source: isFromCategory ? 'category' : 'direct'
+          source: source || (isFromCategory ? 'category' : 'direct')
         })
       })
       
@@ -154,9 +173,10 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
       console.error('Purchase error:', error)
       toast({
         title: "Error",
-        description: "Failed to process purchase. Please try again.",
+        description: "Failed to process your request. Please try again.",
         variant: "destructive"
       })
+    } finally {
       setIsLoading(false)
     }
   }

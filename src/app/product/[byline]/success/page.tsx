@@ -190,31 +190,10 @@ export default async function SuccessPage({
     );
   }
 
-  // Generate download URL for products with codebase
-  if (!product.codebase_url) {
-    return <SuccessPageContent status="download-error" byline={byline} />;
-  }
-
-  const supabase = await createServerComponentClient()
-  const { data, error } = await supabase
-    .storage
-    .from('products')
-    .createSignedUrl(product.codebase_url, 60 * 60) // 1 hour expiry
-
-  if (error || !data?.signedUrl) {
-    return <SuccessPageContent status="download-error" product={{ id: product.id, name: product.name }} byline={byline} />;
-  }
-
-  return (
-    <SuccessPageContent 
-      status="success" 
-      product={{ 
-        id: product.id, 
-        name: product.name,
-        github_repo_url: product.github_repo_url 
-      }}
-      downloadUrl={data.signedUrl}
-      byline={byline}
-    />
-  );
+  // If there's no GitHub repository URL, show download error
+  return <SuccessPageContent 
+    status="download-error" 
+    product={{ id: product.id, name: product.name }} 
+    byline={byline} 
+  />;
 } 
