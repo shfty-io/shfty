@@ -55,7 +55,6 @@ export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
           imageUrls: product.image_urls || [],
           imagePositions: product.image_positions || {},
           softwareLicense: product.software_license || '',
-          githubRepoUrl: product.github_repo_url || null,
           videoUrl: product.video_url || null,
           demoUrl: product.demo_url || null
         }}
