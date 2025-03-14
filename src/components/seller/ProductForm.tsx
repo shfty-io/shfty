@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
@@ -134,30 +135,28 @@ interface FocalPointSelectorProps {
   imageUrl: string;
   initialPosition?: { x: number; y: number };
   onPositionChange: (position: { x: number; y: number }) => void;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPositionChange, onClose }: FocalPointSelectorProps) {
+function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPositionChange, open, onOpenChange }: FocalPointSelectorProps) {
   const [position, setPosition] = useState(initialPosition);
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
-  // Load image dimensions when the component mounts
+  
+  // Update position when initialPosition changes
   useEffect(() => {
-    const img = new window.Image();
-    img.onload = () => {
-      // No need to store the image size since we're not using it
-      // The image will be displayed via background-image style
-    };
-    img.src = imageUrl;
-  }, [imageUrl]);
-
-  // Update container size when window resizes
+    setPosition(initialPosition);
+  }, [initialPosition]);
+  
+  // Measure container on mount and resize
   useEffect(() => {
-    const updateContainerSize = () => {
+    if (!open) return;
+    
+    const updateSize = () => {
       if (containerRef.current) {
         setContainerSize({
           width: containerRef.current.clientWidth,
@@ -165,27 +164,31 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
         });
       }
     };
-
-    updateContainerSize();
-    window.addEventListener('resize', updateContainerSize);
-    return () => window.removeEventListener('resize', updateContainerSize);
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!imageRef.current) return;
     
+    // Initial measurement with a slight delay to ensure rendering
+    const timer = setTimeout(updateSize, 50);
+    
+    // Listen for window resize
+    window.addEventListener('resize', updateSize);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSize);
+    };
+  }, [open]);
+  
+  // Handle mouse/touch down
+  const handleDragStart = (clientX: number, clientY: number) => {
     setIsDragging(true);
-    setStartDragPos({ 
-      x: e.clientX, 
-      y: e.clientY 
-    });
+    setStartDragPos({ x: clientX, y: clientY });
   };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !imageRef.current || !containerRef.current) return;
+  
+  // Handle mouse/touch move
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!isDragging || !containerRef.current) return;
     
-    const deltaX = e.clientX - startDragPos.x;
-    const deltaY = e.clientY - startDragPos.y;
+    const deltaX = clientX - startDragPos.x;
+    const deltaY = clientY - startDragPos.y;
     
     // Calculate new position as percentage
     let newX = position.x - (deltaX / containerSize.width) * 100;
@@ -196,74 +199,104 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
     newY = Math.max(0, Math.min(100, newY));
     
     setPosition({ x: newX, y: newY });
-    setStartDragPos({ x: e.clientX, y: e.clientY });
+    setStartDragPos({ x: clientX, y: clientY });
   };
-
-  const handleMouseUp = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      onPositionChange(position);
-    }
+  
+  // Handle mouse/touch up
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    onPositionChange(position);
   };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!imageRef.current) return;
+  
+  // Add global event listeners for dragging
+  useEffect(() => {
+    if (!open) return;
     
-    setIsDragging(true);
-    setStartDragPos({ 
-      x: e.touches[0].clientX, 
-      y: e.touches[0].clientY 
-    });
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        handleDragMove(e.clientX, e.clientY);
+      }
+    };
     
-    const deltaX = e.touches[0].clientX - startDragPos.x;
-    const deltaY = e.touches[0].clientY - startDragPos.y;
+    const handleMouseUp = () => {
+      handleDragEnd();
+    };
     
-    // Calculate new position as percentage
-    let newX = position.x - (deltaX / containerSize.width) * 100;
-    let newY = position.y - (deltaY / containerSize.height) * 100;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging && e.touches[0]) {
+        e.preventDefault();
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
     
-    // Clamp values between 0 and 100
-    newX = Math.max(0, Math.min(100, newX));
-    newY = Math.max(0, Math.min(100, newY));
+    const handleTouchEnd = () => {
+      handleDragEnd();
+    };
     
-    setPosition({ x: newX, y: newY });
-    setStartDragPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-  };
-
-  const handleTouchEnd = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      onPositionChange(position);
-    }
-  };
-
+    // Add document-level event listeners
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    
+    // Add ESC key handler to close the modal
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscKey);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [open, isDragging, position, containerSize.width, containerSize.height, onPositionChange, onOpenChange]);
+  
+  // If not open, don't render anything
+  if (!open) return null;
+  
+  // Use Dialog for a more integrated approach
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
-      <div className="bg-background p-6 rounded-lg w-[90vw] max-w-3xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Adjust Image Position</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Drag the image to adjust which part will be visible in the 4:3 frame. The outlined area shows exactly what will be displayed.
-        </p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl" onInteractOutside={(e) => {
+        if (isDragging) {
+          e.preventDefault();
+        }
+      }} onPointerMove={(e) => {
+        if (isDragging) {
+          e.preventDefault();
+          handleDragMove(e.clientX, e.clientY);
+        }
+      }}>
+        <DialogHeader>
+          <DialogTitle>Adjust Image Position</DialogTitle>
+          <DialogDescription>
+            Drag the image to adjust which part will be visible in the 4:3 frame. 
+            The outlined area shows exactly what will be displayed.
+          </DialogDescription>
+        </DialogHeader>
         
         <div 
           ref={containerRef}
-          className="relative aspect-[4/3] overflow-hidden rounded-md border-2 border-primary cursor-move"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          className="relative aspect-[4/3] overflow-hidden rounded-md border-2 border-primary cursor-move mt-4"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleDragStart(e.clientX, e.clientY);
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (e.touches[0]) {
+              handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
         >
           {/* The image that can be dragged */}
           <div 
@@ -273,36 +306,44 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
             {/* Using a styled div instead of img or Image to avoid Next.js warning while maintaining drag functionality */}
             <div 
               ref={imageRef}
-              className="absolute max-w-none w-auto h-auto"
+              className="absolute max-w-none w-full h-full"
               style={{
                 backgroundImage: `url(${imageUrl})`,
                 backgroundPosition: `${position.x}% ${position.y}%`,
-                backgroundSize: 'cover',
-                width: '100%',
-                height: '100%'
+                backgroundSize: 'cover'
               }}
             />
           </div>
-
-          {/* Transparent overlay with instructions */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center text-white bg-black/30 px-4 py-2 rounded-md opacity-0 transition-opacity group-hover:opacity-100">
-              Drag to position image
-            </div>
-          </div>
+          
+          {/* Visual indicator for dragging */}
+          {isDragging && (
+            <div className="absolute inset-0 border-4 border-white/30 pointer-events-none" />
+          )}
         </div>
 
         <div className="flex justify-between mt-4">
           <p className="text-xs text-muted-foreground">
             This is exactly how your image will appear in the product card.
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={onClose}>Done</Button>
-          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                onPositionChange(position);
+                onOpenChange(false);
+              }}
+            >
+              Done
+            </Button>
+          </DialogFooter>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1189,6 +1230,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
   // Add state for currently editing image focal point
   const [editingImage, setEditingImage] = useState<string | null>(null);
+  const [isFocalPointDialogOpen, setIsFocalPointDialogOpen] = useState(false);
 
   // Add handler for updating image position
   const updateImagePosition = (url: string, position: { x: number; y: number }) => {
@@ -1674,7 +1716,10 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                     variant="secondary"
                     size="sm"
                     className="h-8"
-                    onClick={() => setEditingImage(url)}
+                    onClick={() => {
+                      setEditingImage(url);
+                      setIsFocalPointDialogOpen(true);
+                    }}
                   >
                     Adjust Position
                   </Button>
@@ -1683,17 +1728,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
                     variant="destructive"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => {
-                      if (formData.imageUrls.length <= 2) {
-                        toast({
-                          title: "Cannot Remove",
-                          description: "You must have at least 2 images",
-                          variant: "destructive"
-                        });
-                        return;
-                      }
-                      removeImage(url);
-                    }}
+                    onClick={() => removeImage(url)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -1820,13 +1855,14 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
       <Button type="submit" className="w-full md:w-auto">Save Changes</Button>
 
-      {/* Focal Point Selector Modal */}
+      {/* Focal Point Selector Dialog */}
       {editingImage && (
         <FocalPointSelector
           imageUrl={editingImage}
           initialPosition={formData.imagePositions?.[editingImage] || { x: 50, y: 50 }}
           onPositionChange={(position) => updateImagePosition(editingImage, position)}
-          onClose={() => setEditingImage(null)}
+          open={isFocalPointDialogOpen}
+          onOpenChange={setIsFocalPointDialogOpen}
         />
       )}
     </form>

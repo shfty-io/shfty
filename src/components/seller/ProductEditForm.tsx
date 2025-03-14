@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { migrateRichTextFormatting } from '@/lib/utils';
-import { Github, Upload, X, Wand2, Loader2 } from "lucide-react";
+import { Upload, X, Wand2, Loader2 } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { UrlInput } from "@/components/ui/url-input";
@@ -173,35 +174,28 @@ interface FocalPointSelectorProps {
   imageUrl: string;
   initialPosition?: { x: number; y: number };
   onPositionChange: (position: { x: number; y: number }) => void;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPositionChange, onClose }: FocalPointSelectorProps) {
+function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPositionChange, open, onOpenChange }: FocalPointSelectorProps) {
   const [position, setPosition] = useState(initialPosition);
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
+  
   // Update position when initialPosition changes
   useEffect(() => {
     setPosition(initialPosition);
   }, [initialPosition]);
-
-  // Load image dimensions when the component mounts
+  
+  // Measure container on mount and resize
   useEffect(() => {
-    const img = new window.Image();
-    img.onload = () => {
-      // No need to store the image size since we're not using it
-      // The image will be displayed via background-image style
-    };
-    img.src = imageUrl;
-  }, [imageUrl]);
-
-  // Update container size when window resizes
-  useEffect(() => {
-    const updateContainerSize = () => {
+    if (!open) return;
+    
+    const updateSize = () => {
       if (containerRef.current) {
         setContainerSize({
           width: containerRef.current.clientWidth,
@@ -209,27 +203,31 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
         });
       }
     };
-
-    updateContainerSize();
-    window.addEventListener('resize', updateContainerSize);
-    return () => window.removeEventListener('resize', updateContainerSize);
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!imageRef.current) return;
     
+    // Initial measurement with a slight delay to ensure rendering
+    const timer = setTimeout(updateSize, 50);
+    
+    // Listen for window resize
+    window.addEventListener('resize', updateSize);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSize);
+    };
+  }, [open]);
+  
+  // Handle mouse/touch down
+  const handleDragStart = (clientX: number, clientY: number) => {
     setIsDragging(true);
-    setStartDragPos({ 
-      x: e.clientX, 
-      y: e.clientY 
-    });
+    setStartDragPos({ x: clientX, y: clientY });
   };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !imageRef.current || !containerRef.current) return;
+  
+  // Handle mouse/touch move
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!isDragging || !containerRef.current) return;
     
-    const deltaX = e.clientX - startDragPos.x;
-    const deltaY = e.clientY - startDragPos.y;
+    const deltaX = clientX - startDragPos.x;
+    const deltaY = clientY - startDragPos.y;
     
     // Calculate new position as percentage
     let newX = position.x - (deltaX / containerSize.width) * 100;
@@ -240,76 +238,104 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
     newY = Math.max(0, Math.min(100, newY));
     
     setPosition({ x: newX, y: newY });
-    setStartDragPos({ x: e.clientX, y: e.clientY });
+    setStartDragPos({ x: clientX, y: clientY });
   };
-
-  const handleMouseUp = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      // Apply the position change immediately
-      onPositionChange(position);
-    }
+  
+  // Handle mouse/touch up
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    onPositionChange(position);
   };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!imageRef.current) return;
+  
+  // Add global event listeners for dragging
+  useEffect(() => {
+    if (!open) return;
     
-    setIsDragging(true);
-    setStartDragPos({ 
-      x: e.touches[0].clientX, 
-      y: e.touches[0].clientY 
-    });
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        handleDragMove(e.clientX, e.clientY);
+      }
+    };
     
-    const deltaX = e.touches[0].clientX - startDragPos.x;
-    const deltaY = e.touches[0].clientY - startDragPos.y;
+    const handleMouseUp = () => {
+      handleDragEnd();
+    };
     
-    // Calculate new position as percentage
-    let newX = position.x - (deltaX / containerSize.width) * 100;
-    let newY = position.y - (deltaY / containerSize.height) * 100;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging && e.touches[0]) {
+        e.preventDefault();
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
     
-    // Clamp values between 0 and 100
-    newX = Math.max(0, Math.min(100, newX));
-    newY = Math.max(0, Math.min(100, newY));
+    const handleTouchEnd = () => {
+      handleDragEnd();
+    };
     
-    setPosition({ x: newX, y: newY });
-    setStartDragPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-  };
-
-  const handleTouchEnd = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      // Apply the position change immediately
-      onPositionChange(position);
-    }
-  };
-
+    // Add document-level event listeners
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    
+    // Add ESC key handler to close the modal
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscKey);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [open, isDragging, position, containerSize.width, containerSize.height, onPositionChange, onOpenChange]);
+  
+  // If not open, don't render anything
+  if (!open) return null;
+  
+  // Use Dialog for a more integrated approach
   return (
-    <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black/50">
-      <div className="bg-background p-6 rounded-lg w-[90vw] max-w-3xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Adjust Image Position</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Drag the image to adjust which part will be visible in the 4:3 frame. The outlined area shows exactly what will be displayed.
-        </p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl" onInteractOutside={(e) => {
+        if (isDragging) {
+          e.preventDefault();
+        }
+      }} onPointerMove={(e) => {
+        if (isDragging) {
+          e.preventDefault();
+          handleDragMove(e.clientX, e.clientY);
+        }
+      }}>
+        <DialogHeader>
+          <DialogTitle>Adjust Image Position</DialogTitle>
+          <DialogDescription>
+            Drag the image to adjust which part will be visible in the 4:3 frame. 
+            The outlined area shows exactly what will be displayed.
+          </DialogDescription>
+        </DialogHeader>
         
         <div 
           ref={containerRef}
-          className="relative aspect-[4/3] overflow-hidden rounded-md border-2 border-primary cursor-move"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          className="relative aspect-[4/3] overflow-hidden rounded-md border-2 border-primary cursor-move mt-4"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleDragStart(e.clientX, e.clientY);
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (e.touches[0]) {
+              handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
         >
           {/* The image that can be dragged */}
           <div 
@@ -319,44 +345,44 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
             {/* Using a styled div instead of img or Image to avoid Next.js warning while maintaining drag functionality */}
             <div 
               ref={imageRef}
-              className="absolute max-w-none w-auto h-auto"
+              className="absolute max-w-none w-full h-full"
               style={{
                 backgroundImage: `url(${imageUrl})`,
                 backgroundPosition: `${position.x}% ${position.y}%`,
-                backgroundSize: 'cover',
-                width: '100%',
-                height: '100%'
+                backgroundSize: 'cover'
               }}
             />
           </div>
-
-          {/* Transparent overlay with instructions */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center text-white bg-black/30 px-4 py-2 rounded-md opacity-0 transition-opacity group-hover:opacity-100">
-              Drag to position image
-            </div>
-          </div>
+          
+          {/* Visual indicator for dragging */}
+          {isDragging && (
+            <div className="absolute inset-0 border-4 border-white/30 pointer-events-none" />
+          )}
         </div>
 
         <div className="flex justify-between mt-4">
           <p className="text-xs text-muted-foreground">
             This is exactly how your image will appear in the product card.
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
             <Button 
               onClick={() => {
-                // Ensure position is saved when Done is clicked
                 onPositionChange(position);
-                onClose();
+                onOpenChange(false);
               }}
             >
               Done
             </Button>
-          </div>
+          </DialogFooter>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -370,8 +396,6 @@ export type ProductFormData = {
   categories: string[];
   technologies: string[];
   faq?: FAQItem[];
-  githubRepoUrl?: string | null;
-  github_token?: string | null;
   softwareLicense?: string | null;
   imageUrls: string[];
   imagePositions?: Record<string, { x: number; y: number }>;
@@ -381,12 +405,19 @@ export type ProductFormData = {
 
 export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Add state hooks from ProductForm
-  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
-  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isEnhancingShortDesc, setIsEnhancingShortDesc] = useState(false);
   const [isEnhancingFullDesc, setIsEnhancingFullDesc] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update state for focal point editing
+  const [editingImageUrl, setEditingImageUrl] = useState<string | null>(null);
+  const [isFocalPointDialogOpen, setIsFocalPointDialogOpen] = useState(false);
+
+  // Add these state variables near the other state declarations, around line 385-390
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [isTechnologiesOpen, setIsTechnologiesOpen] = useState(false);
+  const [isLicenseOpen, setIsLicenseOpen] = useState(false);
 
   // Log initialData for debugging
   useEffect(() => {
@@ -415,9 +446,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       : null
   );
 
-  // Add state for currently editing image focal point
-  const [editingImage, setEditingImage] = useState<string | null>(null);
-  
   // Update initial formData state to include imagePositions
   const [formData, setFormData] = useState<ProductFormData>({
     name: initialData?.name ?? "",
@@ -427,8 +455,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
     faq: initialData?.faq || [],
-    githubRepoUrl: initialData?.githubRepoUrl || null,
-    github_token: initialData?.github_token || null,
     softwareLicense: initialData?.softwareLicense || null,
     imageUrls: initialData?.imageUrls ?? [],
     imagePositions: initialData?.imagePositions || {},
@@ -596,27 +622,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       });
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const fetchGitHubRepos = async () => {
-    try {
-      setIsLoadingRepos(true);
-      const response = await fetch('/api/github/repos');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setGithubRepos(data.repositories);
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch GitHub repositories",
-        variant: "destructive"
-      });
-      console.error(err);
-    } finally {
-      setIsLoadingRepos(false);
     }
   };
 
@@ -832,12 +837,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     }));
   }, [selectedTechnologies]);
 
-  useEffect(() => {
-    if (formData.githubRepoUrl) {
-      fetchGitHubRepos();
-    }
-  }, [formData.githubRepoUrl]);
-
   // Add this function with the other handlers
   const removeImage = (urlToRemove: string) => {
     if (formData.imageUrls.length <= 2) {
@@ -873,6 +872,19 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
         imagePositions: newImagePositions
       };
     });
+  };
+
+  // Add these handler functions around line 870-880, near other handler functions
+  const handleCategoriesOpenChange = (isOpen: boolean) => {
+    setIsCategoriesOpen(isOpen);
+  };
+
+  const handleTechnologiesOpenChange = (isOpen: boolean) => {
+    setIsTechnologiesOpen(isOpen);
+  };
+
+  const handleLicenseOpenChange = (isOpen: boolean) => {
+    setIsLicenseOpen(isOpen);
   };
 
   // Update JSX to match ProductForm structure
@@ -934,27 +946,29 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
 
         {/* Categories and Technologies */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2 relative z-[70]">
+          <div className={`space-y-2 relative ${isCategoriesOpen ? 'z-[150]' : 'z-0'}`}>
             <TagsSelector 
               tags={categories}
               selectedTags={selectedCategories}
               setSelectedTags={setSelectedCategories}
               title="Categories"
               maxTags={3}
+              onOpenChange={handleCategoriesOpenChange}
             />
           </div>
-          <div className="space-y-2 relative z-[70]">
+          <div className={`space-y-2 relative ${isTechnologiesOpen ? 'z-[150]' : 'z-0'}`}>
             <TagsSelector 
               tags={technologies}
               selectedTags={selectedTechnologies}
               setSelectedTags={setSelectedTechnologies}
               title="Technologies Used"
+              onOpenChange={handleTechnologiesOpenChange}
             />
           </div>
         </div>
 
         {/* License selector */}
-        <div className="space-y-2 relative z-[70]">
+        <div className={`space-y-2 relative ${isLicenseOpen ? 'z-[200]' : 'z-0'}`}>
           <div className="h-6 flex items-center">
             <Label htmlFor="softwareLicense" className="text-sm font-medium">Software License</Label>
           </div>
@@ -966,6 +980,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                 setSelectedLicense(license);
                 setFormData({ ...formData, softwareLicense: license?.id || null });
               }}
+              onOpenChange={handleLicenseOpenChange}
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -973,119 +988,27 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           </p>
         </div>
 
-        {/* Demo URL and GitHub Repository */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Demo URL Section */}
-          <div className="space-y-2 relative z-[70]">
-            <div className="h-6 flex items-center">
-              <Label className="text-sm font-medium">Product Demo URL (Optional)</Label>
-            </div>
-            <div className="relative">
-              <UrlInput
-                placeholder="your-demo-url.com"
-                value={formData.demoUrl ? formData.demoUrl.replace(/^https?:\/\//, '') : ''}
-                onChange={(e) => {
-                  setFormData({ 
-                    ...formData, 
-                    demoUrl: e.target.value ? `https://${e.target.value}` : null 
-                  });
-                }}
-                className="h-10"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Link to a live demo of your product
-            </p>
+        {/* Demo URL Section */}
+        <div className="space-y-2 relative z-[70]">
+          <div className="h-6 flex items-center">
+            <Label className="text-sm font-medium">Product Demo URL (Optional)</Label>
           </div>
-
-          {/* GitHub Repository Section */}
-          <div className="space-y-2 relative z-[70]">
-            <div className="h-6 flex items-center">
-              <Label className="text-sm font-medium">
-                GitHub Repository
-                <span className="text-destructive ml-1">*</span>
-              </Label>
-            </div>
-            <div className="relative">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="flex h-10 w-full items-center justify-start gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer">
-                    <Github className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left">
-                      {formData.githubRepoUrl ? 
-                        formData.githubRepoUrl.split('/').slice(-2).join('/') : // Show repo owner/name
-                        "Select Repository"}
-                    </span>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Select a Repository</DialogTitle>
-                    <DialogDescription>
-                      Choose a GitHub repository to link to your product
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    {isLoadingRepos ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    ) : githubRepos.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No repositories found. Make sure you connected your GitHub account.
-                      </div>
-                    ) : (
-                      githubRepos.map((repo) => (
-                        <button
-                          key={repo.id}
-                          type="button"
-                          className={`w-full p-4 border rounded-md cursor-pointer hover:border-primary transition-colors text-left ${
-                            formData.githubRepoUrl === repo.html_url ? 'border-primary bg-muted' : ''
-                          }`}
-                          onClick={() => setFormData(prev => ({ 
-                            ...prev, 
-                            githubRepoUrl: repo.html_url,
-                            price: repo.private ? prev.price : 0
-                          }))}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-medium">{repo.name}</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-xs px-2 py-1 rounded ${
-                                  repo.private ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {repo.private ? 'Private' : 'Public'}
-                                </span>
-                                {repo.owner && (
-                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    Owner: {repo.owner.login}
-                                  </span>
-                                )}
-                              </div>
-                              {repo.description && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {repo.description}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                Updated: {new Date(repo.updated_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Link your GitHub repository to your product
-            </p>
+          <div className="relative">
+            <UrlInput
+              placeholder="your-demo-url.com"
+              value={formData.demoUrl ? formData.demoUrl.replace(/^https?:\/\//, '') : ''}
+              onChange={(e) => {
+                setFormData({ 
+                  ...formData, 
+                  demoUrl: e.target.value ? `https://${e.target.value}` : null 
+                });
+              }}
+              className="h-10"
+            />
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Link to a live demo of your product
+          </p>
         </div>
 
         {/* Short Description */}
@@ -1221,7 +1144,10 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                     variant="secondary"
                     size="sm"
                     className="h-8"
-                    onClick={() => setEditingImage(url)}
+                    onClick={() => {
+                      setEditingImageUrl(url);
+                      setIsFocalPointDialogOpen(true);
+                    }}
                   >
                     Adjust Position
                   </Button>
@@ -1338,13 +1264,14 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
         )}
       </Button>
 
-      {/* Focal Point Selector Modal */}
-      {editingImage && (
+      {/* Focal Point Selector Dialog */}
+      {editingImageUrl && (
         <FocalPointSelector
-          imageUrl={editingImage}
-          initialPosition={formData.imagePositions?.[editingImage] || { x: 50, y: 50 }}
-          onPositionChange={(position) => updateImagePosition(editingImage, position)}
-          onClose={() => setEditingImage(null)}
+          imageUrl={editingImageUrl}
+          initialPosition={formData.imagePositions?.[editingImageUrl] || { x: 50, y: 50 }}
+          onPositionChange={(position) => updateImagePosition(editingImageUrl, position)}
+          open={isFocalPointDialogOpen}
+          onOpenChange={setIsFocalPointDialogOpen}
         />
       )}
     </form>
