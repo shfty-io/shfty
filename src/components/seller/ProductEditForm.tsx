@@ -288,7 +288,7 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black/50">
       <div className="bg-background p-6 rounded-lg w-[90vw] max-w-3xl">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Adjust Image Position</h3>
