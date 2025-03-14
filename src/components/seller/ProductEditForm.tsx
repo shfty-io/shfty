@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
@@ -34,25 +33,6 @@ interface ProductFormProps {
 interface FAQItem {
   question: string;
   answer: string;
-}
-
-// Add this interface near other type definitions
-interface GitHubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string | null;
-  private: boolean;
-  updated_at: string;
-  owner: {
-    login: string;
-    id: number;
-    avatar_url: string;
-    url: string;
-    html_url: string;
-    type: string;
-  };
 }
 
 // Add constants from ProductForm
@@ -222,8 +202,8 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
     setStartDragPos({ x: clientX, y: clientY });
   };
   
-  // Handle mouse/touch move
-  const handleDragMove = (clientX: number, clientY: number) => {
+  // Handle mouse/touch move - wrap in useCallback
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
     if (!isDragging || !containerRef.current) return;
     
     const deltaX = clientX - startDragPos.x;
@@ -239,14 +219,14 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
     
     setPosition({ x: newX, y: newY });
     setStartDragPos({ x: clientX, y: clientY });
-  };
+  }, [isDragging, position.x, position.y, startDragPos.x, startDragPos.y, containerSize.width, containerSize.height]);
   
-  // Handle mouse/touch up
-  const handleDragEnd = () => {
+  // Handle mouse/touch up - wrap in useCallback
+  const handleDragEnd = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
     onPositionChange(position);
-  };
+  }, [isDragging, onPositionChange, position]);
   
   // Add global event listeners for dragging
   useEffect(() => {
@@ -295,7 +275,7 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [open, isDragging, position, containerSize.width, containerSize.height, onPositionChange, onOpenChange]);
+  }, [open, isDragging, onOpenChange, handleDragEnd, handleDragMove]);
   
   // If not open, don't render anything
   if (!open) return null;

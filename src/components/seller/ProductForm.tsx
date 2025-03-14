@@ -184,7 +184,7 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
   };
   
   // Handle mouse/touch move
-  const handleDragMove = (clientX: number, clientY: number) => {
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
     if (!isDragging || !containerRef.current) return;
     
     const deltaX = clientX - startDragPos.x;
@@ -200,14 +200,14 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
     
     setPosition({ x: newX, y: newY });
     setStartDragPos({ x: clientX, y: clientY });
-  };
+  }, [isDragging, position.x, position.y, startDragPos.x, startDragPos.y, containerSize.width, containerSize.height]);
   
   // Handle mouse/touch up
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
     onPositionChange(position);
-  };
+  }, [isDragging, onPositionChange, position]);
   
   // Add global event listeners for dragging
   useEffect(() => {
@@ -256,7 +256,7 @@ function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPo
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [open, isDragging, position, containerSize.width, containerSize.height, onPositionChange, onOpenChange]);
+  }, [open, isDragging, onOpenChange, handleDragEnd, handleDragMove]);
   
   // If not open, don't render anything
   if (!open) return null;

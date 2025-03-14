@@ -12,7 +12,7 @@ interface ProductStatsProps {
   creatorAvatarUrl: string | null
   updatedAt: string | null
   likesCount: number
-  viewCount: number
+  viewCount: number | null | undefined
 }
 
 export function ProductStats({ 
@@ -24,6 +24,7 @@ export function ProductStats({
   viewCount 
 }: ProductStatsProps) {
   const [likesCount, setLikesCount] = useState(initialLikesCount)
+  const safeViewCount = viewCount || 0
   const supabase = createClient()
 
   // Fetch the current likes count
@@ -124,7 +125,7 @@ export function ProductStats({
               <Eye className="w-5 h-5 text-gray-500" />
             </div>
             <div className="flex flex-col items-center text-sm">
-              <span className="font-medium">{viewCount.toLocaleString()}+</span>
+              <span className="font-medium">{safeViewCount.toLocaleString()}+</span>
               <span className="text-muted-foreground">Views</span>
             </div>
           </div>

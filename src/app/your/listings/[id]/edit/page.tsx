@@ -66,7 +66,6 @@ export default async function EditProductPage(props: PageProps) {
         image_urls: formData.imageUrls,
         image_positions: formData.imagePositions || null,
         software_license: formData.softwareLicense,
-        github_repo_url: formData.githubRepoUrl,
         demo_url: formData.demoUrl,
         video_url: formData.videoUrl,
         updated_at: new Date().toISOString()
