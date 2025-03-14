@@ -4,11 +4,12 @@ import Image from "next/image"
 
 interface ImageGalleryProps {
   images: string[]
+  imagePositions?: Record<string, { x: number; y: number }>
   productName: string
   videoUrl?: string | null
 }
 
-export function ImageGallery({ images, productName, videoUrl }: ImageGalleryProps) {
+export function ImageGallery({ images, imagePositions, productName, videoUrl }: ImageGalleryProps) {
   const hasVideo = Boolean(videoUrl)
   const allMedia = hasVideo && videoUrl ? [videoUrl, ...images] : images
 
@@ -45,6 +46,11 @@ export function ImageGallery({ images, productName, videoUrl }: ImageGalleryProp
                 fill
                 sizes="(max-width: 768px) 50vw, 33vw"
                 className="object-cover"
+                style={{
+                  objectPosition: imagePositions?.[url] 
+                    ? `${imagePositions[url].x}% ${imagePositions[url].y}%` 
+                    : '50% 50%'
+                }}
                 priority={idx === 0}
               />
             </div>

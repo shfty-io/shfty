@@ -11,6 +11,7 @@ interface Product {
   price: number;
   categories: string[];
   image_urls: string[] | null;
+  image_positions?: Record<string, { x: number; y: number }> | null;
   short_description: string;
   byline: string;
   created_at: string;
@@ -85,6 +86,7 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
         price,
         categories,
         image_urls,
+        image_positions,
         short_description,
         byline,
         status,

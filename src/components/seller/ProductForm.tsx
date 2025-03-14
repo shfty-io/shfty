@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,6 +129,189 @@ const MAX_BYLINE_LENGTH = 25;
 const MAX_SHORT_DESCRIPTION_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 5000;
 
+// Define FocalPointSelector component
+interface FocalPointSelectorProps {
+  imageUrl: string;
+  initialPosition?: { x: number; y: number };
+  onPositionChange: (position: { x: number; y: number }) => void;
+  onClose: () => void;
+}
+
+function FocalPointSelector({ imageUrl, initialPosition = { x: 50, y: 50 }, onPositionChange, onClose }: FocalPointSelectorProps) {
+  const [position, setPosition] = useState(initialPosition);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  // Load image dimensions when the component mounts
+  useEffect(() => {
+    const img = new window.Image();
+    img.onload = () => {
+      // No need to store the image size since we're not using it
+      // The image will be displayed via background-image style
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // Update container size when window resizes
+  useEffect(() => {
+    const updateContainerSize = () => {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        });
+      }
+    };
+
+    updateContainerSize();
+    window.addEventListener('resize', updateContainerSize);
+    return () => window.removeEventListener('resize', updateContainerSize);
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!imageRef.current) return;
+    
+    setIsDragging(true);
+    setStartDragPos({ 
+      x: e.clientX, 
+      y: e.clientY 
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    
+    const deltaX = e.clientX - startDragPos.x;
+    const deltaY = e.clientY - startDragPos.y;
+    
+    // Calculate new position as percentage
+    let newX = position.x - (deltaX / containerSize.width) * 100;
+    let newY = position.y - (deltaY / containerSize.height) * 100;
+    
+    // Clamp values between 0 and 100
+    newX = Math.max(0, Math.min(100, newX));
+    newY = Math.max(0, Math.min(100, newY));
+    
+    setPosition({ x: newX, y: newY });
+    setStartDragPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      onPositionChange(position);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!imageRef.current) return;
+    
+    setIsDragging(true);
+    setStartDragPos({ 
+      x: e.touches[0].clientX, 
+      y: e.touches[0].clientY 
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    
+    const deltaX = e.touches[0].clientX - startDragPos.x;
+    const deltaY = e.touches[0].clientY - startDragPos.y;
+    
+    // Calculate new position as percentage
+    let newX = position.x - (deltaX / containerSize.width) * 100;
+    let newY = position.y - (deltaY / containerSize.height) * 100;
+    
+    // Clamp values between 0 and 100
+    newX = Math.max(0, Math.min(100, newX));
+    newY = Math.max(0, Math.min(100, newY));
+    
+    setPosition({ x: newX, y: newY });
+    setStartDragPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchEnd = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      onPositionChange(position);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+      <div className="bg-background p-6 rounded-lg w-[90vw] max-w-3xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Adjust Image Position</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Drag the image to adjust which part will be visible in the 4:3 frame. The outlined area shows exactly what will be displayed.
+        </p>
+        
+        <div 
+          ref={containerRef}
+          className="relative aspect-[4/3] overflow-hidden rounded-md border-2 border-primary cursor-move"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* The image that can be dragged */}
+          <div 
+            className={`absolute inset-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            style={{ touchAction: 'none' }}
+          >
+            {/* Using a styled div instead of img or Image to avoid Next.js warning while maintaining drag functionality */}
+            <div 
+              ref={imageRef}
+              className="absolute max-w-none w-auto h-auto"
+              style={{
+                backgroundImage: `url(${imageUrl})`,
+                backgroundPosition: `${position.x}% ${position.y}%`,
+                backgroundSize: 'cover',
+                width: '100%',
+                height: '100%'
+              }}
+            />
+          </div>
+
+          {/* Transparent overlay with instructions */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center text-white bg-black/30 px-4 py-2 rounded-md opacity-0 transition-opacity group-hover:opacity-100">
+              Drag to position image
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between mt-4">
+          <p className="text-xs text-muted-foreground">
+            This is exactly how your image will appear in the product card.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>Done</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Add new interface for image positions
+// interface ImagePosition {
+//   url: string;
+//   position: { x: number; y: number };
+// }
+
 export type ProductFormData = {
   id?: string;
   name: string;
@@ -143,6 +326,7 @@ export type ProductFormData = {
   github_token?: string | null;
   softwareLicense?: string | null;
   imageUrls: string[];
+  imagePositions?: Record<string, { x: number; y: number }>;
   videoUrl?: string | null;
   demoUrl?: string | null;
   hasReadme?: boolean;
@@ -189,6 +373,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     github_token: initialData?.github_token || null,
     softwareLicense: initialData?.softwareLicense || null,
     imageUrls: initialData?.imageUrls ?? [],
+    imagePositions: initialData?.imagePositions || {},
     videoUrl: initialData?.videoUrl || null,
     demoUrl: initialData?.demoUrl || null,
     hasReadme: initialData?.hasReadme ?? false,
@@ -1002,6 +1187,20 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
     return html;
   };
 
+  // Add state for currently editing image focal point
+  const [editingImage, setEditingImage] = useState<string | null>(null);
+
+  // Add handler for updating image position
+  const updateImagePosition = (url: string, position: { x: number; y: number }) => {
+    setFormData(prev => ({
+      ...prev,
+      imagePositions: {
+        ...prev.imagePositions,
+        [url]: position
+      }
+    }));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8 relative z-[50]">
       <div className="space-y-6">
@@ -1350,7 +1549,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
           <div className="relative">
             <Textarea
               id="shortDescription"
-              placeholder="Used in search results and as an intro at the top of your template's page."
+              placeholder="Used in search results and as an intro at the top of your template&apos;s page."
               value={formData.shortDescription}
               onChange={(e) => {
                 const newValue = e.target.value;
@@ -1455,37 +1654,55 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
 
             {/* Image Previews */}
             {formData.imageUrls.map((url, index) => (
-              <div key={url} className="relative aspect-square">
-                <Image
-                  src={url}
-                  alt={`Product image ${index + 1}`}
-                  fill
-                  className="object-cover rounded-md"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6"
-                  onClick={() => {
-                    if (formData.imageUrls.length <= 2) {
-                      toast({
-                        title: "Cannot Remove",
-                        description: "You must have at least 2 images",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    removeImage(url);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <div key={url} className="relative aspect-[4/3] group">
+                <div className="relative w-full h-full overflow-hidden rounded-md">
+                  <Image
+                    src={url}
+                    alt={`Product image ${index + 1}`}
+                    fill
+                    className="object-cover rounded-md"
+                    style={{
+                      objectPosition: formData.imagePositions?.[url] 
+                        ? `${formData.imagePositions[url].x}% ${formData.imagePositions[url].y}%` 
+                        : '50% 50%'
+                    }}
+                  />
+                </div>
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/40 flex items-center justify-center gap-2 transition-opacity">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setEditingImage(url)}
+                  >
+                    Adjust Position
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      if (formData.imageUrls.length <= 2) {
+                        toast({
+                          title: "Cannot Remove",
+                          description: "You must have at least 2 images",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      removeImage(url);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
             
             {/* Upload Buttons */}
-            <div className="border-2 border-dashed rounded-md aspect-square flex flex-col gap-2 p-4">
+            <div className="border-2 border-dashed rounded-md aspect-[4/3] flex flex-col gap-2 p-4">
               {/* Image Upload */}
               <div className="flex-1 flex flex-col items-center justify-center">
                 <Input
@@ -1554,7 +1771,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Upload 2-8 images (PNG, JPG, WEBP) and optionally one video
+            Upload 2-8 images (PNG, JPG, WEBP) and optionally one video. After uploading, click &quot;Adjust Position&quot; on each image to set how it appears in the 4:3 product card.
           </p>
         </div>
 
@@ -1602,6 +1819,16 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       </div>
 
       <Button type="submit" className="w-full md:w-auto">Save Changes</Button>
+
+      {/* Focal Point Selector Modal */}
+      {editingImage && (
+        <FocalPointSelector
+          imageUrl={editingImage}
+          initialPosition={formData.imagePositions?.[editingImage] || { x: 50, y: 50 }}
+          onPositionChange={(position) => updateImagePosition(editingImage, position)}
+          onClose={() => setEditingImage(null)}
+        />
+      )}
     </form>
   );
 } 

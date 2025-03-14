@@ -189,6 +189,7 @@ export type Database = {
           github_token: string | null
           id: string
           image_urls: string[] | null
+          image_positions: Json | null
           likes_count: number | null
           name: string
           price: number | null
@@ -215,6 +216,7 @@ export type Database = {
           github_token?: string | null
           id?: string
           image_urls?: string[] | null
+          image_positions?: Json | null
           likes_count?: number | null
           name: string
           price?: number | null
@@ -241,6 +243,7 @@ export type Database = {
           github_token?: string | null
           id?: string
           image_urls?: string[] | null
+          image_positions?: Json | null
           likes_count?: number | null
           name?: string
           price?: number | null

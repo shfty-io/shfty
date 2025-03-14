@@ -28,7 +28,7 @@ export default async function EditProductPage(props: PageProps) {
   // Fetch product details
   const { data: product, error: productError } = await supabase
     .from('products')
-    .select('*, demo_url')
+    .select('*, demo_url, image_positions')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
@@ -41,6 +41,7 @@ export default async function EditProductPage(props: PageProps) {
   // Log the product data for debugging
   console.log("Product fetched from database:", product);
   console.log("Demo URL from database:", product.demo_url);
+  console.log("Image positions:", product.image_positions);
 
   async function handleSubmit(formData: ProductFormData) {
     'use server';
@@ -63,6 +64,7 @@ export default async function EditProductPage(props: PageProps) {
         faq: formData.faq,
         technologies: formData.technologies,
         image_urls: formData.imageUrls,
+        image_positions: formData.imagePositions || null,
         software_license: formData.softwareLicense,
         github_repo_url: formData.githubRepoUrl,
         demo_url: formData.demoUrl,

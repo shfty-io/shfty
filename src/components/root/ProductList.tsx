@@ -46,6 +46,7 @@ interface Product {
     avatar_url: string | null
     full_name: string | null
   }
+  image_positions?: Record<string, { x: number; y: number }> | null
 }
 
 interface ProductListProps {
@@ -237,6 +238,11 @@ export default function ProductList({
               description: product.short_description || stripHtml(product.description),
               price: product.price,
               images: product.image_urls || [],
+              image_positions: product.image_positions ? 
+                (typeof product.image_positions === 'string' 
+                  ? JSON.parse(product.image_positions) 
+                  : product.image_positions) 
+                : {},
               view_count: product.view_count,
               likes_count: product.likes_count,
               byline: product.byline,

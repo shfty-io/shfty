@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, Heart } from 'lucide-react'
 
 interface Product {
@@ -10,6 +10,7 @@ interface Product {
   description: string
   price: number
   images: string[]
+  image_positions?: Record<string, { x: number; y: number }>
   view_count: number
   likes_count: number
   user: {
@@ -24,10 +25,25 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  
+  // Log product data for debugging
+  useEffect(() => {
+    console.log("ProductCard received data:", product);
+    console.log("Image positions:", product.image_positions);
+  }, [product]);
+  
   const imageUrl = isHovered && product.images?.[1] 
     ? product.images[1] 
     : product.images?.[0] || '/placeholder.jpg'
     
+  // Log when image URL changes
+  useEffect(() => {
+    if (product.image_positions) {
+      console.log("Current image URL:", imageUrl);
+      console.log("Position for this image:", product.image_positions[imageUrl]);
+    }
+  }, [imageUrl, product.image_positions]);
+  
   const formattedPrice = product.price === 0 
     ? 'Free'
     : new Intl.NumberFormat('en-US', {
@@ -56,7 +72,12 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.title}
           width={500}
           height={500}
-          className="h-full w-full object-cover object-center transition-opacity group-hover:opacity-80"
+          className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
+          style={{
+            objectPosition: product.image_positions?.[imageUrl] 
+              ? `${product.image_positions[imageUrl].x}% ${product.image_positions[imageUrl].y}%` 
+              : '50% 50%'
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       </Link>

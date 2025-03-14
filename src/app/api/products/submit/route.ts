@@ -134,6 +134,7 @@ export async function POST(request: Request) {
         github_token: productData.github_token,
         software_license: productData.softwareLicense,
         image_urls: productData.imageUrls,
+        image_positions: productData.imagePositions || null,
         video_url: productData.videoUrl,
         demo_url: productData.demoUrl,
         status: 'in_review',

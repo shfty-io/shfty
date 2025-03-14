@@ -20,6 +20,7 @@ interface Product {
   faq: FaqItem[] | null;
   technologies: string[] | null;
   image_urls: string[] | null;
+  image_positions?: Record<string, { x: number; y: number }> | null;
   software_license: string | null;
   github_repo_url?: string | null;
   has_readme?: boolean;
@@ -52,6 +53,7 @@ export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
           faq: product.faq || [],
           technologies: product.technologies || [],
           imageUrls: product.image_urls || [],
+          imagePositions: product.image_positions || {},
           softwareLicense: product.software_license || '',
           githubRepoUrl: product.github_repo_url || null,
           videoUrl: product.video_url || null,

@@ -39,7 +39,11 @@ export function ProductPageContent({
           <ProductHero product={product} hasPurchased={product.hasPurchased} />
           <ImageGallery 
             images={product.image_urls || []} 
+            imagePositions={typeof product.image_positions === 'string' 
+              ? JSON.parse(product.image_positions) 
+              : product.image_positions}
             productName={product.name}
+            videoUrl={product.video_url}
           />
           <div className="mx-auto max-w-[1440px] px-5">
             <ProductDetails
