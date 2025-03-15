@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/sidebar";
 
 const navigation = [
-  { name: "Profile", href: "/your/profile" },
   { name: "Account", href: "/your/account" },
   { name: "Payment", href: "/your/payment" },
+  { name: "Setup", href: "/your/setup" },
   { name: "Purchases", href: "/your/purchases" },
   { name: "Listings", href: "/your/listings" },
   { name: "Sell", href: "/your/sell" },

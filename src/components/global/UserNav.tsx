@@ -89,7 +89,7 @@ export function UserNav({ initialUser }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/your/profile">Settings</Link>
+          <Link href="/your/account">Settings</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
