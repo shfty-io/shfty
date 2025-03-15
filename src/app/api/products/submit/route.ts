@@ -129,7 +129,7 @@ export async function POST(request: Request) {
         price: productData.price,
         categories: productData.categories,
         technologies: productData.technologies,
-        faq: productData.faq,
+        features: productData.features,
         github_repo_url: productData.githubRepoUrl,
         github_token: productData.github_token,
         software_license: productData.softwareLicense,

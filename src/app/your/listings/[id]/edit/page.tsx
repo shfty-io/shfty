@@ -61,7 +61,7 @@ export default async function EditProductPage(props: PageProps) {
         description: formData.description,
         price: formData.price,
         categories: formData.categories,
-        faq: formData.faq,
+        features: formData.features,
         technologies: formData.technologies,
         image_urls: formData.imageUrls,
         image_positions: formData.imagePositions || null,

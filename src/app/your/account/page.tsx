@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/client";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { User } from '@supabase/supabase-js';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
+import Image from "next/image";
 
 interface Profile {
   email_notifications_enabled: boolean;
   created_at?: string;
+  full_name?: string;
+  avatar_url?: string;
 }
 
 export default function AccountPage() {
@@ -18,7 +24,11 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -37,7 +47,7 @@ export default function AccountPage() {
         // Load profile data including notification preferences
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('email_notifications_enabled, created_at')
+          .select('email_notifications_enabled, created_at, full_name, avatar_url')
           .eq('id', user.id)
           .single();
         
@@ -45,6 +55,8 @@ export default function AccountPage() {
           console.error('Error loading profile data:', profileError);
         } else {
           setProfile(profileData);
+          setFullName(profileData.full_name || "");
+          setAvatarUrl(profileData.avatar_url || "");
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -85,6 +97,110 @@ export default function AccountPage() {
       setProfile(prev => prev ? {...prev, email_notifications_enabled: !isEnabled} : null);
     }
   };
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsUpdating(true);
+    
+    try {
+      const formData = new FormData();
+      
+      if (fullName) {
+        formData.append('fullName', fullName);
+      }
+      
+      if (avatarUrl) {
+        formData.append('avatarUrl', avatarUrl);
+      }
+      
+      const response = await fetch('/api/account/update', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update profile');
+      }
+      
+      // Update local state
+      setProfile(prev => prev ? {
+        ...prev,
+        full_name: fullName,
+        avatar_url: avatarUrl
+      } : null);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    // Only accept image files
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsUpdating(true);
+      
+      // Create a folder with the user's ID to organize uploads
+      const filePath = `${user.id}/${Date.now()}-${file.name}`;
+      
+      // Upload the file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+      
+      if (error) throw error;
+      
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(data.path);
+      
+      // Update the avatar URL
+      setAvatarUrl(publicUrl);
+      
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload avatar image.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
   
   if (isLoading) {
     return <div className="min-h-[40vh] flex items-center justify-center">Loading account settings...</div>;
@@ -96,25 +212,87 @@ export default function AccountPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
       
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-2">
-              <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium">{user.email}</p>
+          <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+          <form onSubmit={handleProfileUpdate} className="space-y-6">
+            <div className="flex flex-col gap-6">
+              <div className="flex justify-center sm:justify-start">
+                <div 
+                  onClick={handleAvatarClick}
+                  className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 cursor-pointer relative flex items-center justify-center border border-gray-200"
+                >
+                  {avatarUrl ? (
+                    <Image 
+                      src={avatarUrl} 
+                      alt="Profile avatar" 
+                      width={96} 
+                      height={96} 
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <span className="text-3xl text-gray-400">
+                      {user.email?.charAt(0).toUpperCase() || "U"}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all flex items-center justify-center">
+                    <span className="text-white opacity-0 hover:opacity-100">Change</span>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Member Since</p>
-                <p className="font-medium">
-                  {profile.created_at 
-                    ? new Date(profile.created_at).toLocaleDateString() 
-                    : new Date(user.created_at).toLocaleDateString()}
-                </p>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    value={user.email || ""}
+                    disabled
+                    className="max-w-md"
+                  />
+                  <p className="text-sm text-gray-500">Email cannot be changed</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="max-w-md"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="member-since">Member Since</Label>
+                  <Input
+                    id="member-since"
+                    value={profile.created_at 
+                      ? new Date(profile.created_at).toLocaleDateString() 
+                      : new Date(user.created_at).toLocaleDateString()}
+                    disabled
+                    className="max-w-md"
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  disabled={isUpdating}
+                  className="mt-2"
+                >
+                  {isUpdating ? "Updating..." : "Save Changes"}
+                </Button>
               </div>
             </div>
-          </div>
+          </form>
         </div>
 
         <div>

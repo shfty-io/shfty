@@ -29,8 +29,8 @@ interface ProductFormProps {
   initialData?: ProductFormData | null;
 }
 
-// Define FAQItem locally
-interface FAQItem {
+// Define FeatureItem locally
+interface FeatureItem {
   question: string;
   answer: string;
 }
@@ -375,7 +375,7 @@ export type ProductFormData = {
   price: number;
   categories: string[];
   technologies: string[];
-  faq?: FAQItem[];
+  features: FeatureItem[];
   softwareLicense?: string | null;
   imageUrls: string[];
   imagePositions?: Record<string, { x: number; y: number }>;
@@ -434,7 +434,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     price: initialData?.price ?? 0,
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
-    faq: initialData?.faq || [],
+    features: initialData?.features || [],
     softwareLicense: initialData?.softwareLicense || null,
     imageUrls: initialData?.imageUrls ?? [],
     imagePositions: initialData?.imagePositions || {},
@@ -449,14 +449,14 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     console.log("Image positions in form data:", formData.imagePositions);
   }, [formData]);
 
-  // Initialize faqItems from initialData
-  const [faqItems, setFaqItems] = useState<FAQItem[]>(() => {
-    if (!initialData?.faq) return [];
+  // Initialize featureItems from initialData
+  const [featureItems, setFeatureItems] = useState<FeatureItem[]>(() => {
+    if (!initialData?.features) return [];
     try {
-      return typeof initialData.faq === 'string' 
-        ? JSON.parse(initialData.faq) 
-        : Array.isArray(initialData.faq) 
-          ? initialData.faq 
+      return typeof initialData.features === 'string' 
+        ? JSON.parse(initialData.features) 
+        : Array.isArray(initialData.features) 
+          ? initialData.features 
           : [];
     } catch {
       return [];
@@ -472,18 +472,18 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     }
   }, [initialData?.description]);
 
-  const addFaqItem = () => {
-    setFaqItems([...faqItems, { question: '', answer: '' }]);
+  const addFeatureItem = () => {
+    setFeatureItems([...featureItems, { question: '', answer: '' }]);
   };
 
-  const removeFaqItem = (index: number) => {
-    setFaqItems(faqItems.filter((_, i) => i !== index));
+  const removeFeatureItem = (index: number) => {
+    setFeatureItems(featureItems.filter((_, i) => i !== index));
   };
 
-  const updateFaqItem = (index: number, field: 'question' | 'answer', value: string) => {
-    const newFaqItems = [...faqItems];
-    newFaqItems[index][field] = value;
-    setFaqItems(newFaqItems);
+  const updateFeatureItem = (index: number, field: 'question' | 'answer', value: string) => {
+    const newFeatureItems = [...featureItems];
+    newFeatureItems[index][field] = value;
+    setFeatureItems(newFeatureItems);
   };
 
   // Add handlers from ProductForm (image upload, video upload, GitHub repos, etc)
@@ -768,9 +768,9 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       return;
     }
 
-    const finalFormData = {
+    const finalFormData: ProductFormData = {
       ...formData,
-      faq: faqItems
+      features: featureItems
     };
 
     try {
@@ -1184,29 +1184,29 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           </p>
         </div>
 
-        {/* FAQ/Features Section */}
+        {/* Features Section */}
         <div className="space-y-4 relative z-[70]">
           <Label className="text-sm font-medium">Features</Label>
           <div className="space-y-4">
-            {faqItems.map((item, index) => (
+            {featureItems.map((item, index) => (
               <div key={index} className="space-y-3 p-4 border rounded-md">
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-question-${index}`} className="text-xs font-medium">Feature</Label>
+                  <Label htmlFor={`feature-question-${index}`} className="text-xs font-medium">Feature</Label>
                   <Input
-                    id={`faq-question-${index}`}
+                    id={`feature-question-${index}`}
                     placeholder="Feature"
                     value={item.question}
-                    onChange={(e) => updateFaqItem(index, 'question', e.target.value)}
+                    onChange={(e) => updateFeatureItem(index, 'question', e.target.value)}
                     className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-answer-${index}`} className="text-xs font-medium">Description</Label>
+                  <Label htmlFor={`feature-answer-${index}`} className="text-xs font-medium">Description</Label>
                   <Textarea
-                    id={`faq-answer-${index}`}
+                    id={`feature-answer-${index}`}
                     placeholder="Description"
                     value={item.answer}
-                    onChange={(e) => updateFaqItem(index, 'answer', e.target.value)}
+                    onChange={(e) => updateFeatureItem(index, 'answer', e.target.value)}
                     className="min-h-[80px] resize-y"
                   />
                 </div>
@@ -1214,14 +1214,14 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                   type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={() => removeFaqItem(index)}
+                  onClick={() => removeFeatureItem(index)}
                   className="mt-2"
                 >
                   Remove Feature
                 </Button>
               </div>
             ))}
-            <Button type="button" variant="outline" onClick={addFaqItem} className="w-full">
+            <Button type="button" variant="outline" onClick={addFeatureItem} className="w-full">
               Add Feature
             </Button>
           </div>

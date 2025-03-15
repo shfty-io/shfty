@@ -3,8 +3,8 @@
 import { ProductEditForm } from '@/components/seller/ProductEditForm';
 import type { ProductFormData } from '@/components/seller/ProductEditForm';
 
-// Define a proper type for FAQ items
-interface FaqItem {
+// Define a proper type for Feature items
+interface FeatureItem {
   question: string;
   answer: string;
 }
@@ -17,7 +17,7 @@ interface Product {
   description: string | null;
   price: number;
   categories: string[] | null;
-  faq: FaqItem[] | null;
+  features: FeatureItem[] | null;
   technologies: string[] | null;
   image_urls: string[] | null;
   image_positions?: Record<string, { x: number; y: number }> | null;
@@ -50,7 +50,7 @@ export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
           description: product.description || '',
           price: product.price,
           categories: product.categories || [],
-          faq: product.faq || [],
+          features: product.features || [],
           technologies: product.technologies || [],
           imageUrls: product.image_urls || [],
           imagePositions: product.image_positions || {},

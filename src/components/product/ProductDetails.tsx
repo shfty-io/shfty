@@ -1,4 +1,4 @@
-import { ProductFAQ } from "./ProductFAQ"
+import { ProductFeatures } from "./ProductFeatures"
 import { RefundPolicy } from "./RefundPolicy"
 import { ReportDialog } from "./ReportDialog"
 import { Badge } from "@/components/ui/badge"
@@ -15,7 +15,7 @@ interface ProductDetailsProps {
   categories: string[]
   technologies: string[] | null
   description: string | null
-  faq: Array<{
+  features: Array<{
     question: string
     answer: string
   }> | null
@@ -30,7 +30,7 @@ export function ProductDetails({
   categories, 
   technologies,
   description,
-  faq, 
+  features, 
   sellerEmail, 
   sellerFullName,
   softwareLicense
@@ -41,7 +41,7 @@ export function ProductDetails({
       <div className="w-full">
         <div className="flex flex-col space-y-[60px] md:flex-col md:space-y-[60px] lg:max-w-[900px] lg:space-y-20">
           <ProductDescription description={description} />
-          <ProductFAQ faq={faq} />
+          <ProductFeatures features={features} />
         </div>
       </div>
 

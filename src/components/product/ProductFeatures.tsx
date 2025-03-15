@@ -5,24 +5,24 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface FAQItem {
+interface FeatureItem {
   question: string
   answer: string
 }
 
-interface ProductFAQProps {
-  faq: FAQItem[] | null
+interface ProductFeaturesProps {
+  features: FeatureItem[] | null
 }
 
-export function ProductFAQ({ faq }: ProductFAQProps) {
-  if (!Array.isArray(faq) || faq.length === 0) return null
+export function ProductFeatures({ features }: ProductFeaturesProps) {
+  if (!Array.isArray(features) || features.length === 0) return null
 
   return (
     <div className="space-y-5">
       <h4 className="body-m font-semibold">Features</h4>
       <div className="space-y-1" data-orientation="vertical">
-        {faq.map((item, index) => (
-          <FaqItem
+        {features.map((item, index) => (
+          <FeatureItem
             key={index}
             question={item.question}
             answer={item.answer}
@@ -33,7 +33,7 @@ export function ProductFAQ({ faq }: ProductFAQProps) {
   )
 }
 
-const FaqItem = React.forwardRef<
+const FeatureItem = React.forwardRef<
   HTMLDivElement,
   {
     question: string
@@ -91,4 +91,4 @@ const FaqItem = React.forwardRef<
     </div>
   )
 })
-FaqItem.displayName = "FaqItem" 
+FeatureItem.displayName = "FeatureItem" 

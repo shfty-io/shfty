@@ -22,6 +22,7 @@ type Product = Database['public']['Tables']['products']['Row'] & {
   categories?: string[];
   technologies?: string[] | null;
   software_license?: string | null;
+  features?: Array<{ question: string; answer: string }> | null;
 };
 
 interface ProductPageContentProps {
@@ -52,8 +53,8 @@ export function ProductPageContent({
               categories={product.categories || []}
               technologies={product.technologies || []}
               description={product.description}
-              faq={Array.isArray(product.faq) 
-                ? product.faq as Array<{ question: string; answer: string }>
+              features={Array.isArray(product.features) 
+                ? product.features as Array<{ question: string; answer: string }>
                 : null}
               sellerEmail={product.seller?.email || null}
               sellerFullName={product.seller?.full_name || null}
