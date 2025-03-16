@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { UserNav } from '@/components/global/UserNav'
 import { Button } from "@/components/ui/button"
-import { Moon, Sun, Twitter, PanelLeftClose, PanelLeftOpen, Github } from 'lucide-react'
+import { Moon, Sun, PanelLeftClose, PanelLeftOpen, Github } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
