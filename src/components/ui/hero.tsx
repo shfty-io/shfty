@@ -102,7 +102,7 @@ export function Hero({ onClose }: HeroProps) {
             </Button>
             <div className="flex items-center gap-8">
               <a
-                href="https://github.com/yourusername/yourrepo"
+                href="https://github.com/shfty-io/shfty"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-base font-semibold leading-6 text-gray-900 hover:text-gray-700"
@@ -111,7 +111,7 @@ export function Hero({ onClose }: HeroProps) {
                 Star on GitHub
               </a>
               <a
-                href="https://www.producthunt.com/posts/your-product"
+                href="https://www.producthunt.com/posts/shfty"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-base font-semibold leading-6 text-gray-900 hover:text-gray-700"
