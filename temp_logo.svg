@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" fill="black"/>
-  <path d="M256 100C200 100 150 150 150 200C150 250 200 300 256 300C312 300 362 250 362 200C362 150 312 100 256 100Z" fill="white" transform="rotate(45 256 256)"/>
-</svg> 

@@ -185,16 +185,18 @@ export type Database = {
           demo_url: string | null
           description: string | null
           faq: Json | null
+          features: Json | null
           github_repo_url: string | null
           github_token: string | null
           id: string
-          image_urls: string[] | null
           image_positions: Json | null
+          image_urls: string[] | null
           likes_count: number | null
           name: string
           price: number | null
           purchase_count: number | null
           short_description: string
+          software_license: string | null
           status: Database["public"]["Enums"]["product_status"] | null
           technologies:
             | Database["public"]["Enums"]["product_technology"][]
@@ -212,16 +214,18 @@ export type Database = {
           demo_url?: string | null
           description?: string | null
           faq?: Json | null
+          features?: Json | null
           github_repo_url?: string | null
           github_token?: string | null
           id?: string
-          image_urls?: string[] | null
           image_positions?: Json | null
+          image_urls?: string[] | null
           likes_count?: number | null
           name: string
           price?: number | null
           purchase_count?: number | null
           short_description: string
+          software_license?: string | null
           status?: Database["public"]["Enums"]["product_status"] | null
           technologies?:
             | Database["public"]["Enums"]["product_technology"][]
@@ -239,16 +243,18 @@ export type Database = {
           demo_url?: string | null
           description?: string | null
           faq?: Json | null
+          features?: Json | null
           github_repo_url?: string | null
           github_token?: string | null
           id?: string
-          image_urls?: string[] | null
           image_positions?: Json | null
+          image_urls?: string[] | null
           likes_count?: number | null
           name?: string
           price?: number | null
           purchase_count?: number | null
           short_description?: string
+          software_license?: string | null
           status?: Database["public"]["Enums"]["product_status"] | null
           technologies?:
             | Database["public"]["Enums"]["product_technology"][]
@@ -481,7 +487,7 @@ export type Database = {
           {
             foreignKeyName: "seller_accounts_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -615,6 +621,13 @@ export type Database = {
       }
     }
     Enums: {
+      document_status:
+        | "draft"
+        | "sent"
+        | "viewed"
+        | "completed"
+        | "declined"
+        | "expired"
       product_category:
         | "photo_video"
         | "productivity"
@@ -630,6 +643,29 @@ export type Database = {
         | "games"
         | "finance"
         | "other"
+        | "hosting"
+        | "analytics"
+        | "automation"
+        | "cms"
+        | "publishing"
+        | "ecommerce"
+        | "backend"
+        | "database"
+      product_license:
+        | "MIT"
+        | "GPL-3.0"
+        | "Apache-2.0"
+        | "BSD-3-Clause"
+        | "BSD-2-Clause"
+        | "LGPL-3.0"
+        | "MPL-2.0"
+        | "AGPL-3.0"
+        | "Unlicense"
+        | "Proprietary"
+        | "CC0-1.0"
+        | "CC-BY-4.0"
+        | "CC-BY-SA-4.0"
+        | "Other"
       product_status: "draft" | "in_review" | "approved" | "rejected"
       product_technology:
         | "react"
@@ -665,6 +701,38 @@ export type Database = {
         | "graphql"
         | "redis"
         | "websocket"
+        | "typescript"
+        | "javascript"
+        | "c_sharp"
+        | "dotnet"
+        | "flutter"
+        | "react_native"
+        | "swift"
+        | "kotlin"
+        | "laravel"
+        | "django"
+        | "express"
+        | "fastapi"
+        | "spring_boot"
+        | "prisma"
+        | "drizzle"
+        | "remix"
+        | "astro"
+        | "solid_js"
+        | "qwik"
+        | "electron"
+        | "tauri"
+        | "capacitor"
+        | "pwa"
+        | "webassembly"
+        | "deno"
+        | "dart"
+        | "symfony"
+        | "elixir"
+        | "phoenix"
+        | "meteor"
+        | "rails"
+        | "mariadb"
       report_reason: "copyright_infringement" | "other"
     }
     CompositeTypes: {
