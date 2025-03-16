@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -81,6 +82,15 @@ export async function GET(request: NextRequest) {
     
     // Create/update profile if user exists
     if (user) {
+      // Track if this is a new user or existing user
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      
+      const isNewUser = !existingProfile
+      
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert(
@@ -98,6 +108,20 @@ export async function GET(request: NextRequest) {
       
       if (profileError) {
         console.error('Error updating profile:', profileError)
+      }
+      
+      // Send welcome email only for new users
+      if (isNewUser && user.email) {
+        try {
+          await sendWelcomeEmail({
+            name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+            email: user.email
+          })
+          console.log('Welcome email sent to:', user.email)
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError)
+          // Don't block the authentication flow if email fails
+        }
       }
       
       // Check/create seller account
