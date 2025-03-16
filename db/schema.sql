@@ -18,6 +18,11 @@ DROP FUNCTION IF EXISTS ensure_user_profile(UUID) CASCADE;
 DROP FUNCTION IF EXISTS delete_user(UUID) CASCADE;
 
 -- Drop all tables (in correct dependency order)
+DROP TABLE IF EXISTS disputes CASCADE;
+DROP TABLE IF EXISTS fraud_warnings CASCADE;
+DROP TABLE IF EXISTS payment_reviews CASCADE;
+DROP TABLE IF EXISTS seller_external_accounts CASCADE;
+DROP TABLE IF EXISTS seller_payouts CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS repository_access CASCADE;
 DROP TABLE IF EXISTS feedback CASCADE;
@@ -39,7 +44,8 @@ CREATE TYPE product_category AS ENUM (
   'photo_video', 'productivity', 'utilities', 'entertainment',
   'developer_tools', 'business', 'creativity', 'security',
   'lifestyle', 'education', 'communication_social', 'games',
-  'finance', 'other'
+  'finance', 'other', 'hosting', 'analytics', 'automation', 
+  'cms', 'publishing', 'ecommerce', 'backend', 'database'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');
@@ -55,7 +61,8 @@ CREATE TYPE product_technology AS ENUM (
   'react_native', 'swift', 'kotlin', 'laravel', 'django',
   'express', 'fastapi', 'spring_boot', 'prisma', 'drizzle',
   'remix', 'astro', 'solid_js', 'qwik', 'electron',
-  'tauri', 'capacitor', 'pwa', 'webassembly', 'deno'
+  'tauri', 'capacitor', 'pwa', 'webassembly', 'deno',
+  'dart', 'symfony', 'elixir', 'phoenix', 'meteor', 'rails', 'mariadb'
 );
 
 CREATE TYPE report_reason AS ENUM ('copyright_infringement', 'other');
@@ -124,6 +131,8 @@ CREATE TABLE IF NOT EXISTS products (
   technologies product_technology[],
   status product_status DEFAULT 'draft',
   faq JSONB,
+  features JSONB,
+  image_positions JSONB,
   view_count INTEGER DEFAULT 0,
   likes_count INTEGER DEFAULT 0,
   purchase_count INTEGER DEFAULT 0,
@@ -180,6 +189,73 @@ CREATE TABLE IF NOT EXISTS feedback (
   status TEXT DEFAULT 'new' CHECK (status IN ('new', 'reviewed', 'addressed')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create disputes table
+CREATE TABLE IF NOT EXISTS disputes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  dispute_id TEXT NOT NULL,
+  charge_id TEXT NOT NULL,
+  payment_intent_id TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  currency TEXT NOT NULL,
+  reason TEXT,
+  status TEXT NOT NULL,
+  evidence_due_by TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create fraud_warnings table
+CREATE TABLE IF NOT EXISTS fraud_warnings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  warning_id TEXT NOT NULL,
+  charge_id TEXT NOT NULL,
+  payment_intent_id TEXT,
+  fraud_type TEXT,
+  actionable BOOLEAN,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create payment_reviews table
+CREATE TABLE IF NOT EXISTS payment_reviews (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  review_id TEXT NOT NULL,
+  payment_intent_id TEXT NOT NULL,
+  reason TEXT,
+  status TEXT NOT NULL,
+  outcome TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create seller_external_accounts table
+CREATE TABLE IF NOT EXISTS seller_external_accounts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  seller_account_id TEXT NOT NULL,
+  external_account_id TEXT NOT NULL,
+  account_type TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create seller_payouts table
+CREATE TABLE IF NOT EXISTS seller_payouts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  payout_id TEXT NOT NULL,
+  seller_account_id TEXT NOT NULL,
+  user_id UUID,
+  amount NUMERIC NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  arrival_date TIMESTAMPTZ,
+  failure_code TEXT,
+  failure_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create index on user_id for faster lookups
@@ -411,6 +487,11 @@ ALTER TABLE seller_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE repository_access ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE disputes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fraud_warnings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seller_external_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seller_payouts ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- PROFILES TABLE POLICIES
@@ -813,6 +894,175 @@ BEGIN
           AND profiles.is_admin = true
         )
       );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- DISPUTES TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Admin can view all disputes
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'disputes' 
+    AND policyname = 'Admins can view all disputes'
+  ) THEN
+    CREATE POLICY "Admins can view all disputes"
+    ON disputes FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_admin = true
+      )
+    );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- FRAUD WARNINGS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Admin can view all fraud warnings
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'fraud_warnings' 
+    AND policyname = 'Admins can view all fraud warnings'
+  ) THEN
+    CREATE POLICY "Admins can view all fraud warnings"
+    ON fraud_warnings FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_admin = true
+      )
+    );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- PAYMENT REVIEWS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Admin can view all payment reviews
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'payment_reviews' 
+    AND policyname = 'Admins can view all payment reviews'
+  ) THEN
+    CREATE POLICY "Admins can view all payment reviews"
+    ON payment_reviews FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_admin = true
+      )
+    );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- SELLER EXTERNAL ACCOUNTS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Seller can view their own external accounts
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_external_accounts' 
+    AND policyname = 'Sellers can view their own external accounts'
+  ) THEN
+    CREATE POLICY "Sellers can view their own external accounts"
+    ON seller_external_accounts FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM seller_accounts
+        WHERE seller_accounts.user_id = auth.uid()
+        AND seller_accounts.id::text = seller_external_accounts.seller_account_id
+      )
+    );
+  END IF;
+  
+  -- Admin can view all seller external accounts
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_external_accounts' 
+    AND policyname = 'Admins can view all seller external accounts'
+  ) THEN
+    CREATE POLICY "Admins can view all seller external accounts"
+    ON seller_external_accounts FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_admin = true
+      )
+    );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- SELLER PAYOUTS TABLE POLICIES
+-- ============================================================
+DO $$
+BEGIN
+  -- Seller can view their own payouts
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_payouts' 
+    AND policyname = 'Sellers can view their own payouts'
+  ) THEN
+    CREATE POLICY "Sellers can view their own payouts"
+    ON seller_payouts FOR SELECT
+    TO authenticated
+    USING (
+      user_id = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM seller_accounts
+        WHERE seller_accounts.user_id = auth.uid()
+        AND seller_accounts.id::text = seller_payouts.seller_account_id
+      )
+    );
+  END IF;
+  
+  -- Admin can view all seller payouts
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'seller_payouts' 
+    AND policyname = 'Admins can view all seller payouts'
+  ) THEN
+    CREATE POLICY "Admins can view all seller payouts"
+    ON seller_payouts FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_admin = true
+      )
+    );
   END IF;
 END
 $$; 

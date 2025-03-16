@@ -7,7 +7,7 @@ import { Moon, Sun, Twitter } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
-import { useTheme } from '@/components/theme/theme-provider'
+import { useTheme } from '@/providers/theme-provider'
 
 export function ProductNavbar() {
   const [mounted, setMounted] = useState(false)
