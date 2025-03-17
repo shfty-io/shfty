@@ -225,7 +225,7 @@ async function getProducts(
         itemsPerPage: PAGE_SIZE
       }
     };
-  } catch (err) {
+  } catch {
     // Catch any unexpected errors
     return { 
       products: [], 

@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
 import ProductList from '@/components/root/ProductList';
-import { ProductCard } from '@/components/product/ProductCard';
 
 interface Product {
   id: string;
@@ -33,10 +31,7 @@ interface CategoryPageContentProps {
   products: Product[];
 }
 
-export function CategoryPageContent({ 
-  title, 
-  products 
-}: CategoryPageContentProps) {
+export function CategoryPageContent({ title, description, products }: CategoryPageContentProps) {
   // Create default pagination metadata for category pages
   const pagination = {
     currentPage: 1,
@@ -46,37 +41,20 @@ export function CategoryPageContent({
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="flex-1 p-4">
       <h1 className="text-3xl font-bold mb-6">{title}</h1>
+      {description && <p className="text-muted-foreground mb-6">{description}</p>}
       
-      {products.length === 0 ? (
-        <div className="text-center py-12">
-          <h2 className="text-xl font-medium mb-2">No products found</h2>
-          <p className="text-muted-foreground">
-            There are no products in this category yet.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={{
-              id: product.id,
-              byline: product.byline,
-              title: product.name,
-              description: product.description,
-              price: product.price,
-              images: product.image_urls || [],
-              image_positions: product.image_positions || undefined,
-              view_count: product.view_count,
-              likes_count: product.likes_count,
-              user: {
-                avatar_url: product.user.avatar_url || '',
-                full_name: product.user.full_name || ''
-              }
-            }} />
-          ))}
-        </div>
-      )}
+      {/* Product Grid */}
+      <div className="py-4">
+        <ProductList 
+          products={products} 
+          pagination={pagination}
+          currentPage={1}
+          initialSearch=""
+          initialSortBy="newest"
+        />
+      </div>
     </div>
   );
 } 

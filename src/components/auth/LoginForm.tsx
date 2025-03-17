@@ -35,7 +35,6 @@ export function LoginForm({
       // Get the site URL for redirection
       // Note: Always use window.location.origin as a reliable source for the current domain
       const origin = window.location.origin
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || origin
       
       // Create the callback URL
       const callbackUrl = new URL('/auth/callback', origin)
