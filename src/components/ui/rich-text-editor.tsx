@@ -58,9 +58,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
           el.classList.add('rich-text-a');
         }
       });
-      
-      // Log the current HTML content for debugging
-      console.log('Current editor HTML:', editorRef.current.innerHTML);
     }, []);
 
     // Initialize the editor with the provided value
@@ -262,7 +259,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
           <Select
             value={currentFormat}
             onValueChange={(value) => {
-              console.log('Format changed to:', value);
               handleFormatChange(value);
             }}
           >

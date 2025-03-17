@@ -16,21 +16,15 @@ export function HeroWrapper() {
       const hasVisited = localStorage.getItem('hasVisitedBefore');
       const hasClosedHero = localStorage.getItem('hasClosedHero');
       
-      console.log("HeroWrapper - hasVisitedBefore:", hasVisited);
-      console.log("HeroWrapper - hasClosedHero:", hasClosedHero);
-      
       if (!hasVisited) {
         // First time visitor - show the hero and mark as visited
-        console.log("HeroWrapper - First visit detected, showing Hero");
         setShouldShowHero(true);
         localStorage.setItem('hasVisitedBefore', 'true');
       } else if (hasClosedHero === 'true') {
         // Returning visitor who has closed the hero - don't show it
-        console.log("HeroWrapper - Returning visitor who has closed the hero, not showing Hero");
         setShouldShowHero(false);
       } else {
         // Returning visitor who hasn't closed the hero yet
-        console.log("HeroWrapper - Returning visitor who hasn't closed the hero, showing Hero");
         setShouldShowHero(true);
       }
     } catch (error) {
@@ -40,7 +34,6 @@ export function HeroWrapper() {
   }, []);
 
   const handleClose = () => {
-    console.log("HeroWrapper - Close button clicked, hiding Hero");
     setShouldShowHero(false);
     
     try {

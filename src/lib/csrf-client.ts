@@ -22,7 +22,6 @@ export const fetchWithCsrf = async (
   // If no token is found, try to generate one
   if (!csrfToken) {
     try {
-      console.log('No CSRF token found, generating now');
       await generateCsrfToken();
       // Get the token again after generation
       csrfToken = getCsrfToken();
@@ -30,8 +29,6 @@ export const fetchWithCsrf = async (
       // If still no token, we have a problem
       if (!csrfToken) {
         console.error('CSRF token generation succeeded but token not found in cookies');
-      } else {
-        console.log('CSRF token successfully generated');
       }
     } catch (error) {
       console.error('Failed to generate CSRF token on demand:', error);
@@ -61,34 +58,49 @@ export const fetchWithCsrf = async (
 };
 
 // Generate a new CSRF token - this will call the server to set a cookie
-export const generateCsrfToken = async (): Promise<boolean> => {
+export async function generateCsrfToken(): Promise<string> {
+  // Check if we already have a token in localStorage
+  const existingToken = localStorage.getItem('csrf_token');
+  
+  if (existingToken) {
+    // Check if token is still valid (not expired)
+    const tokenData = JSON.parse(existingToken);
+    const expiryTime = new Date(tokenData.expiry);
+    
+    if (expiryTime > new Date()) {
+      return tokenData.token;
+    }
+  }
+  
+  // If no token or expired, generate a new one
   try {
     console.log('Generating CSRF token');
-    const response = await fetch('/api/csrf/generate', { 
-      method: 'POST',
-      credentials: 'include' 
+    const response = await fetch('/api/csrf/generate', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('CSRF token generation failed:', errorData.error || 'Unknown error');
-      return false;
+      throw new Error('Failed to generate CSRF token');
     }
     
-    // Wait a short time to ensure cookie is set in the browser
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const data = await response.json();
     
-    // Verify that the token was actually set
-    const token = getCsrfToken();
-    if (!token) {
-      console.error('CSRF token was not set in cookies after generation');
-      return false;
-    }
+    // Store token in localStorage with expiry (1 hour)
+    const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 1);
+    
+    localStorage.setItem('csrf_token', JSON.stringify({
+      token: data.token,
+      expiry: expiry.toISOString(),
+    }));
     
     console.log('CSRF token generated successfully');
-    return true;
+    return data.token;
   } catch (error) {
-    console.error('Failed to generate CSRF token:', error);
-    return false;
+    console.error('Error generating CSRF token:', error);
+    throw error;
   }
-}; 
+} 

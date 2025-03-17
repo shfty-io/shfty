@@ -36,7 +36,6 @@ export function ProductStats({
         .eq('product_id', productId)
 
       if (!error && count !== null) {
-        console.log('Updated likes count:', count, 'for product:', productId)
         setLikesCount(count)
       }
     } catch (error) {

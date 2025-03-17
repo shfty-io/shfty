@@ -3,6 +3,7 @@ import { createServerComponentClient } from '@/lib/server';
 import { ProductFormData } from '@/components/seller/ProductEditForm';
 import { revalidatePath } from 'next/cache';
 import { EditPageContent } from './page.client';
+import { notFound } from 'next/navigation';
 
 // Define types for the page props
 type Params = { id: string };
@@ -34,14 +35,8 @@ export default async function EditProductPage(props: PageProps) {
     .single();
 
   if (productError || !product) {
-    console.error("Error fetching product:", productError);
-    return redirect('/your/listings');
+    notFound();
   }
-
-  // Log the product data for debugging
-  console.log("Product fetched from database:", product);
-  console.log("Demo URL from database:", product.demo_url);
-  console.log("Image positions:", product.image_positions);
 
   async function handleSubmit(formData: ProductFormData) {
     'use server';

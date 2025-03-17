@@ -68,8 +68,6 @@ export function ProductHero({ product, hasPurchased }: ProductHeroProps) {
       
       const data = await response.json()
       
-      console.log('GitHub access response:', data) // Debug log
-
       if (data.githubRepoUrl) {
         window.open(data.githubRepoUrl, '_blank')
       } else {

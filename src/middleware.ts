@@ -11,6 +11,15 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // Add cache control headers for authentication-related routes
+  if (requestUrl.pathname.startsWith('/auth/') || 
+      requestUrl.pathname.startsWith('/your/') ||
+      requestUrl.pathname.startsWith('/admin/')) {
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -52,11 +61,19 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session if it exists with error handling
+  // Refresh session if it exists with improved error handling
   try {
-    const { error } = await supabase.auth.getSession();
+    // Try to access and refresh the session
+    const { data, error } = await supabase.auth.getSession();
+    
     if (error) {
       console.error("Error refreshing session in middleware:", error);
+    } else if (!data.session) {
+      // No session found - this is normal for unauthenticated users
+      // console.log("No session found in middleware");
+    } else {
+      // Session found and refreshed successfully
+      // console.log("Session refreshed successfully in middleware");
     }
   } catch (err) {
     console.error("Failed to refresh session in middleware:", err);

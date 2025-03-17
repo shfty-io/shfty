@@ -50,7 +50,6 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
       
       // For free products, handle direct repository access
       if (price === 0) {
-        console.log('Initiating free product access:', productId)
         const response = await fetchWithCsrf(`/api/products/${productId}/download-auth`)
         
         if (response.status === 401) {
@@ -87,7 +86,6 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
         }
         
         const data = await response.json()
-        console.log('Repository access successful:', data)
 
         if (data.githubRepoUrl) {
           window.open(data.githubRepoUrl, '_blank')

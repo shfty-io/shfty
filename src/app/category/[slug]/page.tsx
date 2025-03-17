@@ -67,13 +67,10 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
     // Get the database enum value for the category
     const dbCategory = categoryMapping[category] || category;
     
-    console.log(`Searching for products with category: ${dbCategory}`);
-    
     // Check if we're dealing with a category that might not exist in the database
     const potentiallyInvalidCategories = ['weather']; // Add any other categories that might not exist in DB
     
     if (potentiallyInvalidCategories.includes(dbCategory)) {
-      console.log(`Category ${dbCategory} might not exist in the database schema. Returning empty results.`);
       return [];
     }
     
@@ -107,16 +104,10 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
       console.error('Error fetching products:', error);
       return [];
     }
-
-    console.log(`Found ${products?.length || 0} products for category ${dbCategory}`);
     
     if (products && products.length > 0) {
-      console.log('First product data:', JSON.stringify(products[0], null, 2));
-      products.forEach(product => {
-        console.log(`Product ${product.id} has categories: ${JSON.stringify(product.categories)}`);
-      });
+      // Continue processing
     } else {
-      console.log('No products found for this category');
       return [];
     }
 
@@ -144,14 +135,13 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
       // Create the transformed product
       const transformedProduct = {
         ...item,
-        user: userData
+        user: userData,
+        image_url: item.image_urls?.[0] || null,
       };
       
-      console.log('Transformed product:', transformedProduct);
       return transformedProduct;
     }) as Product[];
     
-    console.log(`Final transformed products: ${transformedProducts.length}`);
     return transformedProducts;
   } catch (error) {
     console.error('Error in getProductsByCategory:', error);
@@ -171,11 +161,6 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const products = await getProductsByCategory(normalizedSlug);
   
-  console.log(`CategoryPage: Found ${products.length} products for ${normalizedSlug}`);
-  if (products.length > 0) {
-    console.log('CategoryPage: Product IDs:', products.map(p => p.id));
-  }
-
   return (
     <>
       <Navbar />

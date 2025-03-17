@@ -35,13 +35,9 @@ interface EditPageContentProps {
 }
 
 export function EditPageContent({ product, onSubmit }: EditPageContentProps) {
-  // Add debugging to see what's coming from the database
-  console.log("Product from database:", product);
-  console.log("Demo URL from database:", product.demo_url);
-  
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Edit Product - {product.name}</h1>
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">Edit Listing</h1>
       <ProductEditForm
         onSubmit={onSubmit}
         initialData={{

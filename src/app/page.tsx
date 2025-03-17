@@ -58,7 +58,6 @@ async function getProducts(
     const supabase = createServiceClient()
     
     if (!supabase) {
-      console.error('Error fetching products: Supabase client is not initialized')
       return { 
         products: [], 
         pagination: { 
@@ -70,7 +69,7 @@ async function getProducts(
       }
     }
     
-    console.log('Fetching products for page', page, 'with search:', search, 'and sort:', sortBy)
+
     
     const PAGE_SIZE = 21;
     const offset = (page - 1) * PAGE_SIZE;
@@ -88,7 +87,6 @@ async function getProducts(
     const { count, error: countError } = await countQuery;
       
     if (countError) {
-      console.error('Error counting products:', countError);
       return {
         products: [],
         pagination: {
@@ -158,7 +156,6 @@ async function getProducts(
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching products:', error)
       return { 
         products: [], 
         pagination: { 
@@ -170,12 +167,8 @@ async function getProducts(
       }
     }
 
-    // Log response for debugging
-    console.log('Products fetched successfully:', data ? data.length : 0)
-    
     // If no products are found, return an empty array
     if (!data || data.length === 0) {
-      console.log('No products found for this page')
       return { 
         products: [], 
         pagination: { 
@@ -234,7 +227,6 @@ async function getProducts(
     };
   } catch (err) {
     // Catch any unexpected errors
-    console.error('Unexpected error fetching products:', err)
     return { 
       products: [], 
       pagination: { 
@@ -276,14 +268,6 @@ export default async function Home({
 
   const { products, pagination } = await getProducts(page, search, sortBy);
   
-  // Log products
-  console.log('Home component products:', products.length);
-  console.log('Page info:', pagination);
-  
-  if (products.length > 0) {
-    console.log('First product in Home component:', products[0].id);
-  }
-
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex w-full">

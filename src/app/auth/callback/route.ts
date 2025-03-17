@@ -22,6 +22,11 @@ export async function GET(request: NextRequest) {
   
   const response = NextResponse.redirect(targetUrl)
   
+  // Set cache control headers early to prevent issues
+  response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
+  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -40,6 +45,8 @@ export async function GET(request: NextRequest) {
             // Don't set SameSite=strict as it can break OAuth redirects
             sameSite: 'lax',
             secure: requestUrl.protocol === 'https:',
+            // Add this to ensure cookies work in iframe contexts (if needed)
+            // partitioned: false, // Only include if needed and supported
           })
         },
         remove(name, options) {
@@ -57,11 +64,33 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log('Exchanging code for session...')
-    // Exchange code for session
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    // Try to exchange code for session multiple times if needed (up to 2 retries)
+    let sessionSuccess = false
+    let retries = 0
+    let error;
+    
+    while (!sessionSuccess && retries < 3) {
+      const result = await supabase.auth.exchangeCodeForSession(code)
+      error = result.error
+      
+      if (!error) {
+        sessionSuccess = true
+        console.log('Session exchange successful on try:', retries + 1)
+        break
+      }
+      
+      console.error(`Session exchange failed on try ${retries + 1}:`, error.message)
+      retries++
+      
+      if (retries < 3) {
+        // Wait a short time before retrying
+        await new Promise(r => setTimeout(r, 500))
+      }
+    }
     
     if (error) {
-      console.error('Error exchanging code for session:', error.message)
+      console.error('All attempts to exchange code for session failed:', error.message)
       return NextResponse.redirect(
         new URL(`/auth/login?error=${encodeURIComponent(error.message)}`, request.url)
       )
@@ -166,11 +195,6 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Authentication successful, redirecting to:', targetUrl.toString())
-    
-    // Add cache control headers to prevent issues with stale session data
-    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
-    response.headers.set('Pragma', 'no-cache')
-    response.headers.set('Expires', '0')
     
     return response
   } catch (error) {

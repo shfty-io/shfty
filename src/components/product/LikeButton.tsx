@@ -79,9 +79,6 @@ export function LikeButton({ productId }: LikeButtonProps) {
       // data will be true if liked, false if unliked
       setIsLiked(data)
 
-      // Log the result for debugging
-      console.log('Toggle like result:', data, 'for product:', productId, 'by user:', user.id)
-
       // Verify the like status after toggling
       const { data: verifyData, error: verifyError } = await supabase
         .from('likes')
@@ -91,7 +88,6 @@ export function LikeButton({ productId }: LikeButtonProps) {
         .single()
 
       if (!verifyError) {
-        console.log('Verified like status:', !!verifyData)
         setIsLiked(!!verifyData)
       }
 

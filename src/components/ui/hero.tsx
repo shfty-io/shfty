@@ -17,7 +17,6 @@ export function Hero({ onClose }: HeroProps) {
   };
 
   const handleStartShopping = () => {
-    console.log("Hero - Start Shopping button clicked");
     onClose();
   };
 
