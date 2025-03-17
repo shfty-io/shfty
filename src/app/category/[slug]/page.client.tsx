@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import ProductList from '@/components/root/ProductList';
 
 interface Product {
@@ -10,6 +9,7 @@ interface Product {
   price: number;
   categories: string[];
   image_urls: string[] | null;
+  image_positions?: Record<string, { x: number; y: number }> | null;
   short_description: string;
   byline: string;
   created_at: string;
@@ -31,21 +31,7 @@ interface CategoryPageContentProps {
   products: Product[];
 }
 
-export function CategoryPageContent({ 
-  title, 
-  products 
-}: CategoryPageContentProps) {
-  useEffect(() => {
-    console.log('CategoryPageContent received title:', title);
-    console.log('CategoryPageContent received products:', products);
-    console.log('CategoryPageContent received products length:', products.length);
-    if (products.length > 0) {
-      products.forEach(product => {
-        console.log(`CategoryPageContent product ${product.id} has categories:`, product.categories);
-      });
-    }
-  }, [title, products]);
-
+export function CategoryPageContent({ title, description, products }: CategoryPageContentProps) {
   // Create default pagination metadata for category pages
   const pagination = {
     currentPage: 1,
@@ -56,6 +42,9 @@ export function CategoryPageContent({
 
   return (
     <div className="flex-1 p-4">
+      <h1 className="text-3xl font-bold mb-6">{title}</h1>
+      {description && <p className="text-muted-foreground mb-6">{description}</p>}
+      
       {/* Product Grid */}
       <div className="py-4">
         <ProductList 

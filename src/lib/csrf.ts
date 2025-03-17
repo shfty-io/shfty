@@ -31,17 +31,6 @@ export async function validateCsrfToken(request: NextRequest): Promise<boolean> 
   const cookieToken = cookieStore.get('csrf_token')?.value;
   const headerToken = request.headers.get('x-csrf-token');
   
-  // Log tokens in development mode for debugging
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('CSRF Validation:', { 
-      cookieToken: cookieToken ? 'exists' : 'missing',
-      headerToken: headerToken ? 'exists' : 'missing',
-      cookieValue: cookieToken?.substring(0, 8) + '...',
-      headerValue: headerToken?.substring(0, 8) + '...',
-      match: cookieToken === headerToken
-    });
-  }
-  
   if (!cookieToken || !headerToken) {
     return false;
   }

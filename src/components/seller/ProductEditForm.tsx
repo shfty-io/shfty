@@ -399,13 +399,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   const [isTechnologiesOpen, setIsTechnologiesOpen] = useState(false);
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
 
-  // Log initialData for debugging
-  useEffect(() => {
-    console.log("Initial data:", initialData);
-    console.log("Demo URL from initial data:", initialData?.demoUrl);
-    console.log("Image positions from initial data:", initialData?.imagePositions);
-  }, [initialData]);
-
   // Add selected tags state
   const [selectedCategories, setSelectedCategories] = useState(
     initialData?.categories 
@@ -441,13 +434,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     videoUrl: initialData?.videoUrl || null,
     demoUrl: initialData?.demoUrl || null
   });
-
-  // Log formData for debugging
-  useEffect(() => {
-    console.log("Form data:", formData);
-    console.log("Demo URL in form data:", formData.demoUrl);
-    console.log("Image positions in form data:", formData.imagePositions);
-  }, [formData]);
 
   // Initialize featureItems from initialData
   const [featureItems, setFeatureItems] = useState<FeatureItem[]>(() => {
@@ -836,16 +822,12 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
 
   // Add handler for updating image position
   const updateImagePosition = (url: string, position: { x: number; y: number }) => {
-    console.log("Updating image position for:", url, position);
-    
     // Ensure we're creating a new object for the imagePositions to trigger state updates properly
     setFormData(prev => {
       const newImagePositions = {
         ...(prev.imagePositions || {}),
         [url]: position
       };
-      
-      console.log("New image positions:", newImagePositions);
       
       return {
         ...prev,

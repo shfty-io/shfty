@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Eye, Heart } from 'lucide-react'
 
 interface Product {
@@ -26,24 +26,10 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   
-  // Log product data for debugging
-  useEffect(() => {
-    console.log("ProductCard received data:", product);
-    console.log("Image positions:", product.image_positions);
-  }, [product]);
-  
   const imageUrl = isHovered && product.images?.[1] 
     ? product.images[1] 
     : product.images?.[0] || '/placeholder.jpg'
     
-  // Log when image URL changes
-  useEffect(() => {
-    if (product.image_positions) {
-      console.log("Current image URL:", imageUrl);
-      console.log("Position for this image:", product.image_positions[imageUrl]);
-    }
-  }, [imageUrl, product.image_positions]);
-  
   const formattedPrice = product.price === 0 
     ? 'Free'
     : new Intl.NumberFormat('en-US', {

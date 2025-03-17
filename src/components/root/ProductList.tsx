@@ -83,10 +83,6 @@ export default function ProductList({
     );
   }
   
-  // For debugging - log current filter state
-  console.log('Current filters:', filters);
-  console.log('Current search query:', searchQuery);
-  
   // Handle page change and apply filters
   const handlePageChange = (page: number) => {
     // Navigate to the new page with current filters

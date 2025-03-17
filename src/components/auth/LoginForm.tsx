@@ -32,17 +32,21 @@ export function LoginForm({
     try {
       setIsLoading(true)
       
-      // Create URL for post-auth redirect using environment variable first
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-      const callbackUrl = new URL('/auth/callback', siteUrl)
+      // Get the site URL for redirection
+      // Note: Always use window.location.origin as a reliable source for the current domain
+      const origin = window.location.origin
+      
+      // Create the callback URL
+      const callbackUrl = new URL('/auth/callback', origin)
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
-      // Log for debugging
-      console.log('GitHub login redirect URL:', callbackUrl.toString())
-      console.log('Environment NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-      console.log('Window location origin:', window.location.origin)
+      // Log details for debugging
+      console.log('GitHub login details:')
+      console.log('- Origin:', origin)
+      console.log('- NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+      console.log('- Callback URL:', callbackUrl.toString())
       
-      // Start OAuth flow
+      // Start OAuth flow with explicit origin
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
