@@ -376,12 +376,32 @@ export type ProductFormData = {
   categories: string[];
   technologies: string[];
   features: FeatureItem[];
+  githubRepoUrl?: string | null;
   softwareLicense?: string | null;
   imageUrls: string[];
   imagePositions?: Record<string, { x: number; y: number }>;
   videoUrl?: string | null;
   demoUrl?: string | null;
 };
+
+// Add GitHubRepo interface
+interface GitHubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  private: boolean;
+  updated_at: string;
+  owner: {
+    login: string;
+    id: number;
+    avatar_url: string;
+    url: string;
+    html_url: string;
+    type: string;
+  };
+}
 
 export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Add state hooks from ProductForm
@@ -399,6 +419,16 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   const [isTechnologiesOpen, setIsTechnologiesOpen] = useState(false);
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
 
+  // Add GitHub repos state
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  
+  // Add state for manual GitHub URL checking
+  const [isCheckingRepo, setIsCheckingRepo] = useState(false);
+  const [manualRepoIsPublic, setManualRepoIsPublic] = useState<boolean | null>(null);
+  
+  // Add description length state
+  const [descriptionLength, setDescriptionLength] = useState(0);
+  
   // Add selected tags state
   const [selectedCategories, setSelectedCategories] = useState(
     initialData?.categories 
@@ -428,13 +458,14 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     categories: initialData?.categories ?? [],
     technologies: initialData?.technologies ?? [],
     features: initialData?.features || [],
+    githubRepoUrl: initialData?.githubRepoUrl || null,
     softwareLicense: initialData?.softwareLicense || null,
     imageUrls: initialData?.imageUrls ?? [],
     imagePositions: initialData?.imagePositions || {},
     videoUrl: initialData?.videoUrl || null,
     demoUrl: initialData?.demoUrl || null
   });
-
+  
   // Initialize featureItems from initialData
   const [featureItems, setFeatureItems] = useState<FeatureItem[]>(() => {
     if (!initialData?.features) return [];
@@ -449,6 +480,143 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     }
   });
 
+  // Add fetchGitHubRepos function
+  const fetchGitHubRepos = useCallback(async () => {
+    try {
+      console.log('[DEBUG] Fetching GitHub repos');
+      const response = await fetch('/api/github/repos');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        // Check if we need to re-authenticate
+        if (data.requiresReauth) {
+          console.log('[DEBUG] GitHub reauth required');
+          // Redirect to GitHub OAuth flow
+          const supabase = createClient();
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+              scopes: 'repo',
+              redirectTo: `${siteUrl}/auth/callback`
+            }
+          });
+          
+          if (error) {
+            throw new Error('Failed to initiate GitHub re-authentication');
+          }
+          return;
+        }
+        throw new Error(data.error);
+      }
+      
+      console.log('[DEBUG] GitHub repos fetched:', data.repositories.length);
+      console.log('[DEBUG] Public repos:', data.repositories.filter((r: GitHubRepo) => !r.private).length);
+      console.log('[DEBUG] Private repos:', data.repositories.filter((r: GitHubRepo) => r.private).length);
+      
+      setGithubRepos(data.repositories);
+      
+      // Check if current githubRepoUrl is in the fetched repos
+      if (formData.githubRepoUrl) {
+        const found = data.repositories.find((repo: GitHubRepo) => repo.html_url === formData.githubRepoUrl);
+        console.log('[DEBUG] Repo found in user repos?', !!found);
+        if (found) {
+          console.log('[DEBUG] Repo is private?', found.private);
+        } else {
+          console.log('[DEBUG] Repo not found in user repos, will check manually');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching repositories:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Could not fetch your GitHub repositories",
+        variant: "destructive"
+      });
+    }
+  }, [formData.githubRepoUrl]);
+
+  // Add function to check GitHub repository visibility
+  const checkGitHubRepositoryVisibility = async (url: string) => {
+    if (!url) return;
+    
+    try {
+      console.log('[DEBUG] Checking repository visibility manually:', url);
+      setIsCheckingRepo(true);
+      setManualRepoIsPublic(null);
+      
+      const response = await fetch('/api/github/check-repo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ repoUrl: url }),
+      });
+      
+      if (!response.ok) {
+        // If it's not found or there's another error, assume it's not a valid repo
+        console.error('Error checking repository:', await response.text());
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('[DEBUG] Manual check result:', data);
+      
+      if (data.exists) {
+        console.log('[DEBUG] Repo exists, isPublic:', data.isPublic);
+        setManualRepoIsPublic(data.isPublic);
+        
+        // If it's a public repo, set price to 0
+        if (data.isPublic) {
+          console.log('[DEBUG] Setting price to 0 for public repo');
+          setFormData(prev => ({
+            ...prev,
+            price: 0
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error checking GitHub repository:', error);
+    } finally {
+      setIsCheckingRepo(false);
+    }
+  };
+
+  // Add effect to check GitHub repo URL when it changes
+  useEffect(() => {
+    if (formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)) {
+      console.log('[DEBUG] URL not found in user repos, checking manually:', formData.githubRepoUrl);
+      // If the URL is not in our list of repos, check if it's a valid public repo
+      checkGitHubRepositoryVisibility(formData.githubRepoUrl);
+    }
+  }, [formData.githubRepoUrl, githubRepos]);
+  
+  // Add effect to set price to 0 for public repositories from user's own repos
+  useEffect(() => {
+    if (formData.githubRepoUrl && githubRepos.length > 0) {
+      const selectedRepo = githubRepos.find(repo => repo.html_url === formData.githubRepoUrl);
+      console.log('[DEBUG] Selected repo found in user repos?', !!selectedRepo);
+      if (selectedRepo) {
+        console.log('[DEBUG] Selected repo is private?', selectedRepo.private);
+        if (!selectedRepo.private) {
+          console.log('[DEBUG] Setting price to 0 for public repo from user repos');
+          setFormData(prev => ({
+            ...prev,
+            price: 0
+          }));
+        }
+      }
+    }
+  }, [formData.githubRepoUrl, githubRepos]);
+
+  // Check repository when component mounts if there's a githubRepoUrl in initialData
+  useEffect(() => {
+    if (initialData?.githubRepoUrl) {
+      console.log('[DEBUG] initialData has githubRepoUrl:', initialData.githubRepoUrl);
+      fetchGitHubRepos();
+    }
+  }, [initialData?.githubRepoUrl, fetchGitHubRepos]);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && initialData?.description) {
       setFormData(prev => ({
@@ -457,6 +625,15 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       }));
     }
   }, [initialData?.description]);
+
+  // Add effect to update description length
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = formData.description;
+      setDescriptionLength(tempDiv.textContent?.length || 0);
+    }
+  }, [formData.description]);
 
   const addFeatureItem = () => {
     setFeatureItems([...featureItems, { question: '', answer: '' }]);
@@ -754,9 +931,25 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       return;
     }
 
+    // Check if this is a public repository
+    const isPublicRepo = (formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private) || 
+        manualRepoIsPublic === true;
+    
+    console.log('[DEBUG] Submit - Public repo check:', {
+      isPublicRepo,
+      repoUrl: formData.githubRepoUrl,
+      inUserRepos: formData.githubRepoUrl ? !!githubRepos.find(repo => repo.html_url === formData.githubRepoUrl) : false,
+      isPrivateRepo: formData.githubRepoUrl ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private : null,
+      manualRepoIsPublic,
+      originalPrice: formData.price,
+      finalPrice: isPublicRepo ? 0 : formData.price
+    });
+
+    // Create a copy of the form data with price set to 0 for public repos
     const finalFormData: ProductFormData = {
       ...formData,
-      features: featureItems
+      features: featureItems,
+      price: isPublicRepo ? 0 : formData.price
     };
 
     try {
@@ -897,10 +1090,40 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                   placeholder="0.00"
                   required
                   className="h-10"
+                  disabled={(() => {
+                    const repoInUserRepos = formData.githubRepoUrl && 
+                      githubRepos.find(repo => repo.html_url === formData.githubRepoUrl);
+                    const repoIsPublic = repoInUserRepos && !repoInUserRepos.private;
+                    const isManuallyCheckedPublic = manualRepoIsPublic === true;
+                    const shouldDisable = Boolean(repoIsPublic || isManuallyCheckedPublic);
+                    
+                    console.log('[DEBUG] Price disabled check:', {
+                      githubRepoUrl: formData.githubRepoUrl,
+                      repoInUserRepos: !!repoInUserRepos,
+                      repoDetails: repoInUserRepos ? {
+                        name: repoInUserRepos.name,
+                        private: repoInUserRepos.private,
+                        html_url: repoInUserRepos.html_url
+                      } : null,
+                      repoIsPublic,
+                      isManuallyCheckedPublic,
+                      shouldDisable,
+                      reposCount: githubRepos.length,
+                      manualRepoIsPublic
+                    });
+                    
+                    return shouldDisable;
+                  })()}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Set to 0 for free products
+                {isCheckingRepo 
+                  ? "Checking repository status..." 
+                  : formData.githubRepoUrl 
+                    ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private || manualRepoIsPublic === false
+                      ? "You can set a price for private repositories" 
+                      : "Public repositories must be free"
+                    : "Set to 0 for free products"}
               </p>
             </div>
           </div>
@@ -1066,12 +1289,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           </div>
           <p className="text-xs text-muted-foreground mt-1 flex justify-between">
             <span>Detailed information about your product</span>
-            <span>{(() => {
-              // Calculate plain text length for the rich text
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = formData.description;
-              return `${tempDiv.textContent?.length || 0}/${MAX_DESCRIPTION_LENGTH}`;
-            })()}</span>
+            <span>{descriptionLength}/{MAX_DESCRIPTION_LENGTH}</span>
           </p>
         </div>
 
