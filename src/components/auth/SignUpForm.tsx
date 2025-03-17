@@ -26,6 +26,8 @@ export function SignUpForm() {
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
       console.log('Starting GitHub sign-up flow with redirect to:', callbackUrl.toString())
+      console.log('Environment NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+      console.log('Window location origin:', window.location.origin)
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',

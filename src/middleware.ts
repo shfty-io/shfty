@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const requestUrl = new URL(request.url);
+  
+  // Create a response object that we can modify
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -23,11 +26,15 @@ export async function middleware(request: NextRequest) {
             ...options,
           });
           
+          // Set more production-friendly cookie options
           response.cookies.set({
             name,
             value,
             ...options,
             path: '/',
+            // Use lax for auth cookies to work with redirects
+            sameSite: 'lax',
+            secure: requestUrl.protocol === 'https:',
           });
         },
         remove(name, options) {
@@ -53,6 +60,14 @@ export async function middleware(request: NextRequest) {
     }
   } catch (err) {
     console.error("Failed to refresh session in middleware:", err);
+  }
+
+  // Ensure no caching for authenticated routes
+  const authPaths = ['/your', '/admin', '/settings', '/account'];
+  if (authPaths.some(path => requestUrl.pathname.startsWith(path))) {
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
   }
 
   return response;

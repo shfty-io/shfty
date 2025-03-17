@@ -39,6 +39,8 @@ export function LoginForm({
       
       // Log for debugging
       console.log('GitHub login redirect URL:', callbackUrl.toString())
+      console.log('Environment NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+      console.log('Window location origin:', window.location.origin)
       
       // Start OAuth flow
       const { error } = await supabase.auth.signInWithOAuth({

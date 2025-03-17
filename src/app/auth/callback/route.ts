@@ -4,14 +4,23 @@ import { sendWelcomeEmail } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
+  console.log('Auth callback request URL:', requestUrl.toString())
+  
   const code = requestUrl.searchParams.get('code')
   
   if (!code) {
+    console.error('No code parameter found in auth callback')
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
   const redirectTo = requestUrl.searchParams.get('returnTo') || '/'
-  const response = NextResponse.redirect(new URL(redirectTo, request.url))
+  console.log('Redirecting to after auth:', redirectTo)
+  
+  // Ensure proper URL construction using origin from the request
+  const targetUrl = new URL(redirectTo, requestUrl.origin)
+  console.log('Final redirect target:', targetUrl.toString())
+  
+  const response = NextResponse.redirect(targetUrl)
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,11 +31,15 @@ export async function GET(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name, value, options) {
+          // Set more production-friendly cookie options
           response.cookies.set({
             name,
             value,
             ...options,
             path: '/',
+            // Don't set SameSite=strict as it can break OAuth redirects
+            sameSite: 'lax',
+            secure: requestUrl.protocol === 'https:',
           })
         },
         remove(name, options) {
@@ -43,6 +56,7 @@ export async function GET(request: NextRequest) {
   )
 
   try {
+    console.log('Exchanging code for session...')
     // Exchange code for session
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
@@ -150,6 +164,8 @@ export async function GET(request: NextRequest) {
         new URL('/auth/login?error=Failed+to+create+session', request.url)
       )
     }
+    
+    console.log('Authentication successful, redirecting to:', targetUrl.toString())
     
     // Add cache control headers to prevent issues with stale session data
     response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
