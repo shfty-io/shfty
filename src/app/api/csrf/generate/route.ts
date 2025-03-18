@@ -13,13 +13,16 @@ export async function POST() {
     // Generate a new CSRF token and set it in a cookie
     const token = await setCsrfCookie();
     
-    // Return the token in development mode for easier debugging
-    const response: CsrfResponse = { success: true };
+    // Return the token in both development and production
+    const response: CsrfResponse = { 
+      success: true,
+      token: token  // Always return the token
+    };
+    
     if (process.env.NODE_ENV !== 'production') {
-      response.token = token;
       console.log('CSRF token generated (development):', token.substring(0, 8) + '...');
     } else {
-      console.log('CSRF token generated (production)');
+      console.log('CSRF token generated (production):', token.substring(0, 8) + '...');
     }
     
     // Create response with proper headers
