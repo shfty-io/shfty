@@ -483,14 +483,12 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Add fetchGitHubRepos function
   const fetchGitHubRepos = useCallback(async () => {
     try {
-      console.log('[DEBUG] Fetching GitHub repos');
       const response = await fetch('/api/github/repos');
       const data = await response.json();
       
       if (!response.ok) {
         // Check if we need to re-authenticate
         if (data.requiresReauth) {
-          console.log('[DEBUG] GitHub reauth required');
           // Redirect to GitHub OAuth flow
           const supabase = createClient();
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -510,24 +508,16 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
         throw new Error(data.error);
       }
       
-      console.log('[DEBUG] GitHub repos fetched:', data.repositories.length);
-      console.log('[DEBUG] Public repos:', data.repositories.filter((r: GitHubRepo) => !r.private).length);
-      console.log('[DEBUG] Private repos:', data.repositories.filter((r: GitHubRepo) => r.private).length);
-      
       setGithubRepos(data.repositories);
       
       // Check if current githubRepoUrl is in the fetched repos
       if (formData.githubRepoUrl) {
         const found = data.repositories.find((repo: GitHubRepo) => repo.html_url === formData.githubRepoUrl);
-        console.log('[DEBUG] Repo found in user repos?', !!found);
         if (found) {
-          console.log('[DEBUG] Repo is private?', found.private);
         } else {
-          console.log('[DEBUG] Repo not found in user repos, will check manually');
         }
       }
     } catch (error) {
-      console.error('Error fetching repositories:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Could not fetch your GitHub repositories",
@@ -541,7 +531,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     if (!url) return;
     
     try {
-      console.log('[DEBUG] Checking repository visibility manually:', url);
       setIsCheckingRepo(true);
       setManualRepoIsPublic(null);
       
@@ -554,29 +543,23 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       });
       
       if (!response.ok) {
-        // If it's not found or there's another error, assume it's not a valid repo
-        console.error('Error checking repository:', await response.text());
         return;
       }
       
       const data = await response.json();
-      console.log('[DEBUG] Manual check result:', data);
       
       if (data.exists) {
-        console.log('[DEBUG] Repo exists, isPublic:', data.isPublic);
         setManualRepoIsPublic(data.isPublic);
         
         // If it's a public repo, set price to 0
         if (data.isPublic) {
-          console.log('[DEBUG] Setting price to 0 for public repo');
           setFormData(prev => ({
             ...prev,
             price: 0
           }));
         }
       }
-    } catch (error) {
-      console.error('Error checking GitHub repository:', error);
+    } catch {
     } finally {
       setIsCheckingRepo(false);
     }
@@ -585,8 +568,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Add effect to check GitHub repo URL when it changes
   useEffect(() => {
     if (formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)) {
-      console.log('[DEBUG] URL not found in user repos, checking manually:', formData.githubRepoUrl);
-      // If the URL is not in our list of repos, check if it's a valid public repo
       checkGitHubRepositoryVisibility(formData.githubRepoUrl);
     }
   }, [formData.githubRepoUrl, githubRepos]);
@@ -595,11 +576,8 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   useEffect(() => {
     if (formData.githubRepoUrl && githubRepos.length > 0) {
       const selectedRepo = githubRepos.find(repo => repo.html_url === formData.githubRepoUrl);
-      console.log('[DEBUG] Selected repo found in user repos?', !!selectedRepo);
       if (selectedRepo) {
-        console.log('[DEBUG] Selected repo is private?', selectedRepo.private);
         if (!selectedRepo.private) {
-          console.log('[DEBUG] Setting price to 0 for public repo from user repos');
           setFormData(prev => ({
             ...prev,
             price: 0
@@ -612,7 +590,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Check repository when component mounts if there's a githubRepoUrl in initialData
   useEffect(() => {
     if (initialData?.githubRepoUrl) {
-      console.log('[DEBUG] initialData has githubRepoUrl:', initialData.githubRepoUrl);
       fetchGitHubRepos();
     }
   }, [initialData?.githubRepoUrl, fetchGitHubRepos]);
@@ -721,7 +698,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
 
         return publicUrl;
       } catch (error) {
-        console.error(`Error uploading ${file.name}:`, error);
         throw new Error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });
@@ -756,11 +732,10 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           variant: "destructive"
         });
       }
-    } catch (error) {
-      console.error('Upload error:', error);
+    } catch {
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload images. Please try again.",
+        description: "Failed to upload images. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -805,8 +780,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           shortDescription: data.description.substring(0, MAX_SHORT_DESCRIPTION_LENGTH)
         }));
       }
-    } catch (error) {
-      console.error('Error enhancing description:', error);
+    } catch {
       toast({
         title: "Enhancement Failed",
         description: "Could not enhance description. Please try again.",
@@ -855,8 +829,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           description: data.description
         }));
       }
-    } catch (error) {
-      console.error('Error enhancing description:', error);
+    } catch {
       toast({
         title: "Enhancement Failed",
         description: "Could not enhance description. Please try again.",
@@ -935,16 +908,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     const isPublicRepo = (formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private) || 
         manualRepoIsPublic === true;
     
-    console.log('[DEBUG] Submit - Public repo check:', {
-      isPublicRepo,
-      repoUrl: formData.githubRepoUrl,
-      inUserRepos: formData.githubRepoUrl ? !!githubRepos.find(repo => repo.html_url === formData.githubRepoUrl) : false,
-      isPrivateRepo: formData.githubRepoUrl ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private : null,
-      manualRepoIsPublic,
-      originalPrice: formData.price,
-      finalPrice: isPublicRepo ? 0 : formData.price
-    });
-
     // Create a copy of the form data with price set to 0 for public repos
     const finalFormData: ProductFormData = {
       ...formData,
@@ -969,8 +932,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Error saving product:", error);
+    } catch {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -1096,21 +1058,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                     const repoIsPublic = repoInUserRepos && !repoInUserRepos.private;
                     const isManuallyCheckedPublic = manualRepoIsPublic === true;
                     const shouldDisable = Boolean(repoIsPublic || isManuallyCheckedPublic);
-                    
-                    console.log('[DEBUG] Price disabled check:', {
-                      githubRepoUrl: formData.githubRepoUrl,
-                      repoInUserRepos: !!repoInUserRepos,
-                      repoDetails: repoInUserRepos ? {
-                        name: repoInUserRepos.name,
-                        private: repoInUserRepos.private,
-                        html_url: repoInUserRepos.html_url
-                      } : null,
-                      repoIsPublic,
-                      isManuallyCheckedPublic,
-                      shouldDisable,
-                      reposCount: githubRepos.length,
-                      manualRepoIsPublic
-                    });
                     
                     return shouldDisable;
                   })()}

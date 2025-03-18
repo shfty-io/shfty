@@ -42,119 +42,87 @@ export async function POST() {
     let startingAfter: string | undefined = undefined;
     
     while (hasMore) {
-      const params: Stripe.AccountListParams = {
-        limit: 100
-      };
-      
-      if (startingAfter) {
-        params.starting_after = startingAfter;
-      }
-      
-      const accounts = await stripe.accounts.list(params);
+      const accounts: Stripe.ApiList<Stripe.Account> = await stripe.accounts.list({
+        limit: 100,
+        starting_after: startingAfter
+      });
+
       allAccounts.push(...accounts.data);
-      
       hasMore = accounts.has_more;
-      if (accounts.data.length > 0) {
-        startingAfter = accounts.data[accounts.data.length - 1].id;
-      } else {
-        hasMore = false;
-      }
+      startingAfter = accounts.data.length > 0 ? accounts.data[accounts.data.length - 1].id : undefined;
     }
     
-    console.log(`Found ${allAccounts.length} connected accounts in Stripe`);
-    
-    // Get all existing accounts from database
+    // Get existing accounts from database
     const { data: existingAccounts, error: fetchError } = await supabase
       .from('seller_accounts')
-      .select('stripe_account_id');
-      
+      .select('stripe_account_id, user_id');
+
     if (fetchError) {
-      return NextResponse.json(
-        { error: "Failed to fetch existing accounts", details: fetchError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to fetch existing accounts' }, { status: 500 });
     }
-    
-    // Create a set of existing account IDs for quick lookup
-    const existingAccountIds = new Set(
-      existingAccounts
-        ?.map(account => account.stripe_account_id)
-        .filter(id => id !== null) || []
-    );
-    
-    console.log(`Found ${existingAccountIds.size} accounts in database`);
-    
-    // Accounts to add to database
-    const accountsToAdd = allAccounts.filter(
-      account => !existingAccountIds.has(account.id)
-    );
-    
-    console.log(`Need to add ${accountsToAdd.length} accounts to database`);
-    
-    // Process each account to be added
-    const results = [];
-    
+
+    // Create a Set of existing account IDs for faster lookup
+    const existingAccountIds = new Set<string>();
+    const existingAccountMap = new Map<string, string>(); // Maps account ID to user ID
+
+    existingAccounts.forEach(account => {
+      existingAccountIds.add(account.stripe_account_id);
+      existingAccountMap.set(account.stripe_account_id, account.user_id);
+    });
+
+    // Identify accounts to add (in Stripe but not in our database)
+    const accountsToAdd = allAccounts.filter(account => !existingAccountIds.has(account.id));
+
+    // Add missing accounts to database
     for (const account of accountsToAdd) {
-      const isComplete = account.details_submitted && account.charges_enabled;
-      
-      // Map Stripe account status to database-compatible status
-      let accountStatus;
-      if (isComplete) {
-        accountStatus = 'complete';
-      } else if (account.details_submitted) {
-        accountStatus = 'pending';
-      } else {
-        // Handle restricted status specifically
-        accountStatus = 'pending'; // Use 'pending' instead of 'restricted' as it might be a valid enum
-      }
-      
-      console.log(`Account ${account.id} status mapping: Stripe status=${account.details_submitted ? 'details_submitted' : 'not_submitted'}/${account.charges_enabled ? 'charges_enabled' : 'charges_disabled'} → DB status=${accountStatus}`);
-      
-      try {
-        // Get the first valid user from the profiles table
-        const { data: validUsers, error: userError } = await supabase
+      // Try to get the user ID from account metadata
+      let userId = account.metadata?.user_id as string | undefined;
+
+      // If no user ID in metadata, try to get it from the account email
+      if (!userId && account.email) {
+        const { data: users } = await supabase
           .from('profiles')
-          .select('id, user_id')
+          .select('id')
+          .eq('email', account.email)
           .limit(1);
-          
-        if (userError || !validUsers || validUsers.length === 0) {
-          throw new Error('No valid users found in the profiles table: ' + (userError?.message || 'empty result'));
+
+        if (users && users.length > 0) {
+          userId = users[0].id;
         }
-        
-        // Use the first valid user's user_id
-        const userId = validUsers[0].user_id;
-        
-        console.log(`Inserting account ${account.id} with user_id ${userId}`);
-        
-        // Process the account
-        const result = {
-          stripe_account_id: account.id,
+      }
+
+      // Skip accounts where we can't determine the user ID
+      if (!userId) {
+        continue;
+      }
+
+      // Map account status
+      let onboardingStatus = 'pending';
+      
+      if (account.details_submitted && account.charges_enabled) {
+        onboardingStatus = 'complete';
+      } else if (account.details_submitted) {
+        onboardingStatus = 'review';
+      }
+
+      // Insert the account into our database
+      const { error: insertError } = await supabase
+        .from('seller_accounts')
+        .insert({
           user_id: userId,
-          status: accountStatus
-        };
-        
-        results.push(result);
-        
-        // Add the account to the database
-        const { error: insertError } = await supabase
-          .from('seller_accounts')
-          .insert(result);
-        
-        if (insertError) {
-          throw new Error('Failed to insert account into database: ' + (insertError.message || 'unknown error'));
-        }
-      } catch (error) {
-        console.error(`Error processing account ${account.id}:`, error);
-        results.push({
           stripe_account_id: account.id,
-          user_id: null,
-          status: 'error'
+          is_onboarded: onboardingStatus === 'complete',
+          account_status: onboardingStatus,
+          last_synced: new Date().toISOString()
         });
+
+      if (insertError) {
+        console.error(`Failed to insert account ${account.id}:`, insertError);
       }
     }
     
     return NextResponse.json(
-      { results },
+      { results: [] },
       { status: 200 }
     );
   } catch (error) {

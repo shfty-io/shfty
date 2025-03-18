@@ -68,7 +68,6 @@ export const fetchWithCsrf = async (
 // Generate a new CSRF token - this will call the server to set a cookie
 export async function generateCsrfToken(): Promise<string> {
   try {
-    console.log('Generating CSRF token');
     const response = await fetch('/api/csrf/generate', {
       method: 'GET',
       headers: {
@@ -99,7 +98,6 @@ export async function generateCsrfToken(): Promise<string> {
       document.cookie = `csrf_token=${data.token}; path=/; expires=${expires.toUTCString()}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
     }
     
-    console.log('CSRF token generated successfully');
     return data.token;
   } catch (error) {
     console.error('Error generating CSRF token:', error);

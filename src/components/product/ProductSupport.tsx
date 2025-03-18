@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Mail, Megaphone } from "lucide-react"
+import { Mail } from "lucide-react"
 import { ReportDialog } from "./ReportDialog"
 
 interface ProductSupportProps {

@@ -4,6 +4,9 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
+    const productData = await request.json();
+    // console.log('Received product data:', productData);
+
     const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -13,9 +16,6 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-
-    const { productData } = await request.json();
-    console.log('Received product data:', productData);
 
     // Validate required fields and constraints
     if (!productData.name || !productData.description || 

@@ -52,7 +52,6 @@ function SetupPageContent() {
         
         if (sellerError && sellerError.code === 'PGRST116') {
           // No seller account found, create one
-          console.log('Creating new seller account');
           const { data: newSellerData, error: createError } = await supabase
             .from('seller_accounts')
             .insert({

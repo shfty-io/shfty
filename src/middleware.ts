@@ -70,10 +70,8 @@ export async function middleware(request: NextRequest) {
       console.error("Error refreshing session in middleware:", error);
     } else if (!data.session) {
       // No session found - this is normal for unauthenticated users
-      // console.log("No session found in middleware");
     } else {
       // Session found and refreshed successfully
-      // console.log("Session refreshed successfully in middleware");
     }
   } catch (err) {
     console.error("Failed to refresh session in middleware:", err);

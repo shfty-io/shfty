@@ -4,7 +4,6 @@ import { sendWelcomeEmail } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
-  console.log('Auth callback request URL:', requestUrl.toString())
   
   const code = requestUrl.searchParams.get('code')
   
@@ -14,11 +13,9 @@ export async function GET(request: NextRequest) {
   }
 
   const redirectTo = requestUrl.searchParams.get('returnTo') || '/'
-  console.log('Redirecting to after auth:', redirectTo)
   
   // Ensure proper URL construction using origin from the request
   const targetUrl = new URL(redirectTo, requestUrl.origin)
-  console.log('Final redirect target:', targetUrl.toString())
   
   const response = NextResponse.redirect(targetUrl)
   
@@ -63,8 +60,6 @@ export async function GET(request: NextRequest) {
   )
 
   try {
-    console.log('Exchanging code for session...')
-    
     // Try to exchange code for session multiple times if needed (up to 2 retries)
     let sessionSuccess = false
     let retries = 0
@@ -76,7 +71,6 @@ export async function GET(request: NextRequest) {
       
       if (!error) {
         sessionSuccess = true
-        console.log('Session exchange successful on try:', retries + 1)
         break
       }
       
@@ -113,9 +107,6 @@ export async function GET(request: NextRequest) {
       
       // Try to explicitly sign in with OAuth credentials from user object
       if (user.app_metadata && user.app_metadata.provider) {
-        const provider = user.app_metadata.provider
-        console.log(`Attempting explicit sign in with ${provider}`)
-        
         // Redirect to OAuth flow again
         return NextResponse.redirect(
           new URL(`/auth/login?error=${encodeURIComponent('Session creation failed, please try again')}`, request.url)
@@ -160,7 +151,6 @@ export async function GET(request: NextRequest) {
             name: user.user_metadata?.full_name || user.user_metadata?.name || '',
             email: user.email
           })
-          console.log('Welcome email sent to:', user.email)
         } catch (emailError) {
           console.error('Failed to send welcome email:', emailError)
           // Don't block the authentication flow if email fails
@@ -188,13 +178,10 @@ export async function GET(request: NextRequest) {
     // Verify one more time that we have a session before redirecting
     const { data: finalSession } = await supabase.auth.getSession()
     if (!finalSession.session) {
-      console.log('No session found after profile creation, redirecting to login')
       return NextResponse.redirect(
         new URL('/auth/login?error=Failed+to+create+session', request.url)
       )
     }
-    
-    console.log('Authentication successful, redirecting to:', targetUrl.toString())
     
     return response
   } catch (error) {

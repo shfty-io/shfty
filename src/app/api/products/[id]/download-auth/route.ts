@@ -16,9 +16,6 @@ export async function GET(
     // Wait for the params to resolve
     const params = await props.params;
     
-    // Log the request for debugging
-    console.log('Download auth request for product:', params.id);
-
     // Extract the ID from the params instead of the URL
     const id = params.id;
     
@@ -47,7 +44,6 @@ export async function GET(
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
-      console.log('No session found - auth required');
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -69,13 +65,6 @@ export async function GET(
       );
     }
 
-    // Debug log the product info
-    console.log('Product details found:', {
-      id,
-      price: product.price,
-      hasGithubUrl: !!product.github_repo_url
-    });
-
     // Get user's profile to get github username if available
     const { data: profile } = await supabase
       .from('profiles')
@@ -96,7 +85,6 @@ export async function GET(
 
     // For paid products, require a purchase record
     if (!purchase && product.price > 0) {
-      console.log('Purchase required for paid product');
       return NextResponse.json(
         { error: "Purchase required to access this product" },
         { status: 403 }
@@ -105,7 +93,6 @@ export async function GET(
 
     // For free products, record a purchase if there isn't one already
     if (!purchase && product.price === 0) {
-      console.log('Recording free purchase for user:', session.user.id);
       // Record the free purchase
       const { error: purchaseError } = await supabase
         .from('purchases')
@@ -123,7 +110,6 @@ export async function GET(
       }
     }
 
-    console.log('Returning successful response with URLs');
     const response: DownloadAuthResponse = {
       githubRepoUrl: product.github_repo_url,
       githubToken: product.github_token
