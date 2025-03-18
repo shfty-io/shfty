@@ -3,12 +3,11 @@
 import Link from 'next/link'
 import { UserNav } from '@/components/global/UserNav'
 import { Button } from "@/components/ui/button"
-import { Moon, Sun, PanelLeftClose, PanelLeftOpen, Github } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Github } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
 import { useSidebar } from '@/components/ui/sidebar'
-import { useTheme } from '@/providers/theme-provider'
 import { useRouter } from 'next/navigation'
 
 export function Navbar() {
@@ -16,7 +15,6 @@ export function Navbar() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toggleSidebar, state } = useSidebar()
-  const { theme, setTheme } = useTheme()
   const supabase = createClient()
   const router = useRouter()
 
@@ -77,16 +75,6 @@ export function Navbar() {
           <span className="sr-only">Toggle sidebar</span>
         </Button>
         <nav className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-9 w-9" 
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
             <a href="https://x.com/shfty_io" target="_blank" rel="noopener noreferrer">
               <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
