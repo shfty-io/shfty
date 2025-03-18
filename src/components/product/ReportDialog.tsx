@@ -84,14 +84,12 @@ export function ReportDialog({ productId }: ReportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button type="button" className="outline-none">
-          <div className="flex items-center space-x-2.5">
-            <Megaphone className="h-5 w-5" />
-            <span className="text-sm leading-[1.6] text-body-80 transition-opacity hover:opacity-50">
-              Report this template
-            </span>
+        <Button variant="outline" className="w-full">
+          <div className="flex items-center justify-center gap-2">
+            <Megaphone className="h-4 w-4" />
+            Report this template
           </div>
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>

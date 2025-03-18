@@ -1,13 +1,11 @@
 import { ProductFeatures } from "./ProductFeatures"
 import { RefundPolicy } from "./RefundPolicy"
-import { ReportDialog } from "./ReportDialog"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Mail } from "lucide-react"
 import { ProductDescription } from "./ProductDescription"
 import { ProductLanguages } from "./ProductLanguages"
 import { ProductLicense } from "./ProductLicense"
+import { ProductSupport } from "./ProductSupport"
 
 interface ProductDetailsProps {
   productId: string
@@ -75,19 +73,12 @@ export function ProductDetails({
 
         <div className="space-y-5">
           <h6 className="body-s md:body-xs font-semibold">Support</h6>
-          <div className="space-y-4">
-            {sellerEmail && (
-              <Button variant="ghost" asChild className="w-full justify-start p-0">
-                <a href={`mailto:${sellerEmail}?subject=Question about ${encodeURIComponent(productName)}`} className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Contact {sellerFullName || 'Seller'}
-                </a>
-              </Button>
-            )}
-            <div className="flex items-center space-x-2.5">
-              <ReportDialog productId={productId} productName={productName} />
-            </div>
-          </div>
+          <ProductSupport 
+            productId={productId} 
+            productName={productName} 
+            sellerEmail={sellerEmail} 
+            sellerFullName={sellerFullName} 
+          />
         </div>
 
         <RefundPolicy />

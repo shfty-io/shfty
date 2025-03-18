@@ -77,6 +77,10 @@ export const categoryMetadata: Record<string, CategoryMetadata> = {
     title: 'Weather',
     description: 'Weather forecasting and monitoring applications.',
   },
+  'frontend-templates': {
+    title: 'Frontend Templates',
+    description: 'Ready-to-use templates for websites, landing pages, dashboards, and other frontend interfaces.',
+  },
   'other': {
     title: 'Other',
     description: 'Miscellaneous applications and tools that don\'t fit other categories.',

@@ -60,6 +60,7 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
       'sports': 'sports',
       'travel': 'travel',
       'utilities': 'utilities',
+      'frontend-templates': 'frontend_templates',
       'weather': 'weather',
       'other': 'other'
     };

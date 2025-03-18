@@ -39,6 +39,7 @@ const data = {
         { title: "Games", url: "/category/games", isActive: false },
         { title: "Graphics & Design", url: "/category/graphics-design", isActive: false },
         { title: "Health & Fitness", url: "/category/health-fitness", isActive: false },
+        { title: "Frontend Templates", url: "/category/frontend-templates", isActive: false },
         { title: "Lifestyle", url: "/category/lifestyle", isActive: false },
         { title: "Medical", url: "/category/medical", isActive: false },
         { title: "News", url: "/category/news", isActive: false },
