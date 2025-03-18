@@ -22,12 +22,24 @@ export async function GET(
     // Extract the ID from the params instead of the URL
     const id = params.id;
     
-    // CSRF validation - make this optional for GET requests since they're idempotent
-    const csrfValidationResult = await validateCsrfToken(request);
-    if (!csrfValidationResult) {
-      console.log('CSRF validation failed, but continuing as GET request');
-      // Continue anyway for GET requests
+    // Get CSRF token from header
+    const csrfHeaderToken = request.headers.get('x-csrf-token');
+    
+    // CSRF validation - make this optional for GET requests but log it
+    let csrfValid = false;
+    try {
+      csrfValid = await validateCsrfToken(request);
+      if (!csrfValid && csrfHeaderToken) {
+        console.warn('CSRF token validation failed but header was present');
+      } else if (!csrfHeaderToken) {
+        console.warn('No CSRF token header provided in request');
+      }
+    } catch (error) {
+      console.error('Error during CSRF validation:', error);
     }
+    
+    // Continue for GET requests even without a valid CSRF token
+    // This is safe since GET requests are idempotent
     
     const supabase = createClient(await cookies());
 

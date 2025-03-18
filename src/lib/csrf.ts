@@ -17,7 +17,7 @@ export async function setCsrfCookie(): Promise<string> {
   cookieStore.set('csrf_token', token, {
     httpOnly: false, // Allow JavaScript access in client
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax', // More permissive to work in development
+    sameSite: 'lax', // More permissive to work across environments
     path: '/',
     maxAge: 60 * 60, // 1 hour
   });
@@ -31,11 +31,27 @@ export async function validateCsrfToken(request: NextRequest): Promise<boolean> 
   const cookieToken = cookieStore.get('csrf_token')?.value;
   const headerToken = request.headers.get('x-csrf-token');
   
-  if (!cookieToken || !headerToken) {
+  if (!cookieToken) {
+    console.warn('CSRF validation failed: No token in cookies');
     return false;
   }
   
-  return cookieToken === headerToken;
+  if (!headerToken) {
+    console.warn('CSRF validation failed: No token in request headers');
+    return false;
+  }
+  
+  const isValid = cookieToken === headerToken;
+  if (!isValid) {
+    console.warn('CSRF validation failed: Token mismatch', {
+      cookieTokenLength: cookieToken.length,
+      headerTokenLength: headerToken.length,
+      cookieTokenPrefix: cookieToken.substring(0, 8),
+      headerTokenPrefix: headerToken.substring(0, 8),
+    });
+  }
+  
+  return isValid;
 }
 
 // CSRF protection middleware for API routes
@@ -50,7 +66,10 @@ export function csrfProtection<T>(
     
     // For all other methods, validate CSRF token
     if (!(await validateCsrfToken(request))) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid CSRF token' }), {
+      return new NextResponse(JSON.stringify({ 
+        error: 'Invalid CSRF token',
+        message: 'Security validation failed. Please refresh the page and try again.'
+      }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
       });
