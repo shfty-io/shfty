@@ -6,14 +6,14 @@ type ProductStatus = Database['public']['Enums']['product_status'];
 
 export async function GET(request: NextRequest) {
   try {
-    // Get pagination parameters from URL
-    const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '21', 10);
-    const search = searchParams.get('search') || '';
-    const sortBy = searchParams.get('sortBy') || 'created_at';
+    // Get pagination parameters
+    const params = request.nextUrl.searchParams;
+    const page = parseInt(params.get('page') || '1', 10);
+    const pageSize = parseInt(params.get('pageSize') || '10', 10);
+    const search = params.get('search') || '';
+    const sortBy = params.get('sortBy') || 'created_at';
     
-    console.log('API request with params:', { page, pageSize, search, sortBy });
+    // console.log('API request with params:', { page, pageSize, search, sortBy });
     
     // Validate parameters
     if (isNaN(page) || page < 1) {
@@ -28,9 +28,6 @@ export async function GET(request: NextRequest) {
       console.error('API error: Supabase client initialization failed');
       return NextResponse.json({ error: 'Database client initialization failed' }, { status: 500 });
     }
-    
-    // Calculate the offset for pagination
-    const offset = (page - 1) * pageSize;
     
     // First, get the total count for pagination
     let countQuery = supabase
@@ -71,8 +68,9 @@ export async function GET(request: NextRequest) {
         user:profiles!products_user_id_fkey (
           avatar_url,
           full_name
-        )
-      `);
+        ),
+        categories!products_categories(id, name)
+      `, { count: 'exact' });
     
     // Add search filter if provided
     if (search) {
@@ -97,45 +95,41 @@ export async function GET(request: NextRequest) {
       query = query.order('created_at', { ascending: false });
     }
     
-    // Apply pagination using range
-    query = query.range(offset, offset + pageSize - 1);
+    // If paging is enabled, apply pagination parameters
+    if (page !== -1) {
+      const startIndex = (page - 1) * pageSize;
+      // console.log('Executing Supabase query with pagination');
+      query = query
+        .range(startIndex, startIndex + pageSize - 1);
+    }
     
     // Execute query
-    console.log('Executing Supabase query with pagination');
     const { data, error } = await query;
     
     if (error) {
-      console.error('Supabase query error:', error);
-      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+      console.error('Error fetching products:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
     
-    console.log(`Fetched ${data?.length || 0} products`);
-    
-    if (!data || data.length === 0) {
-      return NextResponse.json({
-        products: [],
-        pagination: {
-          currentPage: page,
-          totalPages: 0,
-          totalItems: 0,
-          itemsPerPage: pageSize
-        }
-      });
-    }
-    
-    // Transform data to match expected format
-    const products = data.map(item => {
+    // Format the response data
+    const products = (data || []).map((product: Record<string, unknown>) => {
+      // Extract the categories
+      const categories = product.categories || [];
+      
       // Handle user data with proper type checking
       let userData = { avatar_url: null as string | null, full_name: null as string | null };
       
-      if (item.user) {
-        if (Array.isArray(item.user) && item.user.length > 0) {
+      if (product.user) {
+        if (Array.isArray(product.user) && product.user.length > 0) {
           userData = {
-            avatar_url: item.user[0]?.avatar_url || null,
-            full_name: item.user[0]?.full_name || null
+            avatar_url: product.user[0]?.avatar_url || null,
+            full_name: product.user[0]?.full_name || null
           };
-        } else if (typeof item.user === 'object') {
-          const userObj = item.user as { avatar_url?: string | null; full_name?: string | null };
+        } else if (typeof product.user === 'object') {
+          const userObj = product.user as { avatar_url?: string | null; full_name?: string | null };
           userData = {
             avatar_url: userObj.avatar_url || null,
             full_name: userObj.full_name || null
@@ -144,31 +138,30 @@ export async function GET(request: NextRequest) {
       }
       
       // Ensure status is properly typed
-      const status = item.status as ProductStatus | null;
+      const status = product.status as ProductStatus | null;
       
       return {
-        ...item,
-        categories: [],
+        ...product,
+        categories,
         status,
         user: userData
       };
     });
     
-    // Calculate pagination metadata
-    const totalItems = count || 0;
-    const totalPages = Math.ceil(totalItems / pageSize);
+    // Calculate total pages
+    const totalPages = page === -1 
+      ? 1 
+      : Math.ceil((count || 0) / pageSize);
     
-    console.log('Returning products:', products.length);
-    console.log('Pagination info:', { currentPage: page, totalPages, totalItems });
+    // console.log('Returning products:', products.length);
+    // console.log('Pagination info:', { currentPage: page, totalPages, totalItems: count });
     
-    // Return successful response
     return NextResponse.json({
       products,
       pagination: {
         currentPage: page,
         totalPages,
-        totalItems,
-        itemsPerPage: pageSize
+        totalItems: count
       }
     });
     

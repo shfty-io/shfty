@@ -18,16 +18,11 @@ export function SignUpForm() {
   const handleGitHubSignIn = async () => {
     setIsLoading(true);
     try {
-      // Use the public environment variable for the site URL
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
       
       // Construct the redirect URL with the final destination
       const callbackUrl = new URL('/auth/callback', siteUrl)
       callbackUrl.searchParams.set('returnTo', redirectPath)
-      
-      console.log('Starting GitHub sign-up flow with redirect to:', callbackUrl.toString())
-      console.log('Environment NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-      console.log('Window location origin:', window.location.origin)
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
@@ -39,13 +34,10 @@ export function SignUpForm() {
       })
       
       if (error) {
-        console.error('GitHub sign-up error from Supabase:', error)
         throw error;
       }
       
-      console.log('OAuth sign-up initiated successfully')
     } catch (err) {
-      console.error('GitHub sign-up error:', err)
       setError(err instanceof Error ? err.message : 'Failed to sign in with GitHub')
     } finally {
       setIsLoading(false);

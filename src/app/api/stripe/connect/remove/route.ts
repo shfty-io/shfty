@@ -46,12 +46,9 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Attempting to delete Stripe account: ${accountId}`);
-
-    // Call Stripe API to delete the connected account
+    // Delete the Stripe account
     try {
       await stripe.accounts.del(accountId);
-      console.log(`Successfully deleted Stripe connected account: ${accountId}`);
       
       return NextResponse.json({ 
         success: true, 
@@ -67,8 +64,6 @@ export async function POST(request: Request) {
           ('type' in stripeError && stripeError.type === 'StripePermissionError') ||
           ('statusCode' in stripeError && 'rawType' in stripeError && 
            stripeError.statusCode === 403 && stripeError.rawType === 'invalid_request_error'))) {
-        
-        console.log(`Account ${accountId} already deleted or inaccessible - marking as success`);
         
         return NextResponse.json({ 
           success: true, 

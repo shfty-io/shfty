@@ -28,30 +28,26 @@ export async function POST(request: Request) {
     let profileId = profile?.id;
 
     if (profileError) {
-      console.error('Error fetching profile:', profileError);
-      
-      // If the profile doesn't exist, try to create it
-      if (profileError.code === 'PGRST116') {
-        console.log('Profile not found, attempting to create one');
-        
-        // Call the ensure_user_profile function to create a profile if it doesn't exist
-        const { data: ensuredProfile, error: ensureError } = await supabase.rpc(
-          'ensure_user_profile',
-          { auth_user_id: user.id }
-        );
-        
-        if (ensureError) {
-          console.error('Error creating profile:', ensureError);
-        } else if (ensuredProfile) {
-          console.log('Successfully created profile:', ensuredProfile);
-          profileId = ensuredProfile;
-        }
-      } else {
-        return NextResponse.json(
-          { error: "Failed to fetch user profile: " + profileError.message },
-          { status: 500 }
-        );
+      if (profileError.code !== 'PGRST116') { // Not found error
+        return NextResponse.json({ error: 'Error fetching profile' }, { status: 500 });
       }
+      
+      // Create a profile if it doesn't exist
+      const { data: ensuredProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          username: user.email?.split('@')[0] || `user_${Date.now()}`
+        })
+        .select()
+        .single();
+        
+      if (createError) {
+        return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
+      }
+      
+      profileId = ensuredProfile.id;
     }
 
     // Cancel Stripe subscriptions if the profile exists and has a Stripe customer ID
@@ -71,7 +67,6 @@ export async function POST(request: Request) {
         // Cancel each subscription
         for (const subscription of subscriptions.data) {
           await stripe.subscriptions.cancel(subscription.id);
-          console.log(`Cancelled subscription ${subscription.id} for user ${user.id}`);
         }
       } catch (stripeError) {
         console.error('Error cancelling Stripe subscriptions:', stripeError);
@@ -95,7 +90,6 @@ export async function POST(request: Request) {
         
         // Use the Stripe Delete API to delete the connected account
         await stripe.accounts.del(sellerAccount.stripe_account_id);
-        console.log(`Deleted Stripe connected account ${sellerAccount.stripe_account_id} for user ${user.id}`);
       }
     } catch (stripeError) {
       console.error('Error deleting Stripe connected account:', stripeError);

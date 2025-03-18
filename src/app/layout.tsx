@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/providers/theme-provider";
 import { HeroWrapper } from "@/components/ui/hero-wrapper";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -35,11 +34,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <ThemeProvider>
-          <HeroWrapper />
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <HeroWrapper />
+        {children}
+        <Toaster />
       </body>
     </html>
   );

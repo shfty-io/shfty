@@ -21,7 +21,7 @@ export default function ProductFilters({
   onFilterChange, 
   onSearch, 
   initialSearch = '',
-  initialSortBy = 'downloaded' 
+  initialSortBy = 'liked' 
 }: ProductFiltersProps) {
   const [sortBy, setSortBy] = useState<'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest'>(initialSortBy);
 
@@ -41,8 +41,8 @@ export default function ProductFilters({
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="downloaded">Most downloaded</SelectItem>
             <SelectItem value="liked">Most liked</SelectItem>
+            <SelectItem value="downloaded">Most downloaded</SelectItem>
             <SelectItem value="newest">Newest</SelectItem>
             <SelectItem value="oldest">Oldest</SelectItem>
             <SelectItem value="price_high">Price high to low</SelectItem>

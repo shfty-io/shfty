@@ -30,18 +30,16 @@ export async function POST(request: Request) {
     );
 
     const supabase = createClient(await cookies());
-    console.log(`Processing Stripe webhook event: ${event.type}`);
 
     switch (event.type) {
       // ACCOUNT EVENTS
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
-        console.log('Account updated:', account.id, account.details_submitted, account.charges_enabled);
         
         // Update seller account status
         const isComplete = account.details_submitted && account.charges_enabled;
         
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('seller_accounts')
           .update({
             is_onboarded: isComplete,
@@ -61,19 +59,11 @@ export async function POST(request: Request) {
           return createExternalServiceError('Supabase', 'Failed to update seller account');
         }
         
-        console.log('Seller account updated via webhook:', { 
-          account_id: account.id, 
-          is_onboarded: isComplete,
-          account_status: isComplete ? 'complete' : 'pending',
-          db_records_updated: data?.length || 0
-        });
-        
         break;
       }
 
       case 'account.application.deauthorized': {
         const account = event.data.object as unknown as Stripe.Account;
-        console.log('Account disconnected:', account.id);
         
         // Update seller account status to disconnected
         const { error } = await supabase
@@ -101,11 +91,6 @@ export async function POST(request: Request) {
         const externalAccount = event.data.object as Stripe.BankAccount | Stripe.Card;
         const accountId = externalAccount.account as string;
         
-        console.log(`External account ${event.type.split('.').pop()}:`, 
-          accountId, 
-          externalAccount.id, 
-          externalAccount.object);
-        
         // Store bank account change in database
         const { error } = await supabase
           .from('seller_external_accounts')
@@ -131,7 +116,6 @@ export async function POST(request: Request) {
       // CHECKOUT & PAYMENT EVENTS
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log('Checkout session completed:', session.id);
         
         // Extract metadata
         const productId = session.metadata?.product_id;
@@ -195,7 +179,6 @@ export async function POST(request: Request) {
 
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        console.log('Payment intent succeeded:', paymentIntent.id);
         
         // Update purchase status if it exists
         const { error } = await supabase
@@ -222,7 +205,6 @@ export async function POST(request: Request) {
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        console.log('Payment intent failed:', paymentIntent.id, paymentIntent.last_payment_error?.message);
         
         // Update purchase status if it exists
         const { error } = await supabase
@@ -251,7 +233,6 @@ export async function POST(request: Request) {
       // DISPUTE & REFUND EVENTS
       case 'charge.dispute.created': {
         const dispute = event.data.object as Stripe.Dispute;
-        console.log('Dispute created:', dispute.id, dispute.status, dispute.amount);
         
         // Get the payment intent from the charge
         const charge = await stripe.charges.retrieve(dispute.charge as string);
@@ -302,7 +283,6 @@ export async function POST(request: Request) {
 
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
-        console.log('Charge refunded:', charge.id, charge.amount_refunded, charge.refunded);
         
         // Get payment intent id
         const paymentIntentId = charge.payment_intent as string;
@@ -335,7 +315,6 @@ export async function POST(request: Request) {
 
       case 'charge.refund.updated': {
         const refund = event.data.object as Stripe.Refund;
-        console.log('Refund updated:', refund.id, refund.status);
         
         // Get the charge and payment intent
         const chargeId = refund.charge as string;
@@ -373,7 +352,6 @@ export async function POST(request: Request) {
       case 'payout.paid':
       case 'payout.failed': {
         const payout = event.data.object as Stripe.Payout;
-        console.log(`Payout ${event.type.split('.').pop()}:`, payout.id, payout.amount, payout.status);
         
         const status = event.type === 'payout.paid' ? 'paid' :
                       event.type === 'payout.failed' ? 'failed' : 'pending';
@@ -420,7 +398,6 @@ export async function POST(request: Request) {
       // FRAUD & REVIEW EVENTS
       case 'radar.early_fraud_warning.created': {
         const fraudWarning = event.data.object as Stripe.Radar.EarlyFraudWarning;
-        console.log('Fraud warning:', fraudWarning.id, fraudWarning.charge);
         
         // Get the payment intent from the charge
         const charge = await stripe.charges.retrieve(fraudWarning.charge as string);
@@ -467,7 +444,6 @@ export async function POST(request: Request) {
       case 'review.opened':
       case 'review.closed': {
         const review = event.data.object as Stripe.Review;
-        console.log(`Review ${event.type.split('.').pop()}:`, review.id, review.reason);
         
         // Get the payment intent
         const paymentIntentId = review.payment_intent as string;
@@ -514,7 +490,7 @@ export async function POST(request: Request) {
       }
       
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        // console.log(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });

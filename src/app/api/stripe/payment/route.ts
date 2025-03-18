@@ -57,20 +57,16 @@ export async function POST(request: Request) {
       }
     }
     
-    // If we couldn't get the seller account ID from the join, try a direct query
+    // Second try: If we still don't have a seller account ID, try looking it up directly
     if (!sellerStripeAccountId) {
-      console.log('Trying direct query for seller account');
-      const { data: sellerAccount, error: sellerError } = await supabase
+      const { data: sellerAccount } = await supabase
         .from('seller_accounts')
         .select('stripe_account_id')
         .eq('user_id', product.user_id)
         .single();
-        
-      if (!sellerError && sellerAccount?.stripe_account_id) {
+      
+      if (sellerAccount) {
         sellerStripeAccountId = sellerAccount.stripe_account_id;
-        console.log('Found seller account ID from direct query:', sellerStripeAccountId);
-      } else if (sellerError) {
-        console.error('Error fetching seller account:', sellerError);
       }
     }
 

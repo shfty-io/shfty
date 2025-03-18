@@ -26,6 +26,8 @@ interface PaymentData {
   status: string;
   github_username: string;
   created_at: string | null;
+  amount: number;
+  payment_intent_id: string;
 }
 
 interface PaymentsTabProps {

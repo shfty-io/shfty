@@ -651,6 +651,7 @@ export type Database = {
         | "ecommerce"
         | "backend"
         | "database"
+        | "frontend_templates"
       product_license:
         | "MIT"
         | "GPL-3.0"

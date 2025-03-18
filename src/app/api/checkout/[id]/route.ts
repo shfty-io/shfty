@@ -13,93 +13,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia'
 })
 
-// Helper function to clean HTML from text
-function cleanHtmlFromText(html: string | null | undefined): string {
-  if (!html) return '';
-  
-  // Remove HTML tags
-  const withoutTags = html.replace(/<[^>]*>/g, ' ');
-  
-  // Replace HTML entities
-  const withoutEntities = withoutTags
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  
-  // Normalize whitespace
-  const normalized = withoutEntities
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  // Increase the character limit to 400 characters
-  // Only add ellipsis if we're actually truncating
-  const maxLength = 400;
-  if (normalized.length > maxLength) {
-    // Try to find a sentence or phrase break near the limit
-    const breakPoint = normalized.lastIndexOf('. ', maxLength - 5);
-    if (breakPoint > maxLength * 0.7) {
-      // If we found a good sentence break, use that
-      return normalized.substring(0, breakPoint + 1);
-    }
-    
-    // Otherwise, look for a space to break at
-    const spaceBreak = normalized.lastIndexOf(' ', maxLength - 3);
-    if (spaceBreak > 0) {
-      return normalized.substring(0, spaceBreak) + '...';
-    }
-    
-    // Fallback to hard truncation
-    return normalized.substring(0, maxLength - 3) + '...';
-  }
-  
-  return normalized;
-}
-
-// Helper function to extract key points from a description
-function extractKeyPoints(description: string | null | undefined): string {
-  if (!description) return '';
-  
-  // Clean the HTML first
-  const cleanedText = cleanHtmlFromText(description);
-  
-  // For the specific format we're seeing, try to extract the main points
-  if (cleanedText.includes('GitHub Repository Marketplace')) {
-    // This is likely our standard format
-    const parts = cleanedText.split(/\s+Wanted to solve/i);
-    if (parts.length > 1) {
-      // Get the part after "Wanted to solve"
-      const problemsSection = 'Wanted to solve ' + parts[1];
-      // Limit to a reasonable length
-      return problemsSection.length > 300 
-        ? problemsSection.substring(0, 297) + '...' 
-        : problemsSection;
-    }
-  }
-  
-  // Look for bullet points or numbered lists
-  const bulletPoints = cleanedText.match(/[•\-*]\s+([^•\-*\n]+)/g);
-  if (bulletPoints && bulletPoints.length > 0) {
-    return bulletPoints.slice(0, 5).join(' ');
-  }
-  
-  // Look for sentences with key phrases
-  const keyPhrases = ['helps', 'solves', 'features', 'benefits', 'includes'];
-  const sentences = cleanedText.split(/[.!?]+\s+/);
-  
-  const keyPointSentences = sentences.filter(sentence => 
-    keyPhrases.some(phrase => sentence.toLowerCase().includes(phrase))
-  );
-  
-  if (keyPointSentences.length > 0) {
-    return keyPointSentences.slice(0, 3).join('. ') + '.';
-  }
-  
-  // Fallback to the first few sentences
-  return sentences.slice(0, 3).join('. ') + (sentences.length > 3 ? '...' : '.');
-}
-
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse> {
@@ -144,14 +57,6 @@ export async function POST(
       return createNotFoundError('Product')
     }
 
-    // Debug the product data
-    console.log('Product data:', {
-      id: product.id,
-      name: product.name,
-      user_id: product.user_id,
-      seller: product.seller
-    });
-
     // Get seller's Stripe account ID - handle both array and object formats
     let sellerStripeAccountId;
     if (product.seller?.seller_accounts) {
@@ -163,11 +68,9 @@ export async function POST(
         sellerStripeAccountId = product.seller.seller_accounts.stripe_account_id;
       }
     }
-    console.log('Seller Stripe account ID from join:', sellerStripeAccountId);
     
     // If we couldn't get the seller account ID from the join, try a direct query
     if (!sellerStripeAccountId) {
-      console.log('Trying direct query for seller account');
       const { data: sellerAccount, error: sellerError } = await supabase
         .from('seller_accounts')
         .select('stripe_account_id')
@@ -176,7 +79,6 @@ export async function POST(
         
       if (!sellerError && sellerAccount?.stripe_account_id) {
         sellerStripeAccountId = sellerAccount.stripe_account_id;
-        console.log('Found seller account ID from direct query:', sellerStripeAccountId);
       } else if (sellerError) {
         console.error('Error fetching seller account:', sellerError);
       }
@@ -189,11 +91,6 @@ export async function POST(
         // Verify the account is properly set up
         const account = await stripe.accounts.retrieve(sellerStripeAccountId);
         sellerSetupComplete = account.details_submitted && account.charges_enabled;
-        console.log('Seller account status:', { 
-          details_submitted: account.details_submitted, 
-          charges_enabled: account.charges_enabled,
-          sellerSetupComplete
-        });
       } catch (error) {
         console.error('Error retrieving seller Stripe account:', error);
       }
@@ -302,28 +199,23 @@ export async function POST(
     }
 
     try {
-      // Create Stripe checkout session
-      const cleanedDescription = cleanHtmlFromText(product.description) || 'Access to GitHub repository';
-      const keyPoints = extractKeyPoints(product.description);
-      
-      // Use the key points if available, otherwise fall back to the cleaned description
-      const finalDescription = keyPoints || cleanedDescription;
-      console.log('Final description for checkout:', finalDescription);
-      
-      const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+      // Create a checkout session with Stripe
+      const session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
           {
             price_data: {
               currency: 'usd',
               product_data: {
-                name: product.name ? product.name.trim() : 'GitHub Repository',
-                description: finalDescription,
+                name: product.name,
+                description: product.description && product.description.length > 0 
+                  ? `${product.name}: ${product.description.slice(0, 80)}${product.description.length > 80 ? '...' : ''}`
+                  : product.name,
                 images: product.image_urls && product.image_urls.length > 0 
                   ? [product.image_urls[0]] 
                   : undefined,
               },
-              unit_amount: Math.round(product.price * 100), // Convert to cents
+              unit_amount: Math.round(product.price * 100), // Convert dollars to cents
             },
             quantity: 1,
           },
@@ -362,9 +254,7 @@ export async function POST(
         payment_method_types: ['card'],
         locale: 'en',
         submit_type: 'pay',
-      };
-
-      const session = await stripe.checkout.sessions.create(sessionConfig);
+      });
 
       return NextResponse.json({ url: session.url })
     } catch (error: unknown) {

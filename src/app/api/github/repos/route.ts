@@ -74,7 +74,7 @@ export async function GET() {
 
     // Log the scopes we have access to
     const scopes = scopeResponse.headers.get('x-oauth-scopes');
-    console.log('Available scopes:', scopes);
+    // console.log('Available scopes:', scopes);
 
     // Check if we have the required scope
     if (!scopes?.includes('repo')) {
@@ -101,10 +101,6 @@ export async function GET() {
 
     const repositories = await response.json();
     
-    // Log the number of repositories and how many are private
-    console.log('Total repositories:', repositories.length);
-    console.log('Private repositories:', repositories.filter((repo: GitHubRepository) => repo.private).length);
-
     // Format response to include needed repository information
     const formattedRepos = repositories.map((repo: GitHubRepository) => ({
       id: repo.id,

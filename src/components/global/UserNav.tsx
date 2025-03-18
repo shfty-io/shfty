@@ -32,7 +32,6 @@ export function UserNav({ initialUser }: UserNavProps) {
     }
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("UserNav: Auth state changed", _event)
       setUser(session?.user ?? null)
     })
 
@@ -43,7 +42,6 @@ export function UserNav({ initialUser }: UserNavProps) {
 
   async function handleSignOut() {
     try {
-      console.log("UserNav: Signing out...")
       const { error } = await supabase.auth.signOut()
       
       if (error) {

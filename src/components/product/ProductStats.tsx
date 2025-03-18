@@ -30,13 +30,14 @@ export function ProductStats({
   // Fetch the current likes count
   const fetchLikesCount = useCallback(async () => {
     try {
-      const { count, error } = await supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', productId)
+      const { data, error } = await supabase
+        .from('products')
+        .select('likes_count')
+        .eq('id', productId)
+        .single()
 
-      if (!error && count !== null) {
-        setLikesCount(count)
+      if (!error && data) {
+        setLikesCount(data.likes_count || 0)
       }
     } catch (error) {
       console.error('Error fetching likes count:', error)
@@ -45,8 +46,10 @@ export function ProductStats({
 
   // Initial fetch and setup realtime subscription
   useEffect(() => {
-    // Fetch initial count
-    fetchLikesCount()
+    // Only fetch if initial count is 0 or setup subscription regardless
+    if (initialLikesCount === 0) {
+      fetchLikesCount()
+    }
 
     // Set up realtime subscription
     const channel = supabase
@@ -69,7 +72,7 @@ export function ProductStats({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [productId, supabase, fetchLikesCount])
+  }, [productId, supabase, fetchLikesCount, initialLikesCount])
 
   return (
     <div className="space-y-6 w-full">

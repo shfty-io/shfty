@@ -45,7 +45,8 @@ CREATE TYPE product_category AS ENUM (
   'developer_tools', 'business', 'creativity', 'security',
   'lifestyle', 'education', 'communication_social', 'games',
   'finance', 'other', 'hosting', 'analytics', 'automation', 
-  'cms', 'publishing', 'ecommerce', 'backend', 'database'
+  'cms', 'publishing', 'ecommerce', 'backend', 'database',
+  'frontend_templates'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');

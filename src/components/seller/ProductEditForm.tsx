@@ -44,20 +44,130 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 // Update the categories array with all options
 const categories = [
-  { id: "photo_video", label: "Photo & Video" },
-  { id: "productivity", label: "Productivity" },
-  { id: "utilities", label: "Utilities" },
-  { id: "entertainment", label: "Entertainment" },
-  { id: "developer_tools", label: "Developer Tools" },
+  // Work & Productivity
+  { id: "ai_notetakers", label: "AI Notetakers" },
+  { id: "app_switcher", label: "App Switcher" },
+  { id: "compliance_software", label: "Compliance Software" },
+  { id: "e_signature_apps", label: "E-Signature Apps" },
+  { id: "knowledge_base_software", label: "Knowledge Base Software" },
+  { id: "meeting_software", label: "Meeting Software" },
+  { id: "pdf_editor", label: "PDF Editor" },
+  { id: "presentation_software", label: "Presentation Software" },
+  { id: "project_management_software", label: "Project Management Software" },
+  { id: "scheduling_software", label: "Scheduling Software" },
+  { id: "search", label: "Search" },
+  { id: "spreadsheets", label: "Spreadsheets" },
+  { id: "ad_blockers", label: "Ad Blockers" },
+  { id: "customer_support_tools", label: "Customer Support Tools" },
+  { id: "email_clients", label: "Email Clients" },
+  { id: "note_and_writing_apps", label: "Note and Writing Apps" },
+  { id: "password_managers", label: "Password Managers" },
+  { id: "screenshots_and_screen_recording_apps", label: "Screenshots & Screen Recording Apps" },
+  { id: "security_software", label: "Security Software" },
+  { id: "team_collaboration_software", label: "Team Collaboration Software" },
+  
+  // Engineering & Development
+  { id: "ab_testing_tools", label: "A/B Testing Tools" },
+  { id: "authentication_identity_tools", label: "Authentication & Identity Tools" },
+  { id: "content_management_systems", label: "Content Management Systems" },
+  { id: "code_review_tools", label: "Code Review Tools" },
+  { id: "command_line_tools", label: "Command Line Tools" },
+  { id: "data_visualization_tools", label: "Data Visualization Tools" },
+  { id: "git_clients", label: "Git Clients" },
+  { id: "issue_tracking_software", label: "Issue Tracking Software" },
+  { id: "no_code_platforms", label: "No-Code Platforms" },
+  { id: "standup_bots", label: "Standup Bots" },
+  { id: "testing_qa_software", label: "Testing and QA Software" },
+  { id: "vpn_client", label: "VPN Client" },
+  { id: "ai_coding_assistants", label: "AI Coding Assistants" },
+  { id: "automation_tools", label: "Automation Tools" },
+  { id: "code_editors", label: "Code Editors" },
+  { id: "data_analysis_tools", label: "Data Analysis Tools" },
+  { id: "databases_backend_frameworks", label: "Databases and Backend Frameworks" },
+  { id: "headless_cms_software", label: "Headless CMS Software" },
+  { id: "observability_tools", label: "Observability Tools" },
+  { id: "static_site_generators", label: "Static Site Generators" },
+  { id: "unified_api", label: "Unified API" },
+  { id: "website_analytics", label: "Website Analytics" },
+  
+  // Design & Creative
+  { id: "design_mockups", label: "Design Mockups" },
+  { id: "digital_whiteboards", label: "Digital Whiteboards" },
+  { id: "icon_sets", label: "Icon Sets" },
+  { id: "ui_frameworks", label: "UI Frameworks" },
+  { id: "wireframing", label: "Wireframing" },
+  { id: "background_removal_tools", label: "Background Removal Tools" },
+  { id: "design_resources", label: "Design Resources" },
+  { id: "graphic_design_tools", label: "Graphic Design Tools" },
+  { id: "interface_design_tools", label: "Interface Design Tools" },
+  { id: "photo_editing", label: "Photo Editing" },
+  { id: "user_research", label: "User Research" },
+  
+  // Social & Community
+  { id: "blogging_platforms", label: "Blogging Platforms" },
+  { id: "dating_apps", label: "Dating Apps" },
+  { id: "microblogging_platforms", label: "Microblogging Platforms" },
+  { id: "safety_privacy_platforms", label: "Safety and Privacy Platforms" },
+  { id: "community_management", label: "Community Management" },
+  { id: "link_in_bio_tools", label: "Link in Bio Tools" },
+  { id: "messaging_apps", label: "Messaging Apps" },
+  { id: "newsletter_platforms", label: "Newsletter Platforms" },
+  
+  // Marketing & Sales
+  { id: "advertising_tools", label: "Advertising Tools" },
+  { id: "seo_tools", label: "SEO Tools" },
+  { id: "crm_software", label: "CRM Software" },
+  { id: "email_marketing", label: "Email Marketing" },
+  { id: "keyword_research_tools", label: "Keyword Research Tools" },
+  { id: "lead_generation_software", label: "Lead Generation Software" },
+  { id: "sales_enablement", label: "Sales Enablement" },
+  { id: "social_media_management_tools", label: "Social Media Management Tools" },
+  { id: "survey_form_builders", label: "Survey and Form Builders" },
+  { id: "business_intelligence_software", label: "Business Intelligence Software" },
+  { id: "marketing_automation_platforms", label: "Marketing Automation Platforms" },
+  { id: "social_media_scheduling_tools", label: "Social Media Scheduling Tools" },
+  
+  // AI
+  { id: "ai_characters", label: "AI Characters" },
+  { id: "ai_content_detection", label: "AI Content Detection" },
+  { id: "ai_generative_art", label: "AI Generative Art" },
+  { id: "ai_infrastructure_tools", label: "AI Infrastructure Tools" },
+  { id: "ai_voice_agents", label: "AI Voice Agents" },
+  { id: "chatgpt_prompts", label: "ChatGPT Prompts" },
+  { id: "predictive_ai", label: "Predictive AI" },
+  { id: "ai_chatbots", label: "AI Chatbots" },
+  { id: "ai_databases", label: "AI Databases" },
+  { id: "ai_metrics_evaluation", label: "AI Metrics and Evaluation" },
+  { id: "llms", label: "LLMs" },
+  { id: "text_to_speech", label: "Text-to-Speech" },
+  
+  // Product add-ons
+  { id: "chrome_extensions", label: "Chrome Extensions" },
+  { id: "figma_templates", label: "Figma Templates" },
+  { id: "slack_apps", label: "Slack Apps" },
+  { id: "wordpress_plugins", label: "WordPress Plugins" },
+  { id: "figma_plugins", label: "Figma Plugins" },
+  { id: "notion_templates", label: "Notion Templates" },
+  { id: "twitter_apps", label: "Twitter Apps" },
+  { id: "wordpress_themes", label: "WordPress Themes" },
+  
+  // Web3
+  { id: "crypto_wallets", label: "Crypto Wallets" },
+  { id: "defi", label: "DeFi" },
+  { id: "nft_creation_tools", label: "NFT Creation Tools" },
+  
+  // Frontend Resources
+  { id: "blog", label: "Blog" },
+  { id: "portfolio", label: "Portfolio" },
+  { id: "personal", label: "Personal" },
+  { id: "dashboard", label: "Dashboard" },
+  { id: "landing_page", label: "Landing Page" },
   { id: "business", label: "Business" },
-  { id: "creativity", label: "Creativity" },
-  { id: "security", label: "Security" },
-  { id: "lifestyle", label: "Lifestyle" },
-  { id: "education", label: "Education" },
-  { id: "communication_social", label: "Communication & Social" },
-  { id: "ai", label: "AI" },
-  { id: "finance", label: "Finance" },
-  { id: "other", label: "Other" }
+  { id: "documentation", label: "Documentation" },
+  { id: "ecommerce", label: "Ecommerce" },
+  { id: "boilerplates", label: "Boilerplates" },
+  { id: "ui_kits_components", label: "UI Kits & Components" },
+  { id: "templates_themes", label: "Templates & Themes" }
 ];
 
 // Update the technologies array with all options
@@ -483,14 +593,12 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Add fetchGitHubRepos function
   const fetchGitHubRepos = useCallback(async () => {
     try {
-      console.log('[DEBUG] Fetching GitHub repos');
       const response = await fetch('/api/github/repos');
       const data = await response.json();
       
       if (!response.ok) {
         // Check if we need to re-authenticate
         if (data.requiresReauth) {
-          console.log('[DEBUG] GitHub reauth required');
           // Redirect to GitHub OAuth flow
           const supabase = createClient();
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -510,24 +618,16 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
         throw new Error(data.error);
       }
       
-      console.log('[DEBUG] GitHub repos fetched:', data.repositories.length);
-      console.log('[DEBUG] Public repos:', data.repositories.filter((r: GitHubRepo) => !r.private).length);
-      console.log('[DEBUG] Private repos:', data.repositories.filter((r: GitHubRepo) => r.private).length);
-      
       setGithubRepos(data.repositories);
       
       // Check if current githubRepoUrl is in the fetched repos
       if (formData.githubRepoUrl) {
         const found = data.repositories.find((repo: GitHubRepo) => repo.html_url === formData.githubRepoUrl);
-        console.log('[DEBUG] Repo found in user repos?', !!found);
         if (found) {
-          console.log('[DEBUG] Repo is private?', found.private);
         } else {
-          console.log('[DEBUG] Repo not found in user repos, will check manually');
         }
       }
     } catch (error) {
-      console.error('Error fetching repositories:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Could not fetch your GitHub repositories",
@@ -541,7 +641,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     if (!url) return;
     
     try {
-      console.log('[DEBUG] Checking repository visibility manually:', url);
       setIsCheckingRepo(true);
       setManualRepoIsPublic(null);
       
@@ -554,29 +653,23 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       });
       
       if (!response.ok) {
-        // If it's not found or there's another error, assume it's not a valid repo
-        console.error('Error checking repository:', await response.text());
         return;
       }
       
       const data = await response.json();
-      console.log('[DEBUG] Manual check result:', data);
       
       if (data.exists) {
-        console.log('[DEBUG] Repo exists, isPublic:', data.isPublic);
         setManualRepoIsPublic(data.isPublic);
         
         // If it's a public repo, set price to 0
         if (data.isPublic) {
-          console.log('[DEBUG] Setting price to 0 for public repo');
           setFormData(prev => ({
             ...prev,
             price: 0
           }));
         }
       }
-    } catch (error) {
-      console.error('Error checking GitHub repository:', error);
+    } catch {
     } finally {
       setIsCheckingRepo(false);
     }
@@ -585,8 +678,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Add effect to check GitHub repo URL when it changes
   useEffect(() => {
     if (formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)) {
-      console.log('[DEBUG] URL not found in user repos, checking manually:', formData.githubRepoUrl);
-      // If the URL is not in our list of repos, check if it's a valid public repo
       checkGitHubRepositoryVisibility(formData.githubRepoUrl);
     }
   }, [formData.githubRepoUrl, githubRepos]);
@@ -595,11 +686,8 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   useEffect(() => {
     if (formData.githubRepoUrl && githubRepos.length > 0) {
       const selectedRepo = githubRepos.find(repo => repo.html_url === formData.githubRepoUrl);
-      console.log('[DEBUG] Selected repo found in user repos?', !!selectedRepo);
       if (selectedRepo) {
-        console.log('[DEBUG] Selected repo is private?', selectedRepo.private);
         if (!selectedRepo.private) {
-          console.log('[DEBUG] Setting price to 0 for public repo from user repos');
           setFormData(prev => ({
             ...prev,
             price: 0
@@ -612,7 +700,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
   // Check repository when component mounts if there's a githubRepoUrl in initialData
   useEffect(() => {
     if (initialData?.githubRepoUrl) {
-      console.log('[DEBUG] initialData has githubRepoUrl:', initialData.githubRepoUrl);
       fetchGitHubRepos();
     }
   }, [initialData?.githubRepoUrl, fetchGitHubRepos]);
@@ -721,7 +808,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
 
         return publicUrl;
       } catch (error) {
-        console.error(`Error uploading ${file.name}:`, error);
         throw new Error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });
@@ -756,11 +842,10 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           variant: "destructive"
         });
       }
-    } catch (error) {
-      console.error('Upload error:', error);
+    } catch {
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload images. Please try again.",
+        description: "Failed to upload images. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -805,8 +890,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           shortDescription: data.description.substring(0, MAX_SHORT_DESCRIPTION_LENGTH)
         }));
       }
-    } catch (error) {
-      console.error('Error enhancing description:', error);
+    } catch {
       toast({
         title: "Enhancement Failed",
         description: "Could not enhance description. Please try again.",
@@ -855,8 +939,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           description: data.description
         }));
       }
-    } catch (error) {
-      console.error('Error enhancing description:', error);
+    } catch {
       toast({
         title: "Enhancement Failed",
         description: "Could not enhance description. Please try again.",
@@ -935,16 +1018,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     const isPublicRepo = (formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private) || 
         manualRepoIsPublic === true;
     
-    console.log('[DEBUG] Submit - Public repo check:', {
-      isPublicRepo,
-      repoUrl: formData.githubRepoUrl,
-      inUserRepos: formData.githubRepoUrl ? !!githubRepos.find(repo => repo.html_url === formData.githubRepoUrl) : false,
-      isPrivateRepo: formData.githubRepoUrl ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private : null,
-      manualRepoIsPublic,
-      originalPrice: formData.price,
-      finalPrice: isPublicRepo ? 0 : formData.price
-    });
-
     // Create a copy of the form data with price set to 0 for public repos
     const finalFormData: ProductFormData = {
       ...formData,
@@ -969,8 +1042,7 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Error saving product:", error);
+    } catch {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -1096,21 +1168,6 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                     const repoIsPublic = repoInUserRepos && !repoInUserRepos.private;
                     const isManuallyCheckedPublic = manualRepoIsPublic === true;
                     const shouldDisable = Boolean(repoIsPublic || isManuallyCheckedPublic);
-                    
-                    console.log('[DEBUG] Price disabled check:', {
-                      githubRepoUrl: formData.githubRepoUrl,
-                      repoInUserRepos: !!repoInUserRepos,
-                      repoDetails: repoInUserRepos ? {
-                        name: repoInUserRepos.name,
-                        private: repoInUserRepos.private,
-                        html_url: repoInUserRepos.html_url
-                      } : null,
-                      repoIsPublic,
-                      isManuallyCheckedPublic,
-                      shouldDisable,
-                      reposCount: githubRepos.length,
-                      manualRepoIsPublic
-                    });
                     
                     return shouldDisable;
                   })()}

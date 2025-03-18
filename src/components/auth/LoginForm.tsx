@@ -40,12 +40,6 @@ export function LoginForm({
       const callbackUrl = new URL('/auth/callback', origin)
       callbackUrl.searchParams.set('returnTo', redirectPath)
       
-      // Log details for debugging
-      console.log('GitHub login details:')
-      console.log('- Origin:', origin)
-      console.log('- NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-      console.log('- Callback URL:', callbackUrl.toString())
-      
       // Start OAuth flow with explicit origin
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',

@@ -49,7 +49,6 @@ export async function POST(request: Request) {
     // Call Stripe API to delete the connected account
     try {
       await stripe.accounts.del(accountId);
-      console.log(`Successfully deleted Stripe connected account: ${accountId}`);
       
       // Update the database to mark this account as deleted
       const { error: updateError } = await supabase
