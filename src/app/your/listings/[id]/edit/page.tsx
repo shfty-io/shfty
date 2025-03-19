@@ -48,6 +48,11 @@ export default async function EditProductPage(props: PageProps) {
       return { error: 'Unauthorized' };
     }
 
+    // Validate minimum price of $4.99 for paid products
+    if (formData.price > 0 && formData.price < 4.99) {
+      return { error: 'Minimum price for paid products is $4.99' };
+    }
+
     const { error } = await supabase
       .from('products')
       .update({

@@ -976,6 +976,16 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
       return;
     }
 
+    // Check minimum price for paid products
+    if (formData.price > 0 && formData.price < 4.99) {
+      toast({
+        title: "Validation Error",
+        description: "Minimum price for paid products is $4.99",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!formData.shortDescription || formData.shortDescription.trim() === '') {
       toast({
         title: "Validation Error",
@@ -1167,7 +1177,13 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                 <Input
                   id="price"
                   type="number"
-                  min="0"
+                  min={(() => {
+                    const repoInUserRepos = formData.githubRepoUrl && 
+                      githubRepos.find(repo => repo.html_url === formData.githubRepoUrl);
+                    const repoIsPublic = repoInUserRepos && !repoInUserRepos.private;
+                    const isManuallyCheckedPublic = manualRepoIsPublic === true;
+                    return repoIsPublic || isManuallyCheckedPublic ? 0 : 4.99;
+                  })()}
                   step="0.01"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
@@ -1190,9 +1206,9 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
                   ? "Checking repository status..." 
                   : formData.githubRepoUrl 
                     ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private || manualRepoIsPublic === false
-                      ? "You can set a price for private repositories" 
+                      ? "Minimum price is $4.99 for paid products" 
                       : "Public repositories must be free"
-                    : "Set to 0 for free products"}
+                    : "Minimum price is $4.99 for paid products"}
               </p>
             </div>
           </div>

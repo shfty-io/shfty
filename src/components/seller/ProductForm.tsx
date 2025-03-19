@@ -629,40 +629,23 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required text fields
     if (!formData.name || formData.name.trim() === '') {
-      toast({
-        title: "Validation Error",
-        description: "Please provide a product name",
-        variant: "destructive"
-      });
+      toast({ title: "Validation Error", description: "Please provide a product name", variant: "destructive" });
       return;
     }
 
     if (formData.name.length > MAX_NAME_LENGTH) {
-      toast({
-        title: "Validation Error",
-        description: `Product name must be ${MAX_NAME_LENGTH} characters or less`,
-        variant: "destructive"
-      });
+      toast({ title: "Validation Error", description: `Product name must be ${MAX_NAME_LENGTH} characters or less`, variant: "destructive" });
       return;
     }
 
     if (!formData.byline || formData.byline.trim() === '') {
-      toast({
-        title: "Validation Error",
-        description: "Please provide a product slug (URL name)",
-        variant: "destructive"
-      });
+      toast({ title: "Validation Error", description: "Please provide a byline", variant: "destructive" });
       return;
     }
 
     if (formData.byline.length > MAX_BYLINE_LENGTH) {
-      toast({
-        title: "Validation Error",
-        description: `Slug must be ${MAX_BYLINE_LENGTH} characters or less`,
-        variant: "destructive"
-      });
+      toast({ title: "Validation Error", description: `Byline must be ${MAX_BYLINE_LENGTH} characters or less`, variant: "destructive" });
       return;
     }
 
@@ -670,6 +653,16 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       toast({
         title: "Validation Error",
         description: "Please provide a short description",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check minimum price for paid products
+    if (formData.price > 0 && formData.price < 4.99) {
+      toast({
+        title: "Validation Error",
+        description: "Minimum price for paid products is $4.99",
         variant: "destructive"
       });
       return;
@@ -1446,7 +1439,7 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
               <Input
                 id="price"
                 type="number"
-                min="0"
+                min={formData.githubRepoUrl && !githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private ? 0 : 4.99}
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
@@ -1463,9 +1456,9 @@ export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
             <p className="text-xs text-muted-foreground mt-1">
               {formData.githubRepoUrl 
                 ? githubRepos.find(repo => repo.html_url === formData.githubRepoUrl)?.private 
-                  ? "You can set a price for private repositories" 
+                  ? "Minimum price is $4.99 for paid products" 
                   : "Public repositories must be free"
-                : "Set your desired price "}
+                : "Minimum price is $4.99 for paid products"}
             </p>
           </div>
         </div>
