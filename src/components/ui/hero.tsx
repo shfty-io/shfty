@@ -16,7 +16,7 @@ export function Hero({ onClose }: HeroProps) {
     setShowMission(!showMission);
   };
 
-  const handleStartShopping = () => {
+  const handleBrowseProducts = () => {
     onClose();
   };
 
@@ -96,8 +96,8 @@ export function Hero({ onClose }: HeroProps) {
             )}
           
           <div className={`${showMission ? 'mt-8' : 'mt-16'} flex flex-col items-center justify-center gap-8 sm:flex-row`}>
-            <Button size="lg" onClick={handleStartShopping} className="h-14 w-full text-lg sm:w-auto">
-              Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" onClick={handleBrowseProducts} className="h-14 w-full text-lg sm:w-auto">
+              Browse Products <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <div className="flex items-center gap-8">
               <a

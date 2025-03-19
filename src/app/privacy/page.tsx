@@ -126,6 +126,9 @@ export default function PrivacyPolicyPage() {
             against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission
             over the Internet or electronic storage is 100% secure, and we cannot guarantee absolute security.
           </p>
+          <p className="mt-2">
+            YOU ACKNOWLEDGE THAT YOU PROVIDE YOUR PERSONAL INFORMATION AT YOUR OWN RISK. WE SHALL NOT BE LIABLE FOR ANY SECURITY BREACHES OR ANY UNAUTHORIZED ACCESS TO OR USE OF YOUR INFORMATION THAT IS BEYOND OUR REASONABLE CONTROL.
+          </p>
         </section>
         
         <section className="mb-8">
@@ -189,8 +192,17 @@ export default function PrivacyPolicyPage() {
             If you have any questions or concerns about this Privacy Policy or our privacy practices, please contact us at:
           </p>
           <p className="mt-2">
-            Email: privacy@yourmarketplace.com<br />
-            Address: [Your Company Address]
+            Email: support@shfty.io
+          </p>
+        </section>
+        
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">14. Limitation of Liability</h2>
+          <p>
+            TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, WE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, RESULTING FROM YOUR USE OF OUR SERVICES OR ANY PERSONAL INFORMATION YOU PROVIDE.
+          </p>
+          <p className="mt-2">
+            YOU AGREE THAT YOUR SOLE REMEDY FOR ANY ISSUES ARISING FROM THIS PRIVACY POLICY OR OUR HANDLING OF YOUR PERSONAL INFORMATION SHALL BE TO DISCONTINUE USING OUR SERVICES.
           </p>
         </section>
       </div>

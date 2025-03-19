@@ -173,6 +173,22 @@ const data = {
       ],
     },
     {
+      title: "Games",
+      url: "#",
+      items: [
+        { title: "Action Games", url: "/category/action-games", isActive: false },
+        { title: "Adventure Games", url: "/category/adventure-games", isActive: false },
+        { title: "Puzzle Games", url: "/category/puzzle-games", isActive: false },
+        { title: "Strategy Games", url: "/category/strategy-games", isActive: false },
+        { title: "Role-Playing Games", url: "/category/role-playing-games", isActive: false },
+        { title: "Simulation Games", url: "/category/simulation-games", isActive: false },
+        { title: "Sports Games", url: "/category/sports-games", isActive: false },
+        { title: "Board Games", url: "/category/board-games", isActive: false },
+        { title: "Card Games", url: "/category/card-games", isActive: false },
+        { title: "Educational Games", url: "/category/educational-games", isActive: false }
+      ],
+    },
+    {
       title: "Frontend Resources",
       url: "#",
       items: [

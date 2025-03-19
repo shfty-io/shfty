@@ -55,6 +55,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate minimum price of $4.99
+    if (productData.price > 0 && productData.price < 4.99) {
+      return NextResponse.json(
+        { error: "Minimum price for paid products is $4.99" },
+        { status: 400 }
+      );
+    }
+
     // Validate categories
     if (!Array.isArray(productData.categories) || 
         productData.categories.length === 0 || 
