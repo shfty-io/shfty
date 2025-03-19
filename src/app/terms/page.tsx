@@ -102,13 +102,25 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">9. Limitation of Liability</h2>
           <p>
-            To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, special, 
-            consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly.
+            TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL WE, OUR AFFILIATES, EMPLOYEES, AGENTS, PARTNERS, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING BUT NOT LIMITED TO DAMAGES FOR LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES (EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES), RESULTING FROM: (I) YOUR USE OR INABILITY TO USE THE SERVICE; (II) ANY CHANGES TO THE SERVICE; (III) ANY PRODUCTS, SERVICES, INFORMATION OR MATERIAL PURCHASED OR OBTAINED FROM OTHER USERS OR THIRD PARTIES THROUGH THE SERVICE; (IV) UNAUTHORIZED ACCESS TO OR ALTERATION OF YOUR TRANSMISSIONS OR DATA; (V) STATEMENTS OR CONDUCT OF ANY THIRD PARTY ON THE SERVICE; OR (VI) ANY OTHER MATTER RELATING TO THE SERVICE.
+          </p>
+          <p className="mt-2">
+            THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT ANY WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. WE DISCLAIM ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
           </p>
         </section>
         
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">10. Indemnification</h2>
+          <h2 className="text-2xl font-semibold mb-4">10. Disclaimer of Warranties</h2>
+          <p>
+            YOU EXPRESSLY UNDERSTAND AND AGREE THAT YOUR USE OF THE SERVICE IS AT YOUR SOLE RISK. WE DO NOT WARRANT THAT THE SERVICE WILL MEET YOUR REQUIREMENTS OR THAT THE SERVICE WILL BE UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE. WE MAKE NO WARRANTY REGARDING THE QUALITY, ACCURACY, TIMELINESS, TRUTHFULNESS, COMPLETENESS OR RELIABILITY OF ANY CONTENT AVAILABLE THROUGH THE SERVICE.
+          </p>
+          <p className="mt-2">
+            YOU ARE SOLELY RESPONSIBLE FOR ALL OF YOUR COMMUNICATIONS AND INTERACTIONS WITH OTHER USERS OF THE SERVICE AND WITH OTHER PERSONS WITH WHOM YOU COMMUNICATE OR INTERACT AS A RESULT OF YOUR USE OF THE SERVICE. YOU UNDERSTAND THAT WE DO NOT SCREEN OR INQUIRE INTO THE BACKGROUND OF ANY USERS OF THE SERVICE, NOR DO WE MAKE ANY ATTEMPT TO VERIFY THE STATEMENTS OF USERS OF THE SERVICE. WE MAKE NO REPRESENTATIONS OR WARRANTIES AS TO THE CONDUCT OF USERS OF THE SERVICE OR THEIR COMPATIBILITY WITH ANY CURRENT OR FUTURE USERS OF THE SERVICE.
+          </p>
+        </section>
+        
+        <section className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">11. Indemnification</h2>
           <p>
             You agree to indemnify, defend, and hold harmless our company, its affiliates, officers, directors, 
             employees, and agents from and against any claims, liabilities, damages, losses, and expenses arising 
@@ -117,7 +129,7 @@ export default function TermsPage() {
         </section>
         
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">11. Governing Law</h2>
+          <h2 className="text-2xl font-semibold mb-4">12. Governing Law</h2>
           <p>
             These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which 
             our company is registered, without regard to its conflict of law provisions.
@@ -125,7 +137,7 @@ export default function TermsPage() {
         </section>
         
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">12. Changes to Terms</h2>
+          <h2 className="text-2xl font-semibold mb-4">13. Changes to Terms</h2>
           <p>
             We reserve the right to modify these Terms at any time. We will provide notice of significant changes by 
             posting the updated Terms on our website. Your continued use of our services after such changes constitutes 
@@ -134,9 +146,9 @@ export default function TermsPage() {
         </section>
         
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">13. Contact Information</h2>
+          <h2 className="text-2xl font-semibold mb-4">14. Contact Information</h2>
           <p>
-            If you have any questions about these Terms, please contact us at support@yourmarketplace.com.
+            If you have any questions about these Terms, please contact us at support@shfty.io.
           </p>
         </section>
       </div>

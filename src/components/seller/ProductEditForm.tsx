@@ -141,6 +141,18 @@ const categories = [
   { id: "llms", label: "LLMs" },
   { id: "text_to_speech", label: "Text-to-Speech" },
   
+  // Games
+  { id: "action_games", label: "Action Games" },
+  { id: "adventure_games", label: "Adventure Games" },
+  { id: "puzzle_games", label: "Puzzle Games" },
+  { id: "strategy_games", label: "Strategy Games" },
+  { id: "role_playing_games", label: "Role-Playing Games" },
+  { id: "simulation_games", label: "Simulation Games" },
+  { id: "sports_games", label: "Sports Games" },
+  { id: "board_games", label: "Board Games" },
+  { id: "card_games", label: "Card Games" },
+  { id: "educational_games", label: "Educational Games" },
+  
   // Product add-ons
   { id: "chrome_extensions", label: "Chrome Extensions" },
   { id: "figma_templates", label: "Figma Templates" },

@@ -79,6 +79,10 @@ CREATE TYPE product_category AS ENUM (
   'ai_voice_agents', 'chatgpt_prompts', 'predictive_ai', 'ai_chatbots', 'ai_databases',
   'ai_metrics_evaluation', 'llms', 'text_to_speech',
   
+  -- Games
+  'action_games', 'adventure_games', 'puzzle_games', 'strategy_games', 'role_playing_games',
+  'simulation_games', 'sports_games', 'board_games', 'card_games', 'educational_games',
+  
   -- Product add-ons
   'chrome_extensions', 'figma_templates', 'slack_apps', 'wordpress_plugins',
   'figma_plugins', 'notion_templates', 'twitter_apps', 'wordpress_themes',
