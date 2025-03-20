@@ -377,10 +377,10 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+      <div className="flex h-16 items-center px-4 max-w-full">
         <div className="flex items-center w-1/4 justify-start">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-xl">shfty</span>
+            <span className="font-semibold text-xl">shfty.io</span>
           </Link>
         </div>
         
@@ -474,7 +474,7 @@ export function Navbar() {
               <div className="px-2">
                 <div className="flex items-center justify-between mb-6">
                   <Link href="/" className="flex items-center gap-2" onClick={() => setSidebarOpen(false)}>
-                    <span className="font-bold text-xl">shfty</span>
+                    <span className="font-semibold text-xl">shfty.io</span>
                   </Link>
                   <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
                     <X className="h-4 w-4" />

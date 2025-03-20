@@ -71,11 +71,11 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
           <p className="text-sm font-medium">{formattedPrice}</p>
           <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+            <span className="flex items-center gap-1 transition-colors">
               <Heart className="w-4 h-4" />
               {product.likes_count}
             </span>
-            <span className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+            <span className="flex items-center gap-1 transition-colors">
               <Eye className="w-4 h-4" />
               {product.view_count}
             </span>

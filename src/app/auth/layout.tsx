@@ -16,7 +16,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`relative flex min-h-screen flex-col ${inter.className}`}>
+    <div className={`overflow-x-hidden ${inter.className}`}>
       <Navbar />
       {children}
     </div>

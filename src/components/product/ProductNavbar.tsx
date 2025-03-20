@@ -36,7 +36,7 @@ export function ProductNavbar() {
   return (
     <header className="relative w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 py-6">
-        <Link href="/" className="font-semibold">
+        <Link href="/" className="font-semibold text-xl">
           shfty.io
         </Link>
         <nav className="flex items-center space-x-4">

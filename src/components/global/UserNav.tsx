@@ -89,6 +89,9 @@ export function UserNav({ initialUser }: UserNavProps) {
         <DropdownMenuItem asChild>
           <Link href="/your/account">Settings</Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/your/sell">My Listings</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"

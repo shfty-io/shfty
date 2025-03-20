@@ -270,7 +270,7 @@ export default async function Home({
   return (
     <>
       <Navbar />
-      <div className="container py-6">
+      <div className="py-6">
         <HomeHero />
         {message && <MessageDisplay message={message} />}
         <ProductList 

@@ -165,7 +165,7 @@ export default async function CategoryPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <div className="container py-6">
+      <div className="py-6">
         <CategoryPageContent 
           title={metadata.title}
           description={metadata.description}
