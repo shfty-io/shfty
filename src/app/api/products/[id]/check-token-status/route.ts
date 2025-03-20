@@ -1,13 +1,13 @@
 import { createClient } from '@/lib/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
-    const id = params.id;
+    const id = context.params.id;
     
     if (!id) {
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
