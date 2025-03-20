@@ -9,5 +9,30 @@
     "env": {
       "NPM_FLAGS": "--legacy-peer-deps"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/verify-github-tokens",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
 } 

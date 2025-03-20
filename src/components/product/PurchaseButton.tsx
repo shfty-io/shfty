@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/use-toast'
 import { usePathname, useRouter } from 'next/navigation'
 import { fetchWithCsrf, generateCsrfToken, getCsrfToken } from '@/lib/csrf-client'
+import { useToast } from '@/components/ui/use-toast'
 
 interface PurchaseButtonProps {
   productId: string
@@ -15,8 +15,10 @@ interface PurchaseButtonProps {
 
 export function PurchaseButton({ productId, price, className = '', source }: PurchaseButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [tokenStatus, setTokenStatus] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+  const { toast } = useToast()
   
   // Determine if on category page for analytics
   const isFromCategory = source === 'category' || pathname?.includes('/category/')
@@ -32,9 +34,37 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
     preloadCsrf()
   }, [])
   
+  // Check token status on mount for products that have a GitHub repo
+  useEffect(() => {
+    const checkTokenStatus = async () => {
+      try {
+        const response = await fetch(`/api/products/${productId}/check-token-status`);
+        if (response.ok) {
+          const data = await response.json();
+          setTokenStatus(data.status);
+        }
+      } catch (error) {
+        console.error('Error checking token status:', error);
+      }
+    };
+    
+    checkTokenStatus();
+  }, [productId]);
+  
   const handlePurchase = async () => {
     try {
       setIsLoading(true)
+      
+      // If token is expired, show a warning and don't proceed
+      if (tokenStatus === 'expired') {
+        toast({
+          title: "Repository Access Issue",
+          description: "This product's repository access may be unavailable as the seller's GitHub token has expired. Please contact the seller.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
       
       // Always refresh the CSRF token before making a purchase request
       const csrfGenerated = await generateCsrfToken()
@@ -180,13 +210,21 @@ export function PurchaseButton({ productId, price, className = '', source }: Pur
   }
 
   return (
-    <Button 
-      onClick={handlePurchase} 
-      size="lg"
-      disabled={isLoading}
-      className={className}
-    >
-      {isLoading ? 'Processing...' : price === 0 ? 'View Repository' : `Purchase for $${price}`}
-    </Button>
+    <div>
+      <Button 
+        onClick={handlePurchase} 
+        size="lg"
+        disabled={isLoading}
+        className={className}
+      >
+        {isLoading ? 'Processing...' : price === 0 ? 'View Repository' : `Purchase for $${price}`}
+      </Button>
+      
+      {tokenStatus === 'expired' && (
+        <div className="mt-2 p-2 text-xs bg-red-50 border border-red-200 rounded-md text-red-600">
+          Warning: Seller&apos;s GitHub access token has expired. You may not be able to access the repository after purchase.
+        </div>
+      )}
+    </div>
   )
 } 
