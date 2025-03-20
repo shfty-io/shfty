@@ -2,6 +2,7 @@ import { createServerComponentClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
 import { incrementViewCount } from '@/app/actions'
 import { ProductPageContent } from './page.client'
+import { Navbar } from '@/components/global/Navbar'
 
 async function getProduct(byline: string) {
   const supabase = await createServerComponentClient();
@@ -98,7 +99,12 @@ export default async function ProductPage({ params }: PageProps) {
     notFound();
   }
 
-  return <ProductPageContent product={product} />;
+  return (
+    <>
+      <Navbar />
+      <ProductPageContent product={product} />
+    </>
+  );
 }
 
 export const dynamic = 'force-dynamic'; 

@@ -1,10 +1,9 @@
 import ProductList from '@/components/root/ProductList'
-import { Navbar } from '@/components/global/Navbar'
 import { createServiceClient } from '@/lib/server'
-import { AppSidebar } from "@/components/root/app-sidebar"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { MessageDisplay } from '@/components/global/MessageDisplay'
 import { Database } from '@/types/supabase'
+import { HomeHero } from '@/components/ui/HomeHero'
+import { Navbar } from '@/components/global/Navbar'
 
 // Use the same ProductStatus type from the database schema
 type ProductStatus = Database['public']['Enums']['product_status']
@@ -269,23 +268,19 @@ export default async function Home({
   const { products, pagination } = await getProducts(page, search, sortBy);
   
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex w-full">
-        <AppSidebar />
-        <SidebarInset className="w-full">
-          <Navbar />
-          <div className="flex-1 p-4">
-            {message && <MessageDisplay message={message} />}
-            <ProductList 
-              products={products} 
-              pagination={pagination} 
-              currentPage={page}
-              initialSearch={search}
-              initialSortBy={sortBy}
-            />
-          </div>
-        </SidebarInset>
+    <>
+      <Navbar />
+      <div className="container py-6">
+        <HomeHero />
+        {message && <MessageDisplay message={message} />}
+        <ProductList 
+          products={products} 
+          pagination={pagination} 
+          currentPage={page}
+          initialSearch={search}
+          initialSortBy={sortBy}
+        />
       </div>
-    </SidebarProvider>
+    </>
   )
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../globals.css";
+import { Navbar } from "@/components/global/Navbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className={`relative flex min-h-screen flex-col ${inter.className}`}>
+      <Navbar />
       {children}
     </div>
   );
