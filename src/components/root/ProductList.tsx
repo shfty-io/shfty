@@ -243,7 +243,6 @@ export default function ProductList({
               likes_count: product.likes_count,
               byline: product.byline,
               user: {
-                avatar_url: product.user?.avatar_url || '/placeholder-avatar.jpg',
                 full_name: product.user?.full_name || 'Anonymous'
               }
             };
