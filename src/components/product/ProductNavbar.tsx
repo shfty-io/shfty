@@ -35,9 +35,9 @@ export function ProductNavbar() {
 
   return (
     <header className="relative w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between px-4 py-6">
+      <div className="flex h-16 items-center justify-between px-8 py-6">
         <Link href="/" className="font-semibold text-xl">
-          shfty.io
+          shfty
         </Link>
         <nav className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
@@ -69,7 +69,7 @@ export function ProductNavbar() {
             </a>
           </Button>
           <Button variant="default" asChild>
-            <Link href={user ? "/your/sell" : "/auth/login"}>Create listing</Link>
+            <Link href={user ? "/your/sell" : "/auth/login"}>Sell</Link>
           </Button>
           {user && <UserNav initialUser={user} />}
         </nav>

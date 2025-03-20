@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { UserNav } from '@/components/global/UserNav'
 import { Button } from "@/components/ui/button"
-import { Menu, X, Github, ChevronRight, ChevronDown } from 'lucide-react'
+import { Menu, X, ChevronRight, ChevronDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
@@ -21,51 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createBrowserClient } from '@supabase/ssr'
 import { cn } from '@/lib/utils'
-
-// Category data for the navbar
-const categories = [
-  {
-    title: "Work & Productivity",
-    items: [
-      { title: "AI notetakers", url: "/category/ai-notetakers" },
-      { title: "Project management software", url: "/category/project-management-software" },
-      { title: "Compliance software", url: "/category/compliance-software" },
-      { title: "Password managers", url: "/category/password-managers" },
-    ]
-  },
-  {
-    title: "AI",
-    items: [
-      { title: "AI Characters", url: "/category/ai-characters" },
-      { title: "AI Chatbots", url: "/category/ai-chatbots" },
-      { title: "AI Content Detection", url: "/category/ai-content-detection" },
-      { title: "AI Databases", url: "/category/ai-databases" },
-      { title: "AI Generative Art", url: "/category/ai-generative-art" },
-      { title: "AI Headshot Generators", url: "/category/ai-headshot-generators" },
-      { title: "AI Infrastructure Tools", url: "/category/ai-infrastructure-tools" },
-      { title: "AI Metrics and Evaluation", url: "/category/ai-metrics-evaluation" },
-    ]
-  },
-  {
-    title: "Engineering & Development",
-    items: [
-      { title: "Hiring software", url: "/category/hiring-software" },
-      { title: "Code editors", url: "/category/code-editors" },
-      { title: "AI Coding Assistants", url: "/category/ai-coding-assistants" },
-      { title: "Git clients", url: "/category/git-clients" },
-    ]
-  },
-  {
-    title: "Design & Creative",
-    items: [
-      { title: "Design mockups", url: "/category/design-mockups" },
-      { title: "Digital whiteboards", url: "/category/digital-whiteboards" },
-      { title: "Icon sets", url: "/category/icon-sets" },
-      { title: "UI frameworks", url: "/category/ui-frameworks" },
-      { title: "Wireframing", url: "/category/wireframing" },
-    ]
-  }
-]
 
 // Full categories data for sidebar
 const allCategories = [
@@ -377,10 +332,10 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center px-4 max-w-full">
+      <div className="flex h-16 items-center px-8 max-w-full">
         <div className="flex items-center w-1/4 justify-start">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-semibold text-xl">shfty.io</span>
+            <span className="font-semibold text-xl">shfty</span>
           </Link>
         </div>
         
@@ -454,7 +409,7 @@ export function Navbar() {
         
         <div className="flex items-center w-1/4 justify-end space-x-4">
           <Button variant="default" asChild className="hidden md:inline-flex">
-            <Link href={user ? "/your/sell" : "/auth/login"}>Submit</Link>
+            <Link href={user ? "/your/sell" : "/auth/login"}>Sell</Link>
           </Button>
           
           {isLoading ? (
@@ -474,7 +429,7 @@ export function Navbar() {
               <div className="px-2">
                 <div className="flex items-center justify-between mb-6">
                   <Link href="/" className="flex items-center gap-2" onClick={() => setSidebarOpen(false)}>
-                    <span className="font-semibold text-xl">shfty.io</span>
+                    <span className="font-semibold text-xl">shfty</span>
                   </Link>
                   <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
                     <X className="h-4 w-4" />
@@ -488,7 +443,7 @@ export function Navbar() {
                     className="block px-3 py-2 text-base font-medium rounded-md bg-primary text-primary-foreground" 
                     onClick={() => setSidebarOpen(false)}
                   >
-                    Submit
+                    Sell
                   </Link>
                 </div>
                 
