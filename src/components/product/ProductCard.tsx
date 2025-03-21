@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Eye, Heart, FileText } from 'lucide-react'
+import { Eye, Heart } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface Product {
   id: string
@@ -23,6 +24,28 @@ interface ProductCardProps {
   product: Product
 }
 
+// Function to get license description
+const getLicenseDescription = (license: string): string => {
+  const descriptions: Record<string, string> = {
+    'MIT': 'You can use it however you want, just keep the creator\'s name on it.',
+    'GPL-3.0': 'If you change it, you must share your changes with everyone.',
+    'Apache-2.0': 'You can use it freely but must say who made it first.',
+    'BSD-3-Clause': 'You can use it if you keep the creator\'s name with it.',
+    'BSD-2-Clause': 'You can use it freely with just two simple rules to follow.',
+    'LGPL-3.0': 'You can use it with your own stuff, but changes to this must be shared.',
+    'MPL-2.0': 'You can mix it with your own code, but must share any fixes to this part.',
+    'AGPL-3.0': 'You must share all your changes, even when used on websites.',
+    'Unlicense': 'Anyone can use it for anything, like a gift to everyone.',
+    'Proprietary': 'You can only use it how the owner says you can.',
+    'CC0-1.0': 'Free for anyone to use for anything.',
+    'CC-BY-4.0': 'You can use it but must say who made it.',
+    'CC-BY-SA-4.0': 'You can use it if you give credit and share your work too.',
+    'Other': 'Has special rules made by the creator.'
+  };
+  
+  return descriptions[license] || 'Special rules made by the creator.';
+};
+
 export function ProductCard({ product }: ProductCardProps) {
   const imageUrl = product.images?.[0] || '/placeholder.jpg'
     
@@ -37,14 +60,6 @@ export function ProductCard({ product }: ProductCardProps) {
     <div className="group rounded-lg overflow-hidden border border-gray-200 transition-colors hover:bg-gray-50 h-full flex flex-col">
       <Link href={`/product/${product.byline}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden">
-          {product.price === 0 && (
-            <div className="absolute top-2 right-2 z-10">
-              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                Free
-              </span>
-            </div>
-          )}
-          
           <Image
             src={imageUrl}
             alt={product.title}
@@ -73,10 +88,18 @@ export function ProductCard({ product }: ProductCardProps) {
           <div>
             <p className="text-sm font-medium">{formattedPrice}</p>
             {product.license && (
-              <p className="text-xs text-gray-500 flex items-center mt-1">
-                <FileText className="w-3 h-3 mr-1" />
-                {product.license}
-              </p>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-500 flex items-center mt-1">
+                      {product.license}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>{getLicenseDescription(product.license)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
