@@ -57,7 +57,7 @@ export function UserNav({ initialUser }: UserNavProps) {
 
   if (!user) {
     return (
-      <Button variant="ghost" asChild>
+      <Button variant="outline" asChild>
         <Link href="/auth/login" className="flex items-center gap-2">
           <UserIcon className="h-5 w-5" />
           <span>Sign in</span>
@@ -88,6 +88,9 @@ export function UserNav({ initialUser }: UserNavProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/your/account">Settings</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/your/sell">Sell</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

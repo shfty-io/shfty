@@ -30,7 +30,7 @@ export function YourSidebar() {
     <Sidebar variant="inset" collapsible="offcanvas" className="z-[100]">
       <SidebarHeader className="relative z-[100]">
         <Link href="/" className="flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-accent transition-colors">
-          <div className="h-8 w-8 rounded bg-gray-900 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-gray-900 flex items-center justify-center">
             <Home className="h-4 w-4 text-white" />
           </div>
           <div>

@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     if (productData.githubRepoUrl) {
       const { data: sellerAccount } = await supabase
         .from('seller_accounts')
-        .select('github_token')
+        .select('github_token, token_status')
         .eq('user_id', user.id)
         .single();
 
@@ -122,6 +122,51 @@ export async function POST(request: Request) {
           { error: "GitHub integration required for repository products" },
           { status: 400 }
         );
+      }
+      
+      // Check token status if available
+      if (sellerAccount.token_status === 'expired') {
+        return NextResponse.json(
+          { error: "Your GitHub token has expired. Please update it in your seller settings before submitting repository products." },
+          { status: 400 }
+        );
+      }
+      
+      // Verify token works if status is unknown
+      if (!sellerAccount.token_status) {
+        // Verify the token has the required scopes by making a test API call
+        const scopeResponse = await fetch('https://api.github.com/user', {
+          headers: {
+            'Authorization': `Bearer ${sellerAccount.github_token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          },
+        });
+
+        if (!scopeResponse.ok) {
+          // Update token status
+          await supabase
+            .from('seller_accounts')
+            .update({
+              token_status: 'expired',
+              token_last_verified: new Date().toISOString()
+            })
+            .eq('user_id', user.id);
+          
+          return NextResponse.json(
+            { error: "Your GitHub token appears to be invalid or expired. Please update it in your seller settings." },
+            { status: 400 }
+          );
+        }
+        
+        // Token is valid, update status
+        await supabase
+          .from('seller_accounts')
+          .update({
+            token_status: 'valid',
+            token_last_verified: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
       }
     }
 

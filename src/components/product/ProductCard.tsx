@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Eye, Heart } from 'lucide-react'
+import { Eye, Heart, FileText } from 'lucide-react'
 
 interface Product {
   id: string
@@ -12,8 +12,9 @@ interface Product {
   image_positions?: Record<string, { x: number; y: number }>
   view_count: number
   likes_count: number
+  license?: string
   user: {
-    avatar_url: string
+    avatar_url?: string
     full_name: string
   }
 }
@@ -60,14 +61,7 @@ export function ProductCard({ product }: ProductCardProps) {
       </Link>
       
       <div className="p-4 flex flex-col flex-grow bg-white group-hover:bg-gray-50 transition-colors">
-        <div className="flex items-center gap-2 mb-2">
-          <Image
-            src={product.user.avatar_url || '/placeholder-avatar.jpg'}
-            alt={product.user.full_name}
-            width={24}
-            height={24}
-            className="rounded-full"
-          />
+        <div className="mb-2">
           <h3 className="text-lg font-bold">{product.title}</h3>
         </div>
         
@@ -76,13 +70,21 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-          <p className="text-sm font-medium">{formattedPrice}</p>
+          <div>
+            <p className="text-sm font-medium">{formattedPrice}</p>
+            {product.license && (
+              <p className="text-xs text-gray-500 flex items-center mt-1">
+                <FileText className="w-3 h-3 mr-1" />
+                {product.license}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+            <span className="flex items-center gap-1 transition-colors">
               <Heart className="w-4 h-4" />
               {product.likes_count}
             </span>
-            <span className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+            <span className="flex items-center gap-1 transition-colors">
               <Eye className="w-4 h-4" />
               {product.view_count}
             </span>

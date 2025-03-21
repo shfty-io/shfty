@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { UserNav } from '@/components/global/UserNav'
 import { Button } from "@/components/ui/button"
-import { Twitter } from 'lucide-react'
+import { Twitter, Github } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/client'
 import { User } from '@supabase/supabase-js'
@@ -35,9 +35,9 @@ export function ProductNavbar() {
 
   return (
     <header className="relative w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between px-4 py-6">
-        <Link href="/" className="font-semibold">
-          shfty.io
+      <div className="flex h-16 items-center justify-between px-8 py-6">
+        <Link href="/" className="font-semibold text-xl">
+          shfty
         </Link>
         <nav className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
@@ -54,8 +54,22 @@ export function ProductNavbar() {
               <span className="sr-only">Discord</span>
             </a>
           </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+            <a href="https://github.com/shfty-io/shfty" target="_blank" rel="noopener noreferrer">
+              <Github className="h-4 w-4" />
+              <span className="sr-only">GitHub</span>
+            </a>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+            <a href="https://www.producthunt.com/products/shfty" target="_blank" rel="noopener noreferrer">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" clipRule="evenodd" d="M12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24ZM12.6883 6.25511H8.5V17.7551H10.9048V14.3775H12.6883C14.9541 14.3775 16.8354 12.7055 16.8354 10.3163C16.8354 7.9271 14.9541 6.25511 12.6883 6.25511ZM12.5909 11.9183H10.9048V8.71428H12.5909C13.6161 8.71428 14.4504 9.42653 14.4504 10.3163C14.4504 11.2061 13.6161 11.9183 12.5909 11.9183Z" />
+              </svg>
+              <span className="sr-only">Product Hunt</span>
+            </a>
+          </Button>
           <Button variant="default" asChild>
-            <Link href={user ? "/your/sell" : "/auth/login"}>Create listing</Link>
+            <Link href={user ? "/your/sell" : "/auth/login"}>Sell</Link>
           </Button>
           {user && <UserNav initialUser={user} />}
         </nav>

@@ -47,6 +47,7 @@ interface Product {
     full_name: string | null
   }
   image_positions?: Record<string, { x: number; y: number }> | null
+  software_license?: string | null
 }
 
 interface ProductListProps {
@@ -225,7 +226,7 @@ export default function ProductList({
         </div>
       </div>
       <div className="p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => {
             // Create the product card props
             const productCardProps = {
@@ -242,8 +243,8 @@ export default function ProductList({
               view_count: product.view_count,
               likes_count: product.likes_count,
               byline: product.byline,
+              license: product.software_license || undefined,
               user: {
-                avatar_url: product.user?.avatar_url || '/placeholder-avatar.jpg',
                 full_name: product.user?.full_name || 'Anonymous'
               }
             };

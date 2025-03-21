@@ -1,8 +1,8 @@
-import { Navbar } from '@/components/global/Navbar';
 import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
 import { createServerComponentClient } from '@/lib/server';
 import { CategoryPageContent } from './page.client';
+import { Navbar } from '@/components/global/Navbar';
 
 interface Product {
   id: string;
@@ -95,6 +95,7 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
         likes_count,
         github_repo_url,
         github_token,
+        software_license,
         user:profiles!products_user_id_fkey(avatar_url, full_name)
       `)
       .eq('status', 'approved')
@@ -165,11 +166,13 @@ export default async function CategoryPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <CategoryPageContent 
-        title={metadata.title}
-        description={metadata.description}
-        products={products}
-      />
+      <div className="py-6">
+        <CategoryPageContent 
+          title={metadata.title}
+          description={metadata.description}
+          products={products}
+        />
+      </div>
     </>
   );
 } 

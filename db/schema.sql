@@ -1,9 +1,17 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Check if feedback table exists before trying to drop its trigger
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'feedback' AND table_schema = 'public') THEN
+    DROP TRIGGER IF EXISTS update_feedback_timestamp_trigger ON feedback;
+  END IF;
+END
+$$;
+
 -- First, drop all triggers
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS update_feedback_timestamp_trigger ON feedback;
 
 -- Drop all functions first
 DROP FUNCTION IF EXISTS handle_new_user() CASCADE;
@@ -372,10 +380,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update timestamp on feedback update
-CREATE TRIGGER update_feedback_timestamp_trigger
-  BEFORE UPDATE ON feedback
-  FOR EACH ROW
-  EXECUTE FUNCTION update_feedback_timestamp();
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'feedback' AND table_schema = 'public') THEN
+    DROP TRIGGER IF EXISTS update_feedback_timestamp_trigger ON feedback;
+    CREATE TRIGGER update_feedback_timestamp_trigger
+      BEFORE UPDATE ON feedback
+      FOR EACH ROW
+      EXECUTE FUNCTION update_feedback_timestamp();
+  END IF;
+END
+$$;
 
 -- Function to toggle product likes
 CREATE OR REPLACE FUNCTION toggle_like(_product_id UUID, _user_id UUID)
