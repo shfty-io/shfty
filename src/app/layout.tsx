@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { MobileWarning } from "@/components/MobileWarning";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,6 +34,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col relative`}>
+        <MobileWarning />
+        
         {/* Background grid with glow effect - now scrolls with page */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="absolute inset-x-0 top-0 h-[500px]" style={{ 

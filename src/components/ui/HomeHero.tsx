@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export function HomeHero() {
   return (
-    <div className="relative overflow-hidden py-12 rounded-lg mb-8">
+    <div className="relative overflow-hidden rounded-lg pt-12 mb-8">
       {/* Background elements removed */}
       
       <div className="relative px-6 text-center max-w-4xl mx-auto">

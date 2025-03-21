@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Eye, Heart } from 'lucide-react'
+import { Eye, Heart, FileText } from 'lucide-react'
 
 interface Product {
   id: string
@@ -12,6 +12,7 @@ interface Product {
   image_positions?: Record<string, { x: number; y: number }>
   view_count: number
   likes_count: number
+  license?: string
   user: {
     avatar_url?: string
     full_name: string
@@ -69,7 +70,15 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-          <p className="text-sm font-medium">{formattedPrice}</p>
+          <div>
+            <p className="text-sm font-medium">{formattedPrice}</p>
+            {product.license && (
+              <p className="text-xs text-gray-500 flex items-center mt-1">
+                <FileText className="w-3 h-3 mr-1" />
+                {product.license}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
             <span className="flex items-center gap-1 transition-colors">
               <Heart className="w-4 h-4" />

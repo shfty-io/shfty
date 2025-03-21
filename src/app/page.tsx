@@ -63,14 +63,14 @@ async function getProducts(
           currentPage: 1, 
           totalPages: 0, 
           totalItems: 0, 
-          itemsPerPage: 21 
+          itemsPerPage: 20 
         } 
       }
     }
     
 
     
-    const PAGE_SIZE = 21;
+    const PAGE_SIZE = 20;
     const offset = (page - 1) * PAGE_SIZE;
     
     // First get the total count for pagination
@@ -120,6 +120,7 @@ async function getProducts(
         github_repo_url,
         github_token,
         status,
+        software_license,
         user:profiles!products_user_id_fkey (
           avatar_url,
           full_name
@@ -232,7 +233,7 @@ async function getProducts(
         currentPage: 1, 
         totalPages: 0, 
         totalItems: 0, 
-        itemsPerPage: 21 
+        itemsPerPage: 20 
       } 
     }
   }

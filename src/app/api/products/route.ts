@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
         github_repo_url,
         github_token,
         status,
+        software_license,
         user:profiles!products_user_id_fkey (
           avatar_url,
           full_name

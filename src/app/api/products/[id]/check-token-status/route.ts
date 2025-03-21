@@ -4,10 +4,14 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = context.params.id;
+    // Wait for the params to resolve
+    const params = await props.params;
+    
+    // Extract the ID from the params instead of the URL
+    const id = params.id;
     
     if (!id) {
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
