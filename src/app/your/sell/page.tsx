@@ -123,17 +123,54 @@ function SellerDashboardContent() {
 
   const handleFinalSubmit = async () => {
     try {
+      // Validate that productData exists and has all required fields
+      if (!productData) {
+        throw new Error("Product data is missing");
+      }
+
+      // Check required fields explicitly
+      const missingFields: string[] = [];
+      
+      if (!productData.name) missingFields.push('name');
+      if (!productData.description) missingFields.push('description');
+      if (!productData.shortDescription) missingFields.push('shortDescription');
+      if (!productData.byline) missingFields.push('byline');
+      if (typeof productData.price !== 'number') missingFields.push('price');
+      if (!Array.isArray(productData.categories) || productData.categories.length === 0) {
+        missingFields.push('categories');
+      }
+
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Create a properly formatted object for the API
+      const submissionData = {
+        name: productData.name,
+        byline: productData.byline,
+        shortDescription: productData.shortDescription,
+        description: productData.description,
+        price: productData.price,
+        categories: productData.categories,
+        technologies: productData.technologies,
+        features: productData.features,
+        githubRepoUrl: productData.githubRepoUrl,
+        github_token: productData.github_token,
+        softwareLicense: productData.softwareLicense,
+        imageUrls: productData.imageUrls,
+        imagePositions: productData.imagePositions,
+        videoUrl: productData.videoUrl,
+        demoUrl: productData.demoUrl
+      };
+
+      console.log("Submitting data:", submissionData);
+
       const response = await fetch('/api/products/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          productData: {
-            ...productData,
-            github_repo_url: productData?.githubRepoUrl ?? null
-          }
-        }),
+        body: JSON.stringify(submissionData),
       });
 
       const data = await response.json();

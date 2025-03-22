@@ -1078,4 +1078,146 @@ BEGIN
     );
   END IF;
 END
+$$;
+
+-- ============================================================
+-- STORAGE BUCKET CONFIGURATION
+-- ============================================================
+
+-- Check if buckets already exist before creating them
+DO $$
+BEGIN
+  -- Create product_images bucket
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE name = 'product_images'
+  ) THEN
+    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    VALUES ('product_images', 'product_images', false, 5242880, 
+      ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
+  END IF;
+
+  -- Create avatars bucket
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE name = 'avatars'
+  ) THEN
+    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    VALUES ('avatars', 'avatars', false, 2097152, 
+      ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
+  END IF;
+
+  -- Create temp_uploads bucket for temporary file uploads
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE name = 'temp_uploads'
+  ) THEN
+    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    VALUES ('temp_uploads', 'temp_uploads', false, 10485760, 
+      ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml', 
+        'application/pdf', 'application/zip']::text[]);
+  END IF;
+END
+$$;
+
+-- Storage bucket policies
+DO $$
+BEGIN
+  -- Product images policies
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Product images - Public select'
+  ) THEN
+    CREATE POLICY "Product images - Public select"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'product_images');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Product images - Auth insert'
+  ) THEN
+    CREATE POLICY "Product images - Auth insert"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (bucket_id = 'product_images' AND auth.uid() = owner);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Product images - Owner update'
+  ) THEN
+    CREATE POLICY "Product images - Owner update"
+      ON storage.objects FOR UPDATE
+      TO authenticated
+      USING (bucket_id = 'product_images' AND auth.uid() = owner);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Product images - Owner delete'
+  ) THEN
+    CREATE POLICY "Product images - Owner delete"
+      ON storage.objects FOR DELETE
+      TO authenticated
+      USING (bucket_id = 'product_images' AND auth.uid() = owner);
+  END IF;
+
+  -- Avatar policies
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Public select'
+  ) THEN
+    CREATE POLICY "Avatars - Public select"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'avatars');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Auth insert'
+  ) THEN
+    CREATE POLICY "Avatars - Auth insert"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (bucket_id = 'avatars' AND auth.uid() = owner);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner update'
+  ) THEN
+    CREATE POLICY "Avatars - Owner update"
+      ON storage.objects FOR UPDATE
+      TO authenticated
+      USING (bucket_id = 'avatars' AND auth.uid() = owner);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner delete'
+  ) THEN
+    CREATE POLICY "Avatars - Owner delete"
+      ON storage.objects FOR DELETE
+      TO authenticated
+      USING (bucket_id = 'avatars' AND auth.uid() = owner);
+  END IF;
+
+  -- Temp uploads policies
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Auth access'
+  ) THEN
+    CREATE POLICY "Temp uploads - Auth access"
+      ON storage.objects FOR SELECT
+      TO authenticated
+      USING (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Auth insert'
+  ) THEN
+    CREATE POLICY "Temp uploads - Auth insert"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Owner delete'
+  ) THEN
+    CREATE POLICY "Temp uploads - Owner delete"
+      ON storage.objects FOR DELETE
+      TO authenticated
+      USING (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+  END IF;
+END
 $$; 

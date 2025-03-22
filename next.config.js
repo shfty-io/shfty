@@ -1,7 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['xbwfjonmiddqfrgwdhmi.supabase.co', 'avatars.githubusercontent.com']
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'xbwfjonmiddqfrgwdhmi.supabase.co',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ixunjnqwpjypsajhdcxo.supabase.co',
+        pathname: '**',
+      }
+    ]
   },
   // eslint: {
   //   ignoreDuringBuilds: true
