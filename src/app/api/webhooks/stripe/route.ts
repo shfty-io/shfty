@@ -123,7 +123,7 @@ export async function POST(request: Request) {
         const source = session.metadata?.source || 'direct';
         
         if (!productId || !sellerId) {
-          console.error('Missing metadata in checkout session:', session.id);
+          console.error('Missing metadata in checkout session:', session.id, 'Metadata:', session.metadata);
           return NextResponse.json(
             { error: 'Missing metadata in checkout session' },
             { status: 400 }
@@ -132,6 +132,14 @@ export async function POST(request: Request) {
         
         // Get customer information
         const customerId = session.customer as string;
+        if (!customerId) {
+          console.error('Missing customer ID in checkout session:', session.id);
+          return NextResponse.json(
+            { error: 'Missing customer ID in session' },
+            { status: 400 }
+          );
+        }
+
         const { data: profiles, error: profileError } = await supabase
           .from('profiles')
           .select('user_id, github_username')
@@ -139,7 +147,7 @@ export async function POST(request: Request) {
           .limit(1);
           
         if (profileError || !profiles || profiles.length === 0) {
-          console.error('Error fetching customer profile:', profileError);
+          console.error('Error fetching customer profile for customer ID:', customerId, 'Error:', profileError);
           return createExternalServiceError('Supabase', 'Failed to fetch customer profile');
         }
         

@@ -13,8 +13,8 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
 
     // 1. Verify the Stripe session
     const session = await stripe.checkout.sessions.retrieve(sessionId)
-    if (!session || session.payment_status !== 'paid') {
-      console.error('Invalid or unpaid session:', sessionId)
+    if (!session || (session.payment_status !== 'paid' && session.payment_status !== 'unpaid')) {
+      console.error('Invalid or unpaid session:', sessionId, 'Status:', session?.payment_status)
       return null
     }
 
@@ -177,10 +177,14 @@ export default async function SuccessPage({
     redirect(`/product/${byline}`);
   }
 
+  // Log the session ID for troubleshooting
+  console.log('Processing success page with session ID:', sessionId);
+
   // Get session and product details
   const result = await getSessionAndProduct(sessionId, byline);
 
   if (!result) {
+    console.error('Session validation failed for ID:', sessionId);
     return <SuccessPageContent status="session-not-found" byline={byline} />;
   }
 
