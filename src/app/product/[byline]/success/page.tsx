@@ -51,18 +51,29 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
     }
 
     // 4. Record the purchase first
-    const { error: purchaseError } = await supabase
+    const { data: existingPurchase } = await supabase
       .from('purchases')
-      .insert({
-        user_id: user.id,
-        product_id: product.id,
-        status: 'completed',
-        github_username: buyerGithubUsername
-      })
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', product.id)
+      .eq('status', 'completed')
+      .maybeSingle();
 
-    if (purchaseError) {
-      console.error('Error recording purchase:', purchaseError)
-      return null
+    // Only create a purchase record if one doesn't already exist from the webhook
+    if (!existingPurchase) {
+      const { error: purchaseError } = await supabase
+        .from('purchases')
+        .insert({
+          user_id: user.id,
+          product_id: product.id,
+          status: 'completed',
+          github_username: buyerGithubUsername
+        });
+
+      if (purchaseError) {
+        console.error('Error recording purchase:', purchaseError);
+        return null;
+      }
     }
 
     // 5. If there's a GitHub repo, handle repository access

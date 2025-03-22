@@ -228,8 +228,8 @@ export async function POST(
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/product/${product.id}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/product/${product.id}`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/product/${product.byline}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/product/${product.byline}`,
         metadata: {
           product_id: product.id,
           seller_id: product.user_id,
