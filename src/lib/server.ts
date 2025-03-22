@@ -48,6 +48,7 @@ export const createServerComponentClient = async () => {
   try {
     // Make sure to await the cookies() function
     const cookieStore = await cookies();
+    // Return the client, not a Promise<SupabaseClient>
     return createClient(cookieStore);
   } catch (error) {
     console.error("Error accessing cookies in server component:", error);
