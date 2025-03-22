@@ -144,6 +144,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          id: string
+          read_at: string | null
+          status: string | null
+          type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          read_at?: string | null
+          status?: string | null
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          read_at?: string | null
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_reviews: {
         Row: {
           created_at: string
@@ -460,6 +501,8 @@ export type Database = {
           id: string
           is_onboarded: boolean | null
           stripe_account_id: string | null
+          token_last_verified: string | null
+          token_status: string | null
           updated_at: string | null
           user_id: string
         }
@@ -470,6 +513,8 @@ export type Database = {
           id?: string
           is_onboarded?: boolean | null
           stripe_account_id?: string | null
+          token_last_verified?: string | null
+          token_status?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -480,6 +525,8 @@ export type Database = {
           id?: string
           is_onboarded?: boolean | null
           stripe_account_id?: string | null
+          token_last_verified?: string | null
+          token_status?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -590,6 +637,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      has_active_subscription: {
+        Args: {
+          input_user_id: string
+        }
+        Returns: boolean
+      }
       increment_product_purchase: {
         Args: {
           product_id: string
@@ -621,37 +674,124 @@ export type Database = {
       }
     }
     Enums: {
-      document_status:
-        | "draft"
-        | "sent"
-        | "viewed"
-        | "completed"
-        | "declined"
-        | "expired"
       product_category:
-        | "photo_video"
-        | "productivity"
-        | "utilities"
-        | "entertainment"
-        | "developer_tools"
+        | "ai_notetakers"
+        | "app_switcher"
+        | "compliance_software"
+        | "e_signature_apps"
+        | "knowledge_base_software"
+        | "meeting_software"
+        | "pdf_editor"
+        | "presentation_software"
+        | "project_management_software"
+        | "scheduling_software"
+        | "search"
+        | "spreadsheets"
+        | "ad_blockers"
+        | "customer_support_tools"
+        | "email_clients"
+        | "note_and_writing_apps"
+        | "password_managers"
+        | "screenshots_and_screen_recording_apps"
+        | "security_software"
+        | "team_collaboration_software"
+        | "ab_testing_tools"
+        | "authentication_identity_tools"
+        | "content_management_systems"
+        | "code_review_tools"
+        | "command_line_tools"
+        | "data_visualization_tools"
+        | "git_clients"
+        | "issue_tracking_software"
+        | "no_code_platforms"
+        | "standup_bots"
+        | "testing_qa_software"
+        | "vpn_client"
+        | "ai_coding_assistants"
+        | "automation_tools"
+        | "code_editors"
+        | "data_analysis_tools"
+        | "databases_backend_frameworks"
+        | "headless_cms_software"
+        | "observability_tools"
+        | "static_site_generators"
+        | "unified_api"
+        | "website_analytics"
+        | "design_mockups"
+        | "digital_whiteboards"
+        | "icon_sets"
+        | "ui_frameworks"
+        | "wireframing"
+        | "background_removal_tools"
+        | "design_resources"
+        | "graphic_design_tools"
+        | "interface_design_tools"
+        | "photo_editing"
+        | "user_research"
+        | "blogging_platforms"
+        | "dating_apps"
+        | "microblogging_platforms"
+        | "safety_privacy_platforms"
+        | "community_management"
+        | "link_in_bio_tools"
+        | "messaging_apps"
+        | "newsletter_platforms"
+        | "advertising_tools"
+        | "seo_tools"
+        | "crm_software"
+        | "email_marketing"
+        | "keyword_research_tools"
+        | "lead_generation_software"
+        | "sales_enablement"
+        | "social_media_management_tools"
+        | "survey_form_builders"
+        | "business_intelligence_software"
+        | "marketing_automation_platforms"
+        | "social_media_scheduling_tools"
+        | "ai_characters"
+        | "ai_content_detection"
+        | "ai_generative_art"
+        | "ai_infrastructure_tools"
+        | "ai_voice_agents"
+        | "chatgpt_prompts"
+        | "predictive_ai"
+        | "ai_chatbots"
+        | "ai_databases"
+        | "ai_metrics_evaluation"
+        | "llms"
+        | "text_to_speech"
+        | "action_games"
+        | "adventure_games"
+        | "puzzle_games"
+        | "strategy_games"
+        | "role_playing_games"
+        | "simulation_games"
+        | "sports_games"
+        | "board_games"
+        | "card_games"
+        | "educational_games"
+        | "chrome_extensions"
+        | "figma_templates"
+        | "slack_apps"
+        | "wordpress_plugins"
+        | "figma_plugins"
+        | "notion_templates"
+        | "twitter_apps"
+        | "wordpress_themes"
+        | "crypto_wallets"
+        | "defi"
+        | "nft_creation_tools"
+        | "blog"
+        | "portfolio"
+        | "personal"
+        | "dashboard"
+        | "landing_page"
         | "business"
-        | "creativity"
-        | "security"
-        | "lifestyle"
-        | "education"
-        | "communication_social"
-        | "games"
-        | "finance"
-        | "other"
-        | "hosting"
-        | "analytics"
-        | "automation"
-        | "cms"
-        | "publishing"
+        | "documentation"
         | "ecommerce"
-        | "backend"
-        | "database"
-        | "frontend_templates"
+        | "boilerplates"
+        | "ui_kits_components"
+        | "templates_themes"
       product_license:
         | "MIT"
         | "GPL-3.0"

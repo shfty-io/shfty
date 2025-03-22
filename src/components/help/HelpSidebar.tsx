@@ -17,6 +17,7 @@ import { FeedbackDialog } from "@/components/ui/feedback-dialog";
 const navigation = [
   { name: "Product Review", href: "/help/product-review" },
   { name: "GitHub Setup", href: "/help/github-setup" },
+  { name: "Software Licenses", href: "/help/licenses" },
   // Add more help pages as needed
 ];
 

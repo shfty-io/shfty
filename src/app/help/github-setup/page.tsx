@@ -105,17 +105,6 @@ export default function GithubSetupPage() {
             <li>
               <p><strong>Set Expiration:</strong> We <em>strongly recommend</em> selecting <strong>&quot;No expiration&quot;</strong> for your token to ensure uninterrupted repository access for your buyers</p>
               
-              <div className="my-6 border rounded-lg overflow-hidden">
-                <Image 
-                  src="/github/github_token_expiration.png" 
-                  alt="GitHub Token Expiration Setting" 
-                  width={800} 
-                  height={400} 
-                  className="w-full object-contain"
-                />
-                <p className="p-3 text-sm bg-muted text-center">Set &quot;No expiration&quot; to prevent token expiration issues</p>
-              </div>
-              
               <Alert className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Important</AlertTitle>

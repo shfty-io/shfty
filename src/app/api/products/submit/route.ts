@@ -76,15 +76,18 @@ export async function POST(request: Request) {
     // Check if user has completed Stripe onboarding
     const { data: sellerAccount } = await supabase
       .from('seller_accounts')
-      .select('is_onboarded')
+      .select('is_onboarded, stripe_account_id, github_token, token_status')
       .eq('user_id', user.id)
       .single();
 
-    if (!sellerAccount?.is_onboarded) {
-      return NextResponse.json(
-        { error: "Complete Stripe onboarding first" },
-        { status: 400 }
-      );
+    // For paid products, ensure seller has a Stripe account
+    if (productData.price > 0) {
+      if (!sellerAccount?.is_onboarded || !sellerAccount?.stripe_account_id) {
+        return NextResponse.json(
+          { error: "You must complete Stripe onboarding before submitting paid products" },
+          { status: 400 }
+        );
+      }
     }
 
     // GitHub repository validation
@@ -109,64 +112,72 @@ export async function POST(request: Request) {
       );
     }
 
-    // Add GitHub token check for repository products
-    if (productData.githubRepoUrl) {
-      const { data: sellerAccount } = await supabase
-        .from('seller_accounts')
-        .select('github_token, token_status')
-        .eq('user_id', user.id)
-        .single();
+    // Add GitHub token check for all products
+    if (!sellerAccount?.github_token) {
+      return NextResponse.json(
+        { error: "GitHub integration required for all products" },
+        { status: 400 }
+      );
+    }
+    
+    // Check token status if available
+    if (sellerAccount.token_status === 'expired') {
+      return NextResponse.json(
+        { error: "Your GitHub token has expired. Please update it in your seller settings before submitting products." },
+        { status: 400 }
+      );
+    }
+    
+    // Verify token works if status is unknown
+    if (!sellerAccount.token_status) {
+      // Verify the token has the required scopes by making a test API call
+      const scopeResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${sellerAccount.github_token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+      });
 
-      if (!sellerAccount?.github_token) {
-        return NextResponse.json(
-          { error: "GitHub integration required for repository products" },
-          { status: 400 }
-        );
-      }
-      
-      // Check token status if available
-      if (sellerAccount.token_status === 'expired') {
-        return NextResponse.json(
-          { error: "Your GitHub token has expired. Please update it in your seller settings before submitting repository products." },
-          { status: 400 }
-        );
-      }
-      
-      // Verify token works if status is unknown
-      if (!sellerAccount.token_status) {
-        // Verify the token has the required scopes by making a test API call
-        const scopeResponse = await fetch('https://api.github.com/user', {
-          headers: {
-            'Authorization': `Bearer ${sellerAccount.github_token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-          },
-        });
-
-        if (!scopeResponse.ok) {
-          // Update token status
-          await supabase
-            .from('seller_accounts')
-            .update({
-              token_status: 'expired',
-              token_last_verified: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
-          
-          return NextResponse.json(
-            { error: "Your GitHub token appears to be invalid or expired. Please update it in your seller settings." },
-            { status: 400 }
-          );
-        }
-        
-        // Token is valid, update status
+      if (!scopeResponse.ok) {
+        // Update token status
         await supabase
           .from('seller_accounts')
           .update({
-            token_status: 'valid',
+            token_status: 'expired',
             token_last_verified: new Date().toISOString()
           })
           .eq('user_id', user.id);
+        
+        return NextResponse.json(
+          { error: "Your GitHub token appears to be invalid or expired. Please update it in your seller settings." },
+          { status: 400 }
+        );
+      }
+      
+      // Token is valid, update status
+      await supabase
+        .from('seller_accounts')
+        .update({
+          token_status: 'valid',
+          token_last_verified: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+    }
+
+    // Prepare visibility warning if applicable
+    let visibilityWarning = null;
+    if (productData.price > 0) {
+      const warnings = [];
+      if (!sellerAccount.is_onboarded || !sellerAccount.stripe_account_id) {
+        warnings.push("a connected Stripe account");
+      }
+      if (!sellerAccount.github_token || sellerAccount.token_status === 'expired') {
+        warnings.push("a valid GitHub token");
+      }
+      
+      if (warnings.length > 0) {
+        visibilityWarning = `Note: Your product will not be visible to customers until you have ${warnings.join(' and ')}.`;
       }
     }
 
@@ -201,8 +212,10 @@ export async function POST(request: Request) {
       throw insertError;
     }
 
+    // Include visibility warning in response if applicable
     return NextResponse.json({ 
       message: "Product submitted for review successfully",
+      visibilityWarning,
       product 
     });
   } catch (error) {

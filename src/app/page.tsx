@@ -1,5 +1,4 @@
 import ProductList from '@/components/root/ProductList'
-import { createServiceClient } from '@/lib/server'
 import { MessageDisplay } from '@/components/global/MessageDisplay'
 import { Database } from '@/types/supabase'
 import { HomeHero } from '@/components/ui/HomeHero'
@@ -43,7 +42,7 @@ export interface PaginationMetadata {
 // Define the type for sort options to match the ProductList component
 type SortOption = 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
 
-// Fetch products with pagination
+// Fetch products with pagination using the API endpoint
 async function getProducts(
   page: number = 1, 
   search: string = '', 
@@ -53,180 +52,41 @@ async function getProducts(
   pagination: PaginationMetadata
 }> {
   try {
-    // Use createServiceClient which doesn't rely on cookies
-    const supabase = createServiceClient()
+    // Construct API URL with query parameters
+    const apiUrl = new URL('/api/products', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    apiUrl.searchParams.append('page', page.toString());
+    apiUrl.searchParams.append('pageSize', '20');
     
-    if (!supabase) {
-      return { 
-        products: [], 
-        pagination: { 
-          currentPage: 1, 
-          totalPages: 0, 
-          totalItems: 0, 
-          itemsPerPage: 20 
-        } 
-      }
-    }
-    
-
-    
-    const PAGE_SIZE = 20;
-    const offset = (page - 1) * PAGE_SIZE;
-    
-    // First get the total count for pagination
-    let countQuery = supabase
-      .from('products')
-      .select('id', { count: 'exact' });
-      
-    // Add search filter if provided
     if (search) {
-      countQuery = countQuery.or(`name.ilike.%${search}%,short_description.ilike.%${search}%`);
+      apiUrl.searchParams.append('search', search);
     }
     
-    const { count, error: countError } = await countQuery;
-      
-    if (countError) {
-      return {
-        products: [],
-        pagination: {
-          currentPage: page,
-          totalPages: 0,
-          totalItems: 0,
-          itemsPerPage: PAGE_SIZE
-        }
-      };
+    if (sortBy) {
+      apiUrl.searchParams.append('sortBy', sortBy);
     }
     
-    const totalItems = count || 0;
-    const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+    // Fetch products from API
+    const response = await fetch(apiUrl.toString(), { next: { revalidate: 60 } });
     
-    // Then fetch the actual products for the current page
-    let query = supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        description,
-        price,
-        image_urls,
-        image_positions,
-        short_description,
-        byline,
-        created_at,
-        view_count,
-        purchase_count,
-        trending_score,
-        likes_count,
-        github_repo_url,
-        github_token,
-        status,
-        software_license,
-        user:profiles!products_user_id_fkey (
-          avatar_url,
-          full_name
-        )
-      `);
-      
-    // Add search filter if provided
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,short_description.ilike.%${search}%`);
+    if (!response.ok) {
+      throw new Error(`API returned status: ${response.status}`);
     }
     
-    // Apply sorting
-    if (sortBy === 'newest') {
-      query = query.order('created_at', { ascending: false });
-    } else if (sortBy === 'oldest') {
-      query = query.order('created_at', { ascending: true });
-    } else if (sortBy === 'price_high') {
-      query = query.order('price', { ascending: false });
-    } else if (sortBy === 'price_low') {
-      query = query.order('price', { ascending: true });
-    } else if (sortBy === 'liked') {
-      query = query.order('likes_count', { ascending: false });
-    } else if (sortBy === 'downloaded') {
-      query = query.order('purchase_count', { ascending: false });
-    } else {
-      // Default sorting by created_at desc
-      query = query.order('created_at', { ascending: false });
-    }
+    const data = await response.json();
     
-    // Apply pagination
-    query = query.range(offset, offset + PAGE_SIZE - 1);
-
-    const { data, error } = await query;
-
-    if (error) {
-      return { 
-        products: [], 
-        pagination: { 
-          currentPage: page, 
-          totalPages, 
-          totalItems, 
-          itemsPerPage: PAGE_SIZE 
-        } 
-      }
-    }
-
-    // If no products are found, return an empty array
-    if (!data || data.length === 0) {
-      return { 
-        products: [], 
-        pagination: { 
-          currentPage: page, 
-          totalPages, 
-          totalItems, 
-          itemsPerPage: PAGE_SIZE 
-        } 
-      }
-    }
-
-    // Transform data to match Product interface
-    const transformedProducts = data.map(item => {
-      // Handle user data with proper type checking
-      let userData = { avatar_url: null as string | null, full_name: null as string | null };
-      
-      if (item.user) {
-        if (Array.isArray(item.user) && item.user.length > 0) {
-          userData = {
-            avatar_url: item.user[0]?.avatar_url || null,
-            full_name: item.user[0]?.full_name || null
-          };
-        } else if (typeof item.user === 'object') {
-          // Use type assertion to handle the object case
-          const userObj = item.user as { avatar_url?: string | null; full_name?: string | null };
-          userData = {
-            avatar_url: userObj.avatar_url || null,
-            full_name: userObj.full_name || null
-          };
-        }
-      }
-      
-      // Ensure status is properly typed as ProductStatus
-      const status = item.status as ProductStatus | null;
-      
-      // Create the transformed product
-      const transformedProduct = {
-        ...item,
-        // Add empty categories array since it's in the Product interface but not in the DB query result
-        categories: [],
-        status,
-        user: userData
-      };
-      
-      return transformedProduct;
-    }) as Product[];
-    
-    return { 
-      products: transformedProducts,
+    // Format data to match expected interface
+    return {
+      products: data.products || [],
       pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems,
-        itemsPerPage: PAGE_SIZE
+        currentPage: data.pagination.currentPage,
+        totalPages: data.pagination.totalPages,
+        totalItems: data.pagination.totalItems,
+        itemsPerPage: 20
       }
     };
-  } catch {
-    // Catch any unexpected errors
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    // Return empty results on error
     return { 
       products: [], 
       pagination: { 

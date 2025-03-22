@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
 import { PaymentSetupForm } from "@/components/payment/PaymentSetupForm";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface SellerAccount {
-  stripe_account_id: string;
+  stripe_account_id: string | null;
   is_onboarded: boolean;
   github_token?: string;
   token_status?: string;
@@ -31,69 +31,102 @@ function SetupPageContent() {
   const [user, setUser] = useState<User | null>(null);
   const [sellerAccount, setSellerAccount] = useState<SellerAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const handleDisconnectStripe = async () => {
+    if (confirm('Are you sure you want to disconnect your Stripe account? You will not be able to receive payments until you set up a new account.')) {
+      setIsDisconnecting(true);
       try {
-        const supabase = createClient();
-        
-        const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError || !userData) {
-          router.push('/auth/login');
-          return;
+        const response = await fetch('/api/seller/stripe-disconnect', {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to disconnect Stripe account');
         }
 
-        setUser(userData);
-
-        // Fetch seller account data
-        const { data: sellerData, error: sellerError } = await supabase
-          .from('seller_accounts')
-          .select('stripe_account_id, is_onboarded, github_token, token_status, token_last_verified')
-          .eq('user_id', userData.id)
-          .single();
+        toast({
+          title: "Stripe account disconnected",
+          description: "Your Stripe account has been successfully disconnected.",
+        });
         
-        if (sellerError && sellerError.code === 'PGRST116') {
-          // No seller account found, create one
-          const { data: newSellerData, error: createError } = await supabase
-            .from('seller_accounts')
-            .insert({
-              user_id: userData.id,
-              is_onboarded: false,
-              account_status: 'pending'
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('Error creating seller account:', createError);
-            toast({
-              title: "Error",
-              description: "Failed to create seller account. Please try again.",
-              variant: "destructive",
-            });
-          } else {
-            setSellerAccount(newSellerData);
-          }
-        } else if (sellerError) {
-          console.error('Error fetching seller account:', sellerError);
-        } else {
-          setSellerAccount(sellerData);
-        }
+        // Refresh the data by fetching it again
+        fetchUserData();
       } catch (error) {
-        console.error('Error fetching user data:', error);
         toast({
           title: "Error",
-          description: "Failed to load user data. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to disconnect Stripe account",
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setIsDisconnecting(false);
       }
-    };
+    }
+  };
 
-    fetchData();
+  const fetchUserData = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      
+      const { data: { user: userData }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData) {
+        router.push('/auth/login');
+        return;
+      }
+
+      setUser(userData);
+
+      // Fetch seller account data
+      const { data: sellerData, error: sellerError } = await supabase
+        .from('seller_accounts')
+        .select('stripe_account_id, is_onboarded, github_token, token_status, token_last_verified')
+        .eq('user_id', userData.id)
+        .single();
+      
+      if (sellerError && sellerError.code === 'PGRST116') {
+        // No seller account found, create one
+        const { data: newSellerData, error: createError } = await supabase
+          .from('seller_accounts')
+          .insert({
+            user_id: userData.id,
+            is_onboarded: false,
+            account_status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating seller account:', createError);
+          toast({
+            title: "Error",
+            description: "Failed to create seller account. Please try again.",
+            variant: "destructive",
+          });
+        } else {
+          setSellerAccount(newSellerData);
+        }
+      } else if (sellerError) {
+        console.error('Error fetching seller account:', sellerError);
+      } else {
+        setSellerAccount(sellerData);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load user data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   const handlePaymentSetup = async (data: PaymentSetupData) => {
     try {
@@ -102,7 +135,7 @@ function SetupPageContent() {
         setSellerAccount(prev => ({
           ...prev,
           is_onboarded: true,
-          stripe_account_id: data.stripeAccountId || prev?.stripe_account_id || ''
+          stripe_account_id: data.stripeAccountId || prev?.stripe_account_id || null
         }));
 
         toast({
@@ -169,7 +202,7 @@ function SetupPageContent() {
       
       if (!response.ok) throw new Error('Failed to delete token');
       
-      setSellerAccount(prev => prev ? {...prev, github_token: ''} : null);
+      setSellerAccount(prev => prev ? {...prev, github_token: undefined} : null);
       toast({
         title: "Success",
         description: "GitHub token removed successfully",
@@ -206,9 +239,21 @@ function SetupPageContent() {
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-4">Seller Account Setup</h2>
         {sellerAccount?.is_onboarded ? (
-          <div className="text-sm text-muted-foreground">
-            <p className="mb-2">✓ Your Stripe account is connected and ready to receive payments.</p>
-            <p>Account ID: {sellerAccount.stripe_account_id}</p>
+          <div className="border rounded-md p-4">
+            <div className="text-sm mb-4">
+              <p className="mb-2">✓ Your Stripe account is connected and ready to receive payments.</p>
+              <p className="text-muted-foreground">Account ID: {sellerAccount.stripe_account_id}</p>
+            </div>
+            {sellerAccount.stripe_account_id && (
+              <Button 
+                variant="outline" 
+                className="text-destructive hover:text-destructive"
+                onClick={handleDisconnectStripe}
+                disabled={isDisconnecting}
+              >
+                {isDisconnecting ? "Disconnecting..." : "Disconnect Stripe Account"}
+              </Button>
+            )}
           </div>
         ) : (
           <PaymentSetupForm onSubmit={handlePaymentSetup} />

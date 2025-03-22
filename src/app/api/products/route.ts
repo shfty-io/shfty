@@ -29,24 +29,86 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database client initialization failed' }, { status: 500 });
     }
     
-    // First, get the total count for pagination
-    let countQuery = supabase
+    // First, fetch all approved products with price and seller account info
+    let productsQuery = supabase
       .from('products')
-      .select('id', { count: 'exact' });
+      .select(`
+        id, 
+        price,
+        user_id,
+        status
+      `)
+      .eq('status', 'approved');
       
     // Add search filter if provided
     if (search) {
-      countQuery = countQuery.or(`name.ilike.%${search}%,short_description.ilike.%${search}%`);
+      productsQuery = productsQuery.or(`name.ilike.%${search}%,short_description.ilike.%${search}%`);
     }
     
-    const { count, error: countError } = await countQuery;
+    const { data: productsData, error: productsError } = await productsQuery;
     
-    if (countError) {
-      console.error('Error counting products:', countError);
-      return NextResponse.json({ error: 'Failed to count products' }, { status: 500 });
+    if (productsError) {
+      console.error('Error fetching products:', productsError);
+      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+    }
+
+    // Now fetch seller accounts for all products that have a user_id
+    const userIds = productsData
+      .filter(product => product.price > 0) // Only need seller accounts for paid products
+      .map(product => product.user_id);
+    
+    let sellerAccountsData: { 
+      user_id: string; 
+      is_onboarded: boolean; 
+      stripe_account_id: string | null;
+      github_token: string | null;
+      token_status: string | null;
+    }[] = [];
+    
+    if (userIds.length > 0) {
+      const { data: accounts, error: accountsError } = await supabase
+        .from('seller_accounts')
+        .select('user_id, is_onboarded, stripe_account_id, github_token, token_status')
+        .in('user_id', userIds);
+      
+      if (accountsError) {
+        console.error('Error fetching seller accounts:', accountsError);
+        return NextResponse.json({ error: 'Failed to fetch seller accounts' }, { status: 500 });
+      }
+      
+      sellerAccountsData = accounts || [];
     }
     
-    // Create query for fetching products
+    // Create a map of user_id to seller account for easy lookup
+    const sellerAccountMap: Record<string, typeof sellerAccountsData[0]> = sellerAccountsData.reduce((acc, account) => {
+      acc[account.user_id] = account;
+      return acc;
+    }, {} as Record<string, typeof sellerAccountsData[0]>);
+    
+    // Filter products based on seller account status
+    const filteredProductIds = productsData.filter(product => {
+      // Free products are always visible
+      if (product.price === 0) return true;
+      
+      // For paid products, ensure seller has a valid Stripe account and GitHub token
+      const sellerAccount = sellerAccountMap[product.user_id];
+      
+      if (!sellerAccount) return false;
+      
+      // Check for valid Stripe account
+      const hasValidStripeAccount = sellerAccount.is_onboarded && sellerAccount.stripe_account_id;
+      
+      // Check for valid GitHub token
+      const hasValidGitHubToken = sellerAccount.github_token && sellerAccount.token_status !== 'expired';
+      
+      // Product is visible only if seller has both valid Stripe account and GitHub token
+      return hasValidStripeAccount && hasValidGitHubToken;
+    }).map(product => product.id);
+    
+    // Get total count of filtered products
+    const filteredCount = filteredProductIds.length;
+    
+    // Fetch detailed product data for the filtered IDs
     let query = supabase
       .from('products')
       .select(`
@@ -66,17 +128,13 @@ export async function GET(request: NextRequest) {
         github_token,
         status,
         software_license,
+        categories,
         user:profiles!products_user_id_fkey (
           avatar_url,
           full_name
-        ),
-        categories!products_categories(id, name)
-      `, { count: 'exact' });
-    
-    // Add search filter if provided
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,short_description.ilike.%${search}%`);
-    }
+        )
+      `)
+      .in('id', filteredProductIds);
     
     // Apply sorting
     if (sortBy === 'newest') {
@@ -96,19 +154,17 @@ export async function GET(request: NextRequest) {
       query = query.order('created_at', { ascending: false });
     }
     
-    // If paging is enabled, apply pagination parameters
+    // Apply pagination
     if (page !== -1) {
       const startIndex = (page - 1) * pageSize;
-      // console.log('Executing Supabase query with pagination');
-      query = query
-        .range(startIndex, startIndex + pageSize - 1);
+      query = query.range(startIndex, startIndex + pageSize - 1);
     }
     
     // Execute query
     const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching filtered products:', error);
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -117,9 +173,6 @@ export async function GET(request: NextRequest) {
     
     // Format the response data
     const products = (data || []).map((product: Record<string, unknown>) => {
-      // Extract the categories
-      const categories = product.categories || [];
-      
       // Handle user data with proper type checking
       let userData = { avatar_url: null as string | null, full_name: null as string | null };
       
@@ -141,6 +194,9 @@ export async function GET(request: NextRequest) {
       // Ensure status is properly typed
       const status = product.status as ProductStatus | null;
       
+      // Ensure categories is an array
+      const categories = Array.isArray(product.categories) ? product.categories : [];
+      
       return {
         ...product,
         categories,
@@ -152,17 +208,14 @@ export async function GET(request: NextRequest) {
     // Calculate total pages
     const totalPages = page === -1 
       ? 1 
-      : Math.ceil((count || 0) / pageSize);
-    
-    // console.log('Returning products:', products.length);
-    // console.log('Pagination info:', { currentPage: page, totalPages, totalItems: count });
+      : Math.ceil(filteredCount / pageSize);
     
     return NextResponse.json({
       products,
       pagination: {
         currentPage: page,
         totalPages,
-        totalItems: count
+        totalItems: filteredCount
       }
     });
     

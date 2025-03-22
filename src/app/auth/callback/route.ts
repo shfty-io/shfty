@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
             github_username: user.user_metadata?.user_name || user.user_metadata?.preferred_username || '',
             email_notifications_enabled: true
           },
-          { onConflict: 'user_id' }
+          { onConflict: 'id' }
         )
       
       if (profileError) {

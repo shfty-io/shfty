@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { migrateRichTextFormatting } from '@/lib/utils';
-import { Upload, X, Wand2, Loader2 } from "lucide-react";
+import { Upload, X, Wand2, Loader2, GripVertical } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -22,6 +22,24 @@ import { TagsSelector } from "./TagsSelector";
 import { LicenseSelector } from "./LicenseSelector";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { createClient } from "@/lib/client";
+import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Redefine the props interface locally
 interface ProductFormProps {
@@ -255,7 +273,7 @@ const technologies = [
 
 // Add full licenses array
 const licenses = [
-  { id: 'MIT', label: 'MIT License' },
+  { id: 'MIT', label: 'MIT License (Recommended)' },
   { id: 'GPL-3.0', label: 'GNU General Public License v3.0' },
   { id: 'Apache-2.0', label: 'Apache License 2.0' },
   { id: 'BSD-3-Clause', label: 'BSD 3-Clause License' },
@@ -523,6 +541,90 @@ interface GitHubRepo {
     html_url: string;
     type: string;
   };
+}
+
+// Add SortableImageItem component for drag-and-drop functionality
+interface SortableImageItemProps {
+  url: string;
+  index: number;
+  imagePositions?: Record<string, { x: number; y: number }>;
+  onRemove: (url: string) => void;
+  onPositionEdit: (url: string) => void;
+}
+
+function SortableImageItem({ 
+  url, 
+  index, 
+  imagePositions, 
+  onRemove, 
+  onPositionEdit 
+}: SortableImageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: url });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="relative aspect-[4/3] group"
+    >
+      <div className="relative w-full h-full overflow-hidden rounded-md">
+        <Image 
+          src={url} 
+          alt={`Product image ${index + 1}`} 
+          fill 
+          className="object-cover rounded-md" 
+          style={{
+            objectPosition: imagePositions?.[url] 
+              ? `${imagePositions[url].x}% ${imagePositions[url].y}%` 
+              : '50% 50%'
+          }}
+        />
+      </div>
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/40 flex items-center justify-center gap-2 transition-opacity">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-8"
+          onClick={() => onPositionEdit(url)}
+        >
+          Adjust Position
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => onRemove(url)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div 
+        className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-5 w-5 text-white drop-shadow-md" />
+      </div>
+      {index === 0 && (
+        <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-bl-md">
+          Primary
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
@@ -1136,7 +1238,36 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
     setIsLicenseOpen(isOpen);
   };
 
-  // Update JSX to match ProductForm structure
+  // Add handler for drag end event
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setFormData((prev) => {
+        const oldIndex = prev.imageUrls.indexOf(active.id as string);
+        const newIndex = prev.imageUrls.indexOf(over.id as string);
+        
+        return {
+          ...prev,
+          imageUrls: arrayMove(prev.imageUrls, oldIndex, newIndex),
+        };
+      });
+    }
+  };
+
+  // Configure dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Updated media section with drag-and-drop functionality
   return (
     <form onSubmit={handleSubmit} className="space-y-8 relative z-[50]">
       <div className="space-y-6">
@@ -1253,8 +1384,9 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
               onOpenChange={handleLicenseOpenChange}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Specify the license under which your software is distributed
+          <p className="text-xs text-muted-foreground mt-1 flex justify-between">
+            <span>Specify the license under which your software is distributed</span>
+            <Link href="/help/licenses" target="_blank" className="text-primary hover:underline">Learn more about licenses</Link>
           </p>
         </div>
 
@@ -1388,46 +1520,30 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
             </span>
           </Label>
           <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {formData.imageUrls.map((url, index) => (
-              <div key={url} className="relative aspect-[4/3] group">
-                <div className="relative w-full h-full overflow-hidden rounded-md">
-                  <Image 
-                    src={url} 
-                    alt={`Product image ${index + 1}`} 
-                    fill 
-                    className="object-cover rounded-md" 
-                    style={{
-                      objectPosition: formData.imagePositions?.[url] 
-                        ? `${formData.imagePositions[url].x}% ${formData.imagePositions[url].y}%` 
-                        : '50% 50%'
-                    }}
-                  />
-                </div>
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/40 flex items-center justify-center gap-2 transition-opacity">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="h-8"
-                    onClick={() => {
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={formData.imageUrls}
+                strategy={rectSortingStrategy}
+              >
+                {formData.imageUrls.map((url, index) => (
+                  <SortableImageItem
+                    key={url}
+                    url={url}
+                    index={index}
+                    imagePositions={formData.imagePositions}
+                    onRemove={removeImage}
+                    onPositionEdit={(url) => {
                       setEditingImageUrl(url);
                       setIsFocalPointDialogOpen(true);
                     }}
-                  >
-                    Adjust Position
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => removeImage(url)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
             
             {/* Upload Button */}
             <div className="border-2 border-dashed rounded-md aspect-[4/3] flex flex-col gap-2 p-4">
@@ -1464,8 +1580,9 @@ export function ProductEditForm({ onSubmit, initialData }: ProductFormProps) {
               </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Upload 2-8 images (PNG, JPG, WEBP) and optionally one video. After uploading, click &quot;Adjust Position&quot; on each image to set how it appears in the 4:3 product card.
+          <p className="text-xs text-muted-foreground mt-2 flex flex-col">
+            <span>Upload 2-8 images (PNG, JPG, WEBP). The first image (leftmost) will be displayed in product cards.</span>
+            <span>Drag and drop to reorder images. After uploading, click &quot;Adjust Position&quot; to set how each image appears.</span>
           </p>
         </div>
 
