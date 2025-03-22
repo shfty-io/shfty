@@ -71,19 +71,55 @@ export async function POST() {
       },
     });
 
-    // Store the Stripe account ID in your database
-    await supabase
+    console.log('Created Stripe account:', account.id, 'for user:', user.id);
+
+    // Check for existing seller account first
+    const { data: existingAccount, error: checkError } = await supabase
       .from('seller_accounts')
-      .upsert({
-        user_id: user.id,
-        stripe_account_id: account.id,
-        is_onboarded: false,
-        account_status: 'pending'
-      }, 
-      { 
-        onConflict: 'user_id', 
-        ignoreDuplicates: false 
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+      
+    let updateError;
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking for existing seller account:', checkError);
+      throw new Error('Failed to check for existing seller account');
+    }
+    
+    // Update existing account or insert new one
+    if (existingAccount) {
+      // Update existing account
+      const { error } = await supabase
+        .from('seller_accounts')
+        .update({
+          stripe_account_id: account.id,
+          is_onboarded: false,
+          account_status: 'pending'
+        })
+        .eq('user_id', user.id);
+      
+      updateError = error;
+    } else {
+      // Insert new account
+      const { error } = await supabase
+        .from('seller_accounts')
+        .insert({
+          user_id: user.id,
+          stripe_account_id: account.id,
+          is_onboarded: false,
+          account_status: 'pending'
+        });
+      
+      updateError = error;
+    }
+      
+    if (updateError) {
+      console.error('Error updating seller account with Stripe ID:', updateError);
+      throw new Error('Failed to update seller account with Stripe ID');
+    }
+    
+    console.log('Updated seller account for user:', user.id, 'with Stripe account ID:', account.id);
 
     // Create an account link for onboarding
     const accountLink = await stripe.accountLinks.create({

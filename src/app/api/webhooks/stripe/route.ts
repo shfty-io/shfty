@@ -204,6 +204,30 @@ export async function POST(request: Request) {
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
         
+        console.log('Processing account.updated webhook:', {
+          accountId: account.id,
+          details_submitted: account.details_submitted,
+          charges_enabled: account.charges_enabled
+        });
+        
+        // Check if seller account exists
+        const { data: existingAccount, error: lookupError } = await supabase
+          .from('seller_accounts')
+          .select('id, user_id')
+          .eq('stripe_account_id', account.id)
+          .limit(1);
+          
+        if (lookupError) {
+          console.error('Error looking up seller account by Stripe account ID:', lookupError);
+          return createExternalServiceError('Supabase', 'Failed to lookup seller account');
+        }
+        
+        // If no account found, log error and return success (can't update what doesn't exist)
+        if (!existingAccount || existingAccount.length === 0) {
+          console.warn(`No seller account found for Stripe account ID: ${account.id}. This might be expected for test accounts.`);
+          return NextResponse.json({ received: true, warning: 'No matching seller account' });
+        }
+        
         // Update seller account status
         const isComplete = account.details_submitted && account.charges_enabled;
         
@@ -211,22 +235,16 @@ export async function POST(request: Request) {
           .from('seller_accounts')
           .update({
             is_onboarded: isComplete,
-            account_status: isComplete ? 'complete' : 'pending',
-            last_webhook_update: new Date().toISOString(),
-            account_details: {
-              details_submitted: account.details_submitted,
-              charges_enabled: account.charges_enabled,
-              payouts_enabled: account.payouts_enabled
-            }
+            account_status: isComplete ? 'complete' : 'pending'
           })
-          .eq('stripe_account_id', account.id)
-          .select();
+          .eq('stripe_account_id', account.id);
 
         if (error) {
           console.error('Error updating seller account:', error);
           return createExternalServiceError('Supabase', 'Failed to update seller account');
         }
         
+        console.log('Successfully updated seller account for Stripe account ID:', account.id);
         break;
       }
 
@@ -238,8 +256,7 @@ export async function POST(request: Request) {
           .from('seller_accounts')
           .update({
             is_onboarded: false,
-            account_status: 'disconnected',
-            last_webhook_update: new Date().toISOString()
+            account_status: 'disconnected'
           })
           .eq('stripe_account_id', account.id);
 

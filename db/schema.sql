@@ -283,86 +283,81 @@ DECLARE
     user_name TEXT;
     full_name TEXT;
     avatar_url TEXT;
+    email_val TEXT;
 BEGIN
-    -- Get metadata from either raw_user_meta_data or raw_app_meta_data
-    meta_data := COALESCE(NEW.raw_user_meta_data, '{}'::JSONB) || COALESCE(NEW.raw_app_meta_data, '{}'::JSONB);
+    -- Log the incoming data for debugging
+    RAISE LOG 'New user data: raw_user_meta_data=%', NEW.raw_user_meta_data;
     
-    -- Extract user information with fallbacks for different auth providers
-    -- GitHub typically uses 'user_name', 'name', Google uses 'name', 'picture', etc.
-    user_name := COALESCE(
-        meta_data->>'user_name',
-        meta_data->>'preferred_username',
-        meta_data->>'username',
-        meta_data->>'nickname',
-        meta_data->>'email',
-        ''
-    );
+    -- Get metadata with priority on raw_user_meta_data (where GitHub info is)
+    meta_data := COALESCE(NEW.raw_user_meta_data, '{}'::JSONB);
     
-    full_name := COALESCE(
-        meta_data->>'full_name',
-        meta_data->>'name',
-        meta_data->>'given_name' || ' ' || meta_data->>'family_name',
-        user_name,
-        ''
-    );
-    
-    avatar_url := COALESCE(
-        meta_data->>'avatar_url',
-        meta_data->>'picture',
-        meta_data->>'avatar',
-        NULL
-    );
+    -- Special handling for GitHub OAuth
+    IF meta_data->>'provider' = 'github' THEN
+        user_name := meta_data->>'user_name';
+        full_name := meta_data->>'name';
+        avatar_url := meta_data->>'avatar_url';
+    ELSE
+        -- Extract user information with fallbacks for different auth providers
+        user_name := COALESCE(
+            meta_data->>'user_name',
+            meta_data->>'preferred_username',
+            meta_data->>'username',
+            meta_data->>'nickname',
+            meta_data->>'email',
+            ''
+        );
+        
+        full_name := COALESCE(
+            meta_data->>'full_name',
+            meta_data->>'name',
+            meta_data->>'given_name' || ' ' || COALESCE(meta_data->>'family_name', ''),
+            user_name,
+            ''
+        );
+        
+        avatar_url := COALESCE(
+            meta_data->>'avatar_url',
+            meta_data->>'picture',
+            meta_data->>'avatar',
+            NULL
+        );
+    END IF;
 
-    -- Insert the new profile with extracted data
-    INSERT INTO public.profiles (
-        id,
-        user_id,
-        email,
-        full_name,
-        avatar_url,
-        is_seller,
-        is_admin,
-        stripe_customer_id,
-        created_at,
-        updated_at,
-        github_username,
-        email_notifications_enabled
-    ) VALUES (
-        NEW.id,
-        NEW.id,
-        COALESCE(NEW.email, ''),
-        full_name,
-        avatar_url,
-        false,
-        false,
-        NULL,
-        NOW(),
-        NOW(),
-        user_name,
-        true
-    );
+    email_val := COALESCE(NEW.email, '');
     
-    -- Create seller account entry (initially inactive)
-    INSERT INTO public.seller_accounts (
-        user_id,
-        is_onboarded,
-        account_status,
-        created_at,
-        updated_at
-    ) VALUES (
-        NEW.id,
-        false,
-        'pending',
-        NOW(),
-        NOW()
-    );
+    -- Add debug logging
+    RAISE LOG 'Extracted data: user_name=%, full_name=%, avatar_url=%', user_name, full_name, avatar_url;
+
+    -- Insert the profile first as a separate transaction
+    BEGIN
+        INSERT INTO public.profiles (
+            id, user_id, email, full_name, avatar_url, github_username, 
+            is_seller, is_admin, stripe_customer_id, email_notifications_enabled
+        ) VALUES (
+            NEW.id, NEW.id, email_val, full_name, avatar_url, user_name,
+            false, false, NULL, true
+        );
+    EXCEPTION WHEN unique_violation THEN
+        RAISE LOG 'Profile already exists for user %', NEW.id;
+        -- Profile already exists, continue
+    END;
+    
+    -- Then create seller account
+    BEGIN
+        INSERT INTO public.seller_accounts (
+            user_id, is_onboarded, account_status
+        ) VALUES (
+            NEW.id, false, 'pending'
+        );
+    EXCEPTION WHEN unique_violation THEN
+        RAISE LOG 'Seller account already exists for user %', NEW.id;
+        -- Seller account already exists, continue
+    END;
     
     RETURN NEW;
 EXCEPTION
     WHEN OTHERS THEN
-        -- Log the error (this will appear in Supabase logs)
         RAISE LOG 'Error in handle_new_user: %, User data: %', SQLERRM, NEW;
-        -- Still return NEW to allow the auth user to be created even if profile creation fails
         RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
