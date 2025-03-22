@@ -117,6 +117,8 @@ CREATE TABLE IF NOT EXISTS seller_accounts (
   github_token TEXT,
   is_onboarded BOOLEAN DEFAULT false,
   account_status TEXT DEFAULT 'pending',
+  last_webhook_update TIMESTAMPTZ,
+  account_details JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -74,11 +74,15 @@ export async function POST() {
     // Store the Stripe account ID in your database
     await supabase
       .from('seller_accounts')
-      .insert({
+      .upsert({
         user_id: user.id,
         stripe_account_id: account.id,
         is_onboarded: false,
         account_status: 'pending'
+      }, 
+      { 
+        onConflict: 'user_id', 
+        ignoreDuplicates: false 
       });
 
     // Create an account link for onboarding
