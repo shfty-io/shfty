@@ -32,13 +32,21 @@ export function SuccessPageContent({
                 Session Not Found
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                We couldn&apos;t find your purchase session. If you believe this is an error, please contact support.
+                We couldn&apos;t find your purchase session. Don&apos;t worry, your payment may still be processing. 
+                Please check your email for a receipt or wait a few minutes and refresh this page.
               </p>
-              <Button asChild variant="outline">
-                <Link href={`/product/${byline}`}>
-                  Return to Product
-                </Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild variant="outline">
+                  <Link href={`/product/${byline}`}>
+                    Return to Product
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/your/purchases">
+                    View Your Purchases
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </main>
