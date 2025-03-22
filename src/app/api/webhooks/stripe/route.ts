@@ -3,12 +3,179 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createServiceClient } from '@/lib/server';
 import { createExternalServiceError, handleApiError } from '@/lib/error-handler';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-02-24.acacia",
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+// Helper function to process checkout purchases
+async function processCheckoutPurchase(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    githubUsername: string;
+    productId: string;
+    session: Stripe.Checkout.Session;
+    source: string;
+  }
+) {
+  const { userId, githubUsername, productId, session, source } = params;
+  
+  // Check if purchase already exists
+  const { data: existingPurchase, error: checkError } = await supabase
+    .from('purchases')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('product_id', productId)
+    .limit(1);
+    
+  if (checkError) {
+    console.error('Error checking for existing purchase:', checkError);
+  } else if (existingPurchase && existingPurchase.length > 0) {
+    console.log('Purchase already exists, skipping insertion');
+    return; // Skip the rest of the function
+  }
+  
+  // Prepare purchase record
+  interface PurchaseRecord {
+    user_id: string;
+    product_id: string;
+    github_username: string;
+    status: string;
+    payment_intent?: string;
+    amount_total?: number;
+    source?: string;
+    payment_details?: {
+      payment_method_types?: string[];
+      currency?: string;
+      customer_email?: string;
+      customer_name?: string;
+      [key: string]: unknown;
+    };
+  }
+  
+  const purchaseRecord: PurchaseRecord = {
+    user_id: userId,
+    product_id: productId,
+    github_username: githubUsername,
+    status: 'completed'
+  };
+  
+  // Add optional fields if available
+  if (session.payment_intent) {
+    purchaseRecord.payment_intent = session.payment_intent.toString();
+  }
+  
+  if (session.amount_total) {
+    purchaseRecord.amount_total = session.amount_total;
+  }
+  
+  if (source) {
+    purchaseRecord.source = source;
+  }
+  
+  // Add payment details
+  if (session.payment_method_types) {
+    purchaseRecord.payment_details = {
+      payment_method_types: session.payment_method_types,
+      currency: session.currency || undefined,
+      customer_email: session.customer_details?.email || undefined,
+      customer_name: session.customer_details?.name || undefined
+    };
+  }
+  
+  console.log('Inserting purchase record:', purchaseRecord);
+  
+  // Record the purchase with proper error logging
+  const { error: purchaseError } = await supabase
+    .from('purchases')
+    .insert(purchaseRecord);
+    
+  if (purchaseError) {
+    console.error('Error recording purchase:', {
+      error: purchaseError,
+      code: purchaseError.code,
+      details: purchaseError.details,
+      hint: purchaseError.hint,
+      message: purchaseError.message
+    });
+    throw purchaseError;
+  }
+  
+  // Log successful purchase
+  console.log('Successfully recorded purchase:', {
+    user_id: userId,
+    product_id: productId,
+    payment_intent: session.payment_intent
+  });
+  
+  // Update product purchase count
+  const { error: updateError } = await supabase.rpc('increment_purchase_count', {
+    product_id: productId
+  });
+  
+  if (updateError) {
+    console.error('Error updating purchase count:', updateError);
+    // Continue anyway as this is not critical
+  }
+  
+  // Handle GitHub repository access if product has a GitHub repo
+  try {
+    const { data: product } = await supabase
+      .from('products')
+      .select('github_repo_url, github_token')
+      .eq('id', productId)
+      .single();
+      
+    if (product?.github_repo_url && product?.github_token && githubUsername) {
+      // Parse GitHub URL
+      const cleanUrl = product.github_repo_url.trim().replace(/\/$/, '');
+      const githubUrl = new URL(cleanUrl.startsWith('https://') ? cleanUrl : `https://${cleanUrl}`);
+      const parts = githubUrl.pathname.split('/').filter(Boolean);
+      
+      if (parts.length === 2) {
+        const [owner, repo] = parts;
+        
+        // Add collaborator
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/collaborators/${githubUsername}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${product.github_token}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+            },
+            body: JSON.stringify({ permission: 'pull' })
+          }
+        );
+        
+        if (response.ok) {
+          // Record successful access
+          await supabase
+            .from('repository_access')
+            .insert({
+              user_id: userId,
+              product_id: productId,
+              repository_url: product.github_repo_url,
+              access_key: githubUsername
+            });
+        } else {
+          console.error('GitHub API error:', {
+            status: response.status,
+            error: await response.text()
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error handling GitHub repository access:', error);
+    // Continue anyway, as the user can still access via the success page
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -141,6 +308,18 @@ export async function POST(request: Request) {
           );
         }
 
+        // Log customer ID for debugging
+        console.log('Looking up customer profile with ID:', customerId);
+        console.log('Customer email from session:', session.customer_details?.email);
+        
+        // First check if this customer ID exists in profiles
+        const { count, error: countError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('stripe_customer_id', customerId);
+          
+        console.log('Profile count for customer ID:', count, 'Error:', countError);
+
         // Log session details for debugging
         console.log('Processing checkout session:', {
           id: session.id,
@@ -156,166 +335,89 @@ export async function POST(request: Request) {
           .eq('stripe_customer_id', customerId)
           .limit(1);
           
-        if (profileError || !profiles || profiles.length === 0) {
+        if (profileError) {
           console.error('Error fetching customer profile for customer ID:', customerId, 'Error:', profileError);
           return createExternalServiceError('Supabase', 'Failed to fetch customer profile');
         }
         
+        // If no profile is found with this customer ID, try to look up by email instead
+        if (!profiles || profiles.length === 0) {
+          console.error('No profile found for customer ID:', customerId, 'Email:', session.customer_details?.email);
+          
+          // Try to find the customer's email in the database
+          if (session.customer_details?.email) {
+            console.log('Searching profiles by email:', session.customer_details.email);
+            
+            const { data: emailProfiles, error: emailError } = await supabase
+              .from('profiles')
+              .select('user_id, github_username')
+              .eq('email', session.customer_details.email)
+              .limit(1);
+              
+            if (emailError) {
+              console.error('Error searching profiles by email:', emailError);
+            } else if (emailProfiles && emailProfiles.length > 0) {
+              console.log('Found profile by email, updating with customer ID');
+              
+              // Update the profile with the Stripe customer ID
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ stripe_customer_id: customerId })
+                .eq('user_id', emailProfiles[0].user_id);
+                
+              if (updateError) {
+                console.error('Failed to update profile with customer ID:', updateError);
+              } else {
+                console.log('Successfully updated profile with customer ID');
+                // Use the found profile
+                const userId = emailProfiles[0].user_id;
+                const githubUsername = emailProfiles[0].github_username || 'unknown';
+                
+                // Now proceed with the purchase using the found profile
+                try {
+                  await processCheckoutPurchase(supabase, {
+                    userId,
+                    githubUsername,
+                    productId,
+                    session,
+                    source
+                  });
+                } catch (error) {
+                  console.error('Error processing checkout purchase by email lookup:', error);
+                  return createExternalServiceError('Supabase', 'Failed to record purchase after email lookup', {
+                    error_details: error instanceof Error ? error.message : String(error)
+                  });
+                }
+                
+                break; // Exit the case
+              }
+            } else {
+              console.log('No profile found by email either');
+            }
+          }
+          
+          // If we get here, we couldn't find a profile
+          return createExternalServiceError('Supabase', 'No matching profile found for customer');
+        }
+        
+        // Use the profile found by customer ID
         const userId = profiles[0].user_id;
         const githubUsername = profiles[0].github_username || 'unknown';
         
-        // Check if purchase already exists
-        const { data: existingPurchase, error: checkError } = await supabase
-          .from('purchases')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('product_id', productId)
-          .limit(1);
-          
-        if (checkError) {
-          console.error('Error checking for existing purchase:', checkError);
-        } else if (existingPurchase && existingPurchase.length > 0) {
-          console.log('Purchase already exists, skipping insertion');
-          break; // Skip to next case without error
-        }
-        
-        // Prepare purchase record with proper typing
-        interface PurchaseRecord {
-          user_id: string;
-          product_id: string;
-          github_username: string;
-          status: string;
-          payment_intent?: string;
-          amount_total?: number;
-          source?: string;
-          payment_details?: {
-            payment_method_types?: string[];
-            currency?: string;
-            customer_email?: string;
-            customer_name?: string;
-            [key: string]: unknown;
-          };
-        }
-        
-        const purchaseRecord: PurchaseRecord = {
-          user_id: userId,
-          product_id: productId,
-          github_username: githubUsername,
-          status: 'completed'
-        };
-        
-        // Add optional fields if available
-        if (session.payment_intent) {
-          purchaseRecord.payment_intent = session.payment_intent.toString();
-        }
-        
-        if (session.amount_total) {
-          purchaseRecord.amount_total = session.amount_total;
-        }
-        
-        if (source) {
-          purchaseRecord.source = source;
-        }
-        
-        // Add payment details
-        if (session.payment_method_types) {
-          purchaseRecord.payment_details = {
-            payment_method_types: session.payment_method_types,
-            currency: session.currency || undefined,
-            customer_email: session.customer_details?.email || undefined,
-            customer_name: session.customer_details?.name || undefined
-          };
-        }
-        
-        // Record the purchase with proper error logging
-        const { error: purchaseError } = await supabase
-          .from('purchases')
-          .insert(purchaseRecord);
-          
-        if (purchaseError) {
-          console.error('Error recording purchase:', {
-            error: purchaseError,
-            code: purchaseError.code,
-            details: purchaseError.details,
-            hint: purchaseError.hint,
-            message: purchaseError.message,
-            record: purchaseRecord
-          });
-          return createExternalServiceError('Supabase', 'Failed to record purchase', {
-            error_code: purchaseError.code,
-            error_message: purchaseError.message
-          });
-        }
-        
-        // Log successful purchase
-        console.log('Successfully recorded purchase:', {
-          user_id: userId,
-          product_id: productId,
-          payment_intent: session.payment_intent
-        });
-        
-        // Update product purchase count
-        const { error: updateError } = await supabase.rpc('increment_purchase_count', {
-          product_id: productId
-        });
-        
-        if (updateError) {
-          console.error('Error updating purchase count:', updateError);
-          // Continue anyway as this is not critical
-        }
-        
-        // Handle GitHub repository access if product has a GitHub repo
+        // Process the checkout purchase
         try {
-          const { data: product } = await supabase
-            .from('products')
-            .select('github_repo_url, github_token')
-            .eq('id', productId)
-            .single();
-            
-          if (product?.github_repo_url && product?.github_token && githubUsername) {
-            // Parse GitHub URL
-            const cleanUrl = product.github_repo_url.trim().replace(/\/$/, '');
-            const githubUrl = new URL(cleanUrl.startsWith('https://') ? cleanUrl : `https://${cleanUrl}`);
-            const parts = githubUrl.pathname.split('/').filter(Boolean);
-            
-            if (parts.length === 2) {
-              const [owner, repo] = parts;
-              
-              // Add collaborator
-              const response = await fetch(
-                `https://api.github.com/repos/${owner}/${repo}/collaborators/${githubUsername}`,
-                {
-                  method: 'PUT',
-                  headers: {
-                    'Authorization': `Bearer ${product.github_token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'X-GitHub-Api-Version': '2022-11-28'
-                  },
-                  body: JSON.stringify({ permission: 'pull' })
-                }
-              );
-              
-              if (response.ok) {
-                // Record successful access
-                await supabase
-                  .from('repository_access')
-                  .insert({
-                    user_id: userId,
-                    product_id: productId,
-                    repository_url: product.github_repo_url,
-                    access_key: githubUsername
-                  });
-              } else {
-                console.error('GitHub API error:', {
-                  status: response.status,
-                  error: await response.text()
-                });
-              }
-            }
-          }
+          await processCheckoutPurchase(supabase, {
+            userId,
+            githubUsername,
+            productId,
+            session,
+            source
+          });
         } catch (error) {
-          console.error('Error handling GitHub repository access:', error);
-          // Continue anyway, as the user can still access via the success page
+          console.error('Error processing checkout purchase:', error);
+          return createExternalServiceError('Supabase', 'Failed to record purchase', {
+            error_details: error instanceof Error ? error.message : String(error)
+          });
         }
         
         break;
