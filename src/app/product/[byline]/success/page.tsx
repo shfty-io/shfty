@@ -88,9 +88,9 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
           source: session.metadata?.source || 'direct',
           payment_details: {
             payment_method_types: session.payment_method_types,
-            currency: session.currency,
-            customer_email: session.customer_details?.email,
-            customer_name: session.customer_details?.name
+            currency: session.currency || undefined,
+            customer_email: session.customer_details?.email || undefined,
+            customer_name: session.customer_details?.name || undefined
           }
         });
 

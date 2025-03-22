@@ -1,7 +1,7 @@
-import { headers, cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient, createServiceClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { createExternalServiceError, handleApiError } from '@/lib/error-handler';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -188,7 +188,13 @@ export async function POST(request: Request) {
           payment_intent?: string;
           amount_total?: number;
           source?: string;
-          payment_details?: Record<string, any>;
+          payment_details?: {
+            payment_method_types?: string[];
+            currency?: string;
+            customer_email?: string;
+            customer_name?: string;
+            [key: string]: unknown;
+          };
         }
         
         const purchaseRecord: PurchaseRecord = {
@@ -215,9 +221,9 @@ export async function POST(request: Request) {
         if (session.payment_method_types) {
           purchaseRecord.payment_details = {
             payment_method_types: session.payment_method_types,
-            currency: session.currency,
-            customer_email: session.customer_details?.email,
-            customer_name: session.customer_details?.name
+            currency: session.currency || undefined,
+            customer_email: session.customer_details?.email || undefined,
+            customer_name: session.customer_details?.name || undefined
           };
         }
         
