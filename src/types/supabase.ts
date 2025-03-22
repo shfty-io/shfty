@@ -369,6 +369,13 @@ export type Database = {
           product_id: string
           status: string
           user_id: string
+          payment_intent: string | null
+          amount_total: number | null
+          source: string | null
+          payment_details: Json | null
+          review_status: string | null
+          failure_reason: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -377,6 +384,13 @@ export type Database = {
           product_id: string
           status: string
           user_id: string
+          payment_intent?: string | null
+          amount_total?: number | null
+          source?: string | null
+          payment_details?: Json | null
+          review_status?: string | null
+          failure_reason?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -385,6 +399,13 @@ export type Database = {
           product_id?: string
           status?: string
           user_id?: string
+          payment_intent?: string | null
+          amount_total?: number | null
+          source?: string | null
+          payment_details?: Json | null
+          review_status?: string | null
+          failure_reason?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
