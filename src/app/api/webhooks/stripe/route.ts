@@ -174,6 +174,60 @@ export async function POST(request: Request) {
           // Continue anyway as this is not critical
         }
         
+        // Handle GitHub repository access if product has a GitHub repo
+        try {
+          const { data: product } = await supabase
+            .from('products')
+            .select('github_repo_url, github_token')
+            .eq('id', productId)
+            .single();
+            
+          if (product?.github_repo_url && product?.github_token && githubUsername) {
+            // Parse GitHub URL
+            const cleanUrl = product.github_repo_url.trim().replace(/\/$/, '');
+            const githubUrl = new URL(cleanUrl.startsWith('https://') ? cleanUrl : `https://${cleanUrl}`);
+            const parts = githubUrl.pathname.split('/').filter(Boolean);
+            
+            if (parts.length === 2) {
+              const [owner, repo] = parts;
+              
+              // Add collaborator
+              const response = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/collaborators/${githubUsername}`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': `Bearer ${product.github_token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                  },
+                  body: JSON.stringify({ permission: 'pull' })
+                }
+              );
+              
+              if (response.ok) {
+                // Record successful access
+                await supabase
+                  .from('repository_access')
+                  .insert({
+                    user_id: userId,
+                    product_id: productId,
+                    repository_url: product.github_repo_url,
+                    access_key: githubUsername
+                  });
+              } else {
+                console.error('GitHub API error:', {
+                  status: response.status,
+                  error: await response.text()
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error handling GitHub repository access:', error);
+          // Continue anyway, as the user can still access via the success page
+        }
+        
         break;
       }
 
