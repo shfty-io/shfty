@@ -29,26 +29,18 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name, value, options) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          
-          // Set more production-friendly cookie options
+          // Set cookies properly in the response - this is what matters
           response.cookies.set({
             name,
             value,
             ...options,
-            path: '/',
-            // Use lax for auth cookies to work with redirects
-            sameSite: 'lax',
-            secure: requestUrl.protocol === 'https:',
+            path: options?.path || '/',
+            sameSite: options?.sameSite || 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true
           });
         },
         remove(name, options) {
-          request.cookies.delete(name);
-          
           response.cookies.set({
             name,
             value: '',
@@ -70,18 +62,16 @@ export async function middleware(request: NextRequest) {
       console.error("Error refreshing session in middleware:", error);
     } else if (!data.session) {
       // No session found - this is normal for unauthenticated users
-      // Redirect to home if trying to access protected routes
+      // Redirect to login if trying to access protected routes
       if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
-        return NextResponse.redirect(new URL('/', request.url));
+        return NextResponse.redirect(new URL('/auth/login', request.url));
       }
-    } else {
-      // Session found and refreshed successfully
-    }
+    } 
   } catch (err) {
     console.error("Failed to refresh session in middleware:", err);
-    // If there's an error checking authentication, redirect to home for protected routes as a safety measure
+    // If there's an error checking authentication, redirect to login for protected routes
     if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/auth/login', request.url));
     }
   }
 
