@@ -2,7 +2,6 @@ import { createClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
-import { headers } from "next/headers";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-02-24.acacia",
@@ -10,20 +9,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST() {
   try {
-    // Ensure request is using HTTPS for livemode
-    const headersList = headers();
-    const protocol = headersList.get('x-forwarded-proto') || 'http';
-    
-    // For local development, we can bypass this check if we're in test mode
-    const isTestMode = process.env.STRIPE_SECRET_KEY?.includes('test');
-    
-    if (protocol !== 'https' && !isTestMode) {
-      return NextResponse.json(
-        { error: "Livemode requests must use HTTPS" },
-        { status: 400 }
-      );
-    }
-
     const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
