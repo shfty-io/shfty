@@ -48,28 +48,88 @@ export default function PurchasesPage() {
         
         setUser(user);
         
-        // Fetch user's purchases
-        const { data: purchases } = await supabase
-          .from('purchases')
-          .select(`
-            *,
-            product:products (
-              id,
-              name,
-              description,
-              price,
-              github_repo_url,
-              user_id,
-              seller:profiles (
-                email,
-                full_name
-              )
-            )
-          `)
+        // First, get the user's profile to ensure we have both IDs
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, user_id')
           .eq('user_id', user.id)
+          .single();
+        
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
+        
+        const authUserId = user.id;
+        const profileId = profileData?.id;
+        
+        // Step 1: Fetch purchases first (without the nested join)
+        const { data: purchasesData, error: purchasesError } = await supabase
+          .from('purchases')
+          .select('*')
+          .or(`user_id.eq.${authUserId}${profileId ? `,user_id.eq.${profileId}` : ''}`)
           .order('created_at', { ascending: false });
           
-        setPurchases(purchases || []);
+        if (purchasesError) {
+          console.error('Error fetching purchases:', purchasesError);
+          setPurchases([]);
+          return;
+        }
+        
+        // If no purchases, set empty array and return
+        if (!purchasesData || purchasesData.length === 0) {
+          setPurchases([]);
+          return;
+        }
+        
+        // Step 2: For each purchase, get the product details separately
+        const purchasesWithProducts = await Promise.all(
+          purchasesData.map(async (purchase) => {
+            // Get product details
+            const { data: product, error: productError } = await supabase
+              .from('products')
+              .select(`
+                id,
+                name,
+                description,
+                price,
+                github_repo_url,
+                user_id
+              `)
+              .eq('id', purchase.product_id)
+              .single();
+              
+            if (productError) {
+              console.error(`Error fetching product ${purchase.product_id}:`, productError);
+              return null;
+            }
+            
+            // If product has a seller, get the seller details
+            let seller = null;
+            if (product?.user_id) {
+              const { data: sellerData, error: sellerError } = await supabase
+                .from('profiles')
+                .select('email, full_name')
+                .eq('id', product.user_id)
+                .single();
+                
+              if (!sellerError) {
+                seller = sellerData;
+              }
+            }
+            
+            return {
+              ...purchase,
+              product: {
+                ...product,
+                seller
+              }
+            };
+          })
+        );
+        
+        // Filter out any null results (failed product fetches)
+        const validPurchases = purchasesWithProducts.filter(Boolean);
+        setPurchases(validPurchases);
       } catch (error) {
         console.error('Error loading purchases data:', error);
       } finally {

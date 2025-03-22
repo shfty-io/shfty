@@ -65,8 +65,6 @@ export async function POST(request: Request) {
         .from('seller_accounts')
         .update({
           github_token: token,
-          token_status: 'valid',
-          token_last_verified: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -79,8 +77,6 @@ export async function POST(request: Request) {
         .insert({
           user_id: user.id,
           github_token: token,
-          token_status: 'valid',
-          token_last_verified: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
       
@@ -124,8 +120,6 @@ export async function DELETE() {
       .from('seller_accounts')
       .update({
         github_token: null,
-        token_status: null,
-        token_last_verified: null,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id);

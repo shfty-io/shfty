@@ -13,7 +13,7 @@ export type Database = {
         Row: {
           amount: number
           charge_id: string
-          created_at: string
+          created_at: string | null
           currency: string
           dispute_id: string
           evidence_due_by: string | null
@@ -21,12 +21,12 @@ export type Database = {
           payment_intent_id: string
           reason: string | null
           status: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           amount: number
           charge_id: string
-          created_at?: string
+          created_at?: string | null
           currency: string
           dispute_id: string
           evidence_due_by?: string | null
@@ -34,12 +34,12 @@ export type Database = {
           payment_intent_id: string
           reason?: string | null
           status: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           amount?: number
           charge_id?: string
-          created_at?: string
+          created_at?: string | null
           currency?: string
           dispute_id?: string
           evidence_due_by?: string | null
@@ -47,7 +47,7 @@ export type Database = {
           payment_intent_id?: string
           reason?: string | null
           status?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -82,31 +82,31 @@ export type Database = {
         Row: {
           actionable: boolean | null
           charge_id: string
-          created_at: string
+          created_at: string | null
           fraud_type: string | null
           id: string
           payment_intent_id: string | null
-          updated_at: string
+          updated_at: string | null
           warning_id: string
         }
         Insert: {
           actionable?: boolean | null
           charge_id: string
-          created_at?: string
+          created_at?: string | null
           fraud_type?: string | null
           id?: string
           payment_intent_id?: string | null
-          updated_at?: string
+          updated_at?: string | null
           warning_id: string
         }
         Update: {
           actionable?: boolean | null
           charge_id?: string
-          created_at?: string
+          created_at?: string | null
           fraud_type?: string | null
           id?: string
           payment_intent_id?: string | null
-          updated_at?: string
+          updated_at?: string | null
           warning_id?: string
         }
         Relationships: []
@@ -144,77 +144,36 @@ export type Database = {
           },
         ]
       }
-      notifications: {
-        Row: {
-          content: Json | null
-          created_at: string | null
-          id: string
-          read_at: string | null
-          status: string | null
-          type: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          content?: Json | null
-          created_at?: string | null
-          id?: string
-          read_at?: string | null
-          status?: string | null
-          type: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          content?: Json | null
-          created_at?: string | null
-          id?: string
-          read_at?: string | null
-          status?: string | null
-          type?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       payment_reviews: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           outcome: string | null
           payment_intent_id: string
           reason: string | null
           review_id: string
           status: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           outcome?: string | null
           payment_intent_id: string
           reason?: string | null
           review_id: string
           status: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           outcome?: string | null
           payment_intent_id?: string
           reason?: string | null
           review_id?: string
           status?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -237,7 +196,9 @@ export type Database = {
           price: number | null
           purchase_count: number | null
           short_description: string
-          software_license: string | null
+          software_license:
+            | Database["public"]["Enums"]["product_license"]
+            | null
           status: Database["public"]["Enums"]["product_status"] | null
           technologies:
             | Database["public"]["Enums"]["product_technology"][]
@@ -266,7 +227,9 @@ export type Database = {
           price?: number | null
           purchase_count?: number | null
           short_description: string
-          software_license?: string | null
+          software_license?:
+            | Database["public"]["Enums"]["product_license"]
+            | null
           status?: Database["public"]["Enums"]["product_status"] | null
           technologies?:
             | Database["public"]["Enums"]["product_technology"][]
@@ -295,7 +258,9 @@ export type Database = {
           price?: number | null
           purchase_count?: number | null
           short_description?: string
-          software_license?: string | null
+          software_license?:
+            | Database["public"]["Enums"]["product_license"]
+            | null
           status?: Database["public"]["Enums"]["product_status"] | null
           technologies?:
             | Database["public"]["Enums"]["product_technology"][]
@@ -326,7 +291,6 @@ export type Database = {
           github_username: string | null
           id: string
           is_admin: boolean | null
-          is_seller: boolean | null
           stripe_customer_id: string | null
           updated_at: string | null
           user_id: string
@@ -340,7 +304,6 @@ export type Database = {
           github_username?: string | null
           id: string
           is_admin?: boolean | null
-          is_seller?: boolean | null
           stripe_customer_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -354,7 +317,6 @@ export type Database = {
           github_username?: string | null
           id?: string
           is_admin?: boolean | null
-          is_seller?: boolean | null
           stripe_customer_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -366,46 +328,31 @@ export type Database = {
           created_at: string | null
           github_username: string
           id: string
+          payment_intent: string | null
           product_id: string
+          source: string | null
           status: string
           user_id: string
-          payment_intent: string | null
-          amount_total: number | null
-          source: string | null
-          payment_details: Json | null
-          review_status: string | null
-          failure_reason: string | null
-          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           github_username: string
           id?: string
+          payment_intent?: string | null
           product_id: string
+          source?: string | null
           status: string
           user_id: string
-          payment_intent?: string | null
-          amount_total?: number | null
-          source?: string | null
-          payment_details?: Json | null
-          review_status?: string | null
-          failure_reason?: string | null
-          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           github_username?: string
           id?: string
+          payment_intent?: string | null
           product_id?: string
+          source?: string | null
           status?: string
           user_id?: string
-          payment_intent?: string | null
-          amount_total?: number | null
-          source?: string | null
-          payment_details?: Json | null
-          review_status?: string | null
-          failure_reason?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -516,11 +463,13 @@ export type Database = {
       }
       seller_accounts: {
         Row: {
+          account_details: Json | null
           account_status: string | null
           created_at: string | null
           github_token: string | null
           id: string
           is_onboarded: boolean | null
+          last_webhook_update: string | null
           stripe_account_id: string | null
           token_last_verified: string | null
           token_status: string | null
@@ -528,11 +477,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_details?: Json | null
           account_status?: string | null
           created_at?: string | null
           github_token?: string | null
           id?: string
           is_onboarded?: boolean | null
+          last_webhook_update?: string | null
           stripe_account_id?: string | null
           token_last_verified?: string | null
           token_status?: string | null
@@ -540,11 +491,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_details?: Json | null
           account_status?: string | null
           created_at?: string | null
           github_token?: string | null
           id?: string
           is_onboarded?: boolean | null
+          last_webhook_update?: string | null
           stripe_account_id?: string | null
           token_last_verified?: string | null
           token_status?: string | null
@@ -555,7 +508,7 @@ export type Database = {
           {
             foreignKeyName: "seller_accounts_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -564,7 +517,7 @@ export type Database = {
       seller_external_accounts: {
         Row: {
           account_type: string
-          created_at: string
+          created_at: string | null
           event_type: string
           external_account_id: string
           id: string
@@ -574,7 +527,7 @@ export type Database = {
         }
         Insert: {
           account_type: string
-          created_at?: string
+          created_at?: string | null
           event_type: string
           external_account_id: string
           id?: string
@@ -584,7 +537,7 @@ export type Database = {
         }
         Update: {
           account_type?: string
-          created_at?: string
+          created_at?: string | null
           event_type?: string
           external_account_id?: string
           id?: string
@@ -598,7 +551,7 @@ export type Database = {
         Row: {
           amount: number
           arrival_date: string | null
-          created_at: string
+          created_at: string | null
           currency: string
           failure_code: string | null
           failure_message: string | null
@@ -606,13 +559,13 @@ export type Database = {
           payout_id: string
           seller_account_id: string
           status: string
-          updated_at: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
           amount: number
           arrival_date?: string | null
-          created_at?: string
+          created_at?: string | null
           currency: string
           failure_code?: string | null
           failure_message?: string | null
@@ -620,13 +573,13 @@ export type Database = {
           payout_id: string
           seller_account_id: string
           status: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           amount?: number
           arrival_date?: string | null
-          created_at?: string
+          created_at?: string | null
           currency?: string
           failure_code?: string | null
           failure_message?: string | null
@@ -634,7 +587,7 @@ export type Database = {
           payout_id?: string
           seller_account_id?: string
           status?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -644,25 +597,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      calculate_trending_score: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_codebases_bucket: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       delete_user: {
         Args: {
           input_profile_id: string
         }
         Returns: undefined
-      }
-      has_active_subscription: {
-        Args: {
-          input_user_id: string
-        }
-        Returns: boolean
       }
       increment_product_purchase: {
         Args: {
@@ -674,16 +613,6 @@ export type Database = {
         Args: {
           product_id: string
         }
-        Returns: undefined
-      }
-      increment_view_count: {
-        Args: {
-          product_id: string
-        }
-        Returns: undefined
-      }
-      manage_codebases_bucket: {
-        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       toggle_like: {

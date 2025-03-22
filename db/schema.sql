@@ -49,12 +49,33 @@ DROP TYPE IF EXISTS product_license CASCADE;
 
 -- Product related enums
 CREATE TYPE product_category AS ENUM (
-  'photo_video', 'productivity', 'utilities', 'entertainment',
-  'developer_tools', 'business', 'creativity', 'security',
-  'lifestyle', 'education', 'communication_social', 'games',
-  'finance', 'other', 'hosting', 'analytics', 'automation', 
-  'cms', 'publishing', 'ecommerce', 'backend', 'database',
-  'frontend_templates'
+  'ai_notetakers', 'app_switcher', 'compliance_software', 'e_signature_apps', 
+  'knowledge_base_software', 'meeting_software', 'pdf_editor', 'presentation_software', 
+  'project_management_software', 'scheduling_software', 'search', 'spreadsheets', 
+  'ad_blockers', 'customer_support_tools', 'email_clients', 'note_and_writing_apps', 
+  'password_managers', 'screenshots_and_screen_recording_apps', 'security_software', 
+  'team_collaboration_software', 'ab_testing_tools', 'authentication_identity_tools', 
+  'content_management_systems', 'code_review_tools', 'command_line_tools', 'data_visualization_tools', 
+  'git_clients', 'issue_tracking_software', 'no_code_platforms', 'standup_bots', 
+  'testing_qa_software', 'vpn_client', 'ai_coding_assistants', 'automation_tools', 
+  'code_editors', 'data_analysis_tools', 'databases_backend_frameworks', 'headless_cms_software', 
+  'observability_tools', 'static_site_generators', 'unified_api', 'website_analytics', 
+  'design_mockups', 'digital_whiteboards', 'icon_sets', 'ui_frameworks', 'wireframing', 
+  'background_removal_tools', 'design_resources', 'graphic_design_tools', 'interface_design_tools', 
+  'photo_editing', 'user_research', 'blogging_platforms', 'dating_apps', 'microblogging_platforms', 
+  'safety_privacy_platforms', 'community_management', 'link_in_bio_tools', 'messaging_apps', 
+  'newsletter_platforms', 'advertising_tools', 'seo_tools', 'crm_software', 'email_marketing', 
+  'keyword_research_tools', 'lead_generation_software', 'sales_enablement', 
+  'social_media_management_tools', 'survey_form_builders', 'business_intelligence_software', 
+  'marketing_automation_platforms', 'social_media_scheduling_tools', 'ai_characters', 
+  'ai_content_detection', 'ai_generative_art', 'ai_infrastructure_tools', 'ai_voice_agents', 
+  'chatgpt_prompts', 'predictive_ai', 'ai_chatbots', 'ai_databases', 'ai_metrics_evaluation', 
+  'llms', 'text_to_speech', 'action_games', 'adventure_games', 'puzzle_games', 'strategy_games', 
+  'role_playing_games', 'simulation_games', 'sports_games', 'board_games', 'card_games', 
+  'educational_games', 'chrome_extensions', 'figma_templates', 'slack_apps', 'wordpress_plugins', 
+  'figma_plugins', 'notion_templates', 'twitter_apps', 'wordpress_themes', 'crypto_wallets', 
+  'defi', 'nft_creation_tools', 'blog', 'portfolio', 'personal', 'dashboard', 'landing_page', 
+  'business', 'documentation', 'ecommerce', 'boilerplates', 'ui_kits_components', 'templates_themes'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');
@@ -101,7 +122,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   full_name TEXT,
   avatar_url TEXT,
   github_username TEXT,
-  is_seller BOOLEAN DEFAULT false,
   is_admin BOOLEAN DEFAULT false,
   stripe_customer_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -119,6 +139,8 @@ CREATE TABLE IF NOT EXISTS seller_accounts (
   account_status TEXT DEFAULT 'pending',
   last_webhook_update TIMESTAMPTZ,
   account_details JSONB,
+  token_status TEXT,
+  token_last_verified TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -131,7 +153,7 @@ CREATE TABLE IF NOT EXISTS products (
   byline TEXT NOT NULL,
   short_description TEXT NOT NULL,
   description TEXT,
-  price INTEGER DEFAULT 0,
+  price NUMERIC(10,2) DEFAULT 0,
   image_urls TEXT[],
   video_url TEXT,
   demo_url TEXT,
@@ -159,6 +181,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   github_username TEXT NOT NULL,
   status TEXT NOT NULL,
+  payment_intent TEXT,
+  source TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -283,86 +307,81 @@ DECLARE
     user_name TEXT;
     full_name TEXT;
     avatar_url TEXT;
+    email_val TEXT;
 BEGIN
-    -- Get metadata from either raw_user_meta_data or raw_app_meta_data
-    meta_data := COALESCE(NEW.raw_user_meta_data, '{}'::JSONB) || COALESCE(NEW.raw_app_meta_data, '{}'::JSONB);
+    -- Log the incoming data for debugging
+    RAISE LOG 'New user data: raw_user_meta_data=%', NEW.raw_user_meta_data;
     
-    -- Extract user information with fallbacks for different auth providers
-    -- GitHub typically uses 'user_name', 'name', Google uses 'name', 'picture', etc.
-    user_name := COALESCE(
-        meta_data->>'user_name',
-        meta_data->>'preferred_username',
-        meta_data->>'username',
-        meta_data->>'nickname',
-        meta_data->>'email',
-        ''
-    );
+    -- Get metadata with priority on raw_user_meta_data (where GitHub info is)
+    meta_data := COALESCE(NEW.raw_user_meta_data, '{}'::JSONB);
     
-    full_name := COALESCE(
-        meta_data->>'full_name',
-        meta_data->>'name',
-        meta_data->>'given_name' || ' ' || meta_data->>'family_name',
-        user_name,
-        ''
-    );
-    
-    avatar_url := COALESCE(
-        meta_data->>'avatar_url',
-        meta_data->>'picture',
-        meta_data->>'avatar',
-        NULL
-    );
+    -- Special handling for GitHub OAuth
+    IF meta_data->>'provider' = 'github' THEN
+        user_name := meta_data->>'user_name';
+        full_name := meta_data->>'name';
+        avatar_url := meta_data->>'avatar_url';
+    ELSE
+        -- Extract user information with fallbacks for different auth providers
+        user_name := COALESCE(
+            meta_data->>'user_name',
+            meta_data->>'preferred_username',
+            meta_data->>'username',
+            meta_data->>'nickname',
+            meta_data->>'email',
+            ''
+        );
+        
+        full_name := COALESCE(
+            meta_data->>'full_name',
+            meta_data->>'name',
+            meta_data->>'given_name' || ' ' || COALESCE(meta_data->>'family_name', ''),
+            user_name,
+            ''
+        );
+        
+        avatar_url := COALESCE(
+            meta_data->>'avatar_url',
+            meta_data->>'picture',
+            meta_data->>'avatar',
+            NULL
+        );
+    END IF;
 
-    -- Insert the new profile with extracted data
-    INSERT INTO public.profiles (
-        id,
-        user_id,
-        email,
-        full_name,
-        avatar_url,
-        is_seller,
-        is_admin,
-        stripe_customer_id,
-        created_at,
-        updated_at,
-        github_username,
-        email_notifications_enabled
-    ) VALUES (
-        NEW.id,
-        NEW.id,
-        COALESCE(NEW.email, ''),
-        full_name,
-        avatar_url,
-        false,
-        false,
-        NULL,
-        NOW(),
-        NOW(),
-        user_name,
-        true
-    );
+    email_val := COALESCE(NEW.email, '');
     
-    -- Create seller account entry (initially inactive)
-    INSERT INTO public.seller_accounts (
-        user_id,
-        is_onboarded,
-        account_status,
-        created_at,
-        updated_at
-    ) VALUES (
-        NEW.id,
-        false,
-        'pending',
-        NOW(),
-        NOW()
-    );
+    -- Add debug logging
+    RAISE LOG 'Extracted data: user_name=%, full_name=%, avatar_url=%', user_name, full_name, avatar_url;
+
+    -- Insert the profile first as a separate transaction
+    BEGIN
+        INSERT INTO public.profiles (
+            id, user_id, email, full_name, avatar_url, github_username, 
+            is_admin, stripe_customer_id, email_notifications_enabled
+        ) VALUES (
+            NEW.id, NEW.id, email_val, full_name, avatar_url, user_name,
+            false, NULL, true
+        );
+    EXCEPTION WHEN unique_violation THEN
+        RAISE LOG 'Profile already exists for user %', NEW.id;
+        -- Profile already exists, continue
+    END;
+    
+    -- Then create seller account
+    BEGIN
+        INSERT INTO public.seller_accounts (
+            user_id, is_onboarded, account_status
+        ) VALUES (
+            NEW.id, false, 'pending'
+        );
+    EXCEPTION WHEN unique_violation THEN
+        RAISE LOG 'Seller account already exists for user %', NEW.id;
+        -- Seller account already exists, continue
+    END;
     
     RETURN NEW;
 EXCEPTION
     WHEN OTHERS THEN
-        -- Log the error (this will appear in Supabase logs)
         RAISE LOG 'Error in handle_new_user: %, User data: %', SQLERRM, NEW;
-        -- Still return NEW to allow the auth user to be created even if profile creation fails
         RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -433,33 +452,6 @@ BEGIN
     UPDATE products
     SET purchase_count = purchase_count + 1
     WHERE id = product_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Function to increment view count (alias for increment_product_view)
-CREATE OR REPLACE FUNCTION increment_view_count(product_id UUID)
-RETURNS VOID AS $$
-BEGIN
-    PERFORM increment_product_view(product_id);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Functions for managing codebases bucket
-CREATE OR REPLACE FUNCTION cleanup_codebases_bucket()
-RETURNS VOID AS $$
-BEGIN
-    -- Implementation details would depend on your storage setup
-    -- This is a placeholder function to match the type definition
-    NULL;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION manage_codebases_bucket()
-RETURNS VOID AS $$
-BEGIN
-    -- Implementation details would depend on your storage setup
-    -- This is a placeholder function to match the type definition
-    NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -1081,6 +1073,82 @@ BEGIN
         AND profiles.is_admin = true
       )
     );
+  END IF;
+END
+$$;
+
+-- ============================================================
+-- STORAGE BUCKET CONFIGURATION
+-- ============================================================
+
+-- First check if storage schema exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage'
+  ) THEN
+    -- Check if buckets already exist before creating them
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_schema = 'storage' AND table_name = 'buckets'
+    ) THEN
+      -- Create avatars bucket
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.buckets WHERE name = 'avatars'
+      ) THEN
+        INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+        VALUES ('avatars', 'avatars', false, 2097152, 
+          ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
+      END IF;
+    ELSE
+      RAISE NOTICE 'Storage buckets table does not exist. Skipping bucket creation.';
+    END IF;
+
+    -- Storage bucket policies
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_schema = 'storage' AND table_name = 'policies'
+    ) THEN
+      -- Avatar policies
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Public select'
+      ) THEN
+        CREATE POLICY "Avatars - Public select"
+          ON storage.objects FOR SELECT
+          USING (bucket_id = 'avatars');
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Auth insert'
+      ) THEN
+        CREATE POLICY "Avatars - Auth insert"
+          ON storage.objects FOR INSERT
+          TO authenticated
+          WITH CHECK (bucket_id = 'avatars' AND auth.uid() = owner);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner update'
+      ) THEN
+        CREATE POLICY "Avatars - Owner update"
+          ON storage.objects FOR UPDATE
+          TO authenticated
+          USING (bucket_id = 'avatars' AND auth.uid() = owner);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner delete'
+      ) THEN
+        CREATE POLICY "Avatars - Owner delete"
+          ON storage.objects FOR DELETE
+          TO authenticated
+          USING (bucket_id = 'avatars' AND auth.uid() = owner);
+      END IF;
+    ELSE
+      RAISE NOTICE 'Storage policies table does not exist. Skipping policy creation.';
+    END IF;
+  ELSE
+    RAISE NOTICE 'Storage schema does not exist. Skipping storage setup.';
   END IF;
 END
 $$; 

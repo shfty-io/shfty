@@ -27,8 +27,7 @@ export async function incrementViewCount(bylineOrId: string) {
       productId = product.id;
     }
     
-    // Now call the RPC function with the correct product ID
-    const { error } = await supabase.rpc('increment_view_count', {
+    const { error } = await supabase.rpc('increment_product_view', {
       product_id: productId
     });
     

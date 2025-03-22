@@ -70,11 +70,19 @@ export async function middleware(request: NextRequest) {
       console.error("Error refreshing session in middleware:", error);
     } else if (!data.session) {
       // No session found - this is normal for unauthenticated users
+      // Redirect to home if trying to access protected routes
+      if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
     } else {
       // Session found and refreshed successfully
     }
   } catch (err) {
     console.error("Failed to refresh session in middleware:", err);
+    // If there's an error checking authentication, redirect to home for protected routes as a safety measure
+    if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
   }
 
   // Ensure no caching for authenticated routes
