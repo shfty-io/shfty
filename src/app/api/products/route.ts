@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/server';
 import { Database } from '@/types/supabase';
 
+export const dynamic = 'force-dynamic';
+
 type ProductStatus = Database['public']['Enums']['product_status'];
 
 export async function GET(request: NextRequest) {

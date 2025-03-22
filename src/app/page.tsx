@@ -66,7 +66,7 @@ async function getProducts(
     }
     
     // Fetch products from API
-    const response = await fetch(apiUrl.toString(), { next: { revalidate: 60 } });
+    const response = await fetch(apiUrl.toString(), { cache: 'no-store' });
     
     if (!response.ok) {
       throw new Error(`API returned status: ${response.status}`);
