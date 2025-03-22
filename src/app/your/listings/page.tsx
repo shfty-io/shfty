@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Edit, Package, Trash } from 'lucide-react';
+import { AlertCircle, Edit, Eye, EyeOff, Package, Trash } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Product = {
   id: string;
@@ -18,12 +21,22 @@ type Product = {
   updated_at: string;
   status: string;
   short_description: string;
+  is_visible?: boolean;
+  visibility_reason?: string;
+};
+
+type SellerAccount = {
+  is_onboarded: boolean;
+  stripe_account_id: string | null;
+  github_token: string | null;
+  token_status: string | null;
 };
 
 export default function ListingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [sellerAccount, setSellerAccount] = useState<SellerAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
@@ -39,6 +52,15 @@ export default function ListingsPage() {
         }
         
         setUser(user);
+        
+        // Fetch seller account status
+        const { data: sellerData } = await supabase
+          .from('seller_accounts')
+          .select('is_onboarded, stripe_account_id, github_token, token_status')
+          .eq('user_id', user.id)
+          .single();
+          
+        setSellerAccount(sellerData || null);
         
         // Fetch user's products
         const { data: products } = await supabase
@@ -57,7 +79,38 @@ export default function ListingsPage() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
           
-        setProducts(products || []);
+        // Process product visibility
+        const processedProducts = (products || []).map(product => {
+          // Check if the product should be visible to customers
+          let isVisible = true;
+          let visibilityReason = '';
+          
+          // Free products are always visible
+          if (product.price > 0 && sellerData) {
+            // Paid products need valid Stripe account and GitHub token
+            const hasValidStripeAccount = sellerData.is_onboarded && sellerData.stripe_account_id;
+            const hasValidGitHubToken = sellerData.github_token && sellerData.token_status !== 'expired';
+            
+            if (!hasValidStripeAccount && !hasValidGitHubToken) {
+              isVisible = false;
+              visibilityReason = 'Missing both Stripe account and GitHub token';
+            } else if (!hasValidStripeAccount) {
+              isVisible = false;
+              visibilityReason = 'Missing Stripe account';
+            } else if (!hasValidGitHubToken) {
+              isVisible = false;
+              visibilityReason = 'Missing or expired GitHub token';
+            }
+          }
+          
+          return {
+            ...product,
+            is_visible: isVisible,
+            visibility_reason: visibilityReason
+          };
+        });
+          
+        setProducts(processedProducts);
       } catch (error) {
         console.error('Error loading listings data:', error);
       } finally {
@@ -74,6 +127,8 @@ export default function ListingsPage() {
   
   if (!user) return null; // User redirected, don't render anything
 
+  const hasHiddenProducts = products.some(product => !product.is_visible);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -85,6 +140,23 @@ export default function ListingsPage() {
         </Link>
       </div>
 
+      {hasHiddenProducts && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Some products are hidden from customers</AlertTitle>
+          <AlertDescription>
+            One or more of your paid products are not visible to customers because you need to connect your 
+            {!sellerAccount?.stripe_account_id && " Stripe account"}
+            {!sellerAccount?.stripe_account_id && !sellerAccount?.github_token && " and"}
+            {!sellerAccount?.github_token && " GitHub account"}.
+            {' '}
+            <Link href="/your/payment" className="font-medium underline underline-offset-4">
+              Update your settings
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6">
         {products?.length ? (
           products.map((product) => (
@@ -93,7 +165,35 @@ export default function ListingsPage() {
               className="border rounded-lg p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
             >
               <div className="flex-1">
-                <h2 className="text-lg font-semibold mb-2">{product.name}</h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-lg font-semibold">{product.name}</h2>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          {product.is_visible ? (
+                            <Badge variant="outline" className="border-green-500 text-green-600 bg-green-50">
+                              <Eye className="h-3 w-3 mr-1" />
+                              Visible
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-red-500 text-red-600 bg-red-50">
+                              <EyeOff className="h-3 w-3 mr-1" />
+                              Hidden
+                            </Badge>
+                          )}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {product.is_visible 
+                          ? "This product is visible to customers" 
+                          : `This product is hidden from customers. Reason: ${product.visibility_reason}`}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                
                 <p className="text-muted-foreground line-clamp-2 mb-2">
                   {product.short_description}
                 </p>

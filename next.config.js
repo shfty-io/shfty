@@ -20,6 +20,20 @@ const nextConfig = {
         'punycode': 'punycode/'
       }
     }
+  },
+  // Force HTTPS for Stripe livemode requests
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          }
+        ]
+      }
+    ];
   }
 }
 

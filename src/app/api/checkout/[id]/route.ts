@@ -45,7 +45,7 @@ export async function POST(
         *,
         seller:user_id (
           id,
-          seller_accounts!inner (
+          seller_accounts (
             stripe_account_id
           )
         )
@@ -61,26 +61,33 @@ export async function POST(
     let sellerStripeAccountId;
     if (product.seller?.seller_accounts) {
       if (Array.isArray(product.seller.seller_accounts)) {
-        // Handle array format
-        sellerStripeAccountId = product.seller.seller_accounts[0]?.stripe_account_id;
+        // Handle array format - filter out accounts with null stripe_account_id
+        const validAccounts = product.seller.seller_accounts.filter((acc: { stripe_account_id?: string | null }) => acc.stripe_account_id);
+        sellerStripeAccountId = validAccounts.length > 0 ? validAccounts[0].stripe_account_id : null;
       } else {
         // Handle object format
-        sellerStripeAccountId = product.seller.seller_accounts.stripe_account_id;
+        sellerStripeAccountId = product.seller.seller_accounts.stripe_account_id || null;
       }
     }
     
     // If we couldn't get the seller account ID from the join, try a direct query
     if (!sellerStripeAccountId) {
-      const { data: sellerAccount, error: sellerError } = await supabase
+      console.log('No seller account found from join, trying direct query for user_id:', product.user_id);
+      
+      // Get all seller accounts for this user and filter for ones with a stripe_account_id
+      const { data: sellerAccounts, error: sellerError } = await supabase
         .from('seller_accounts')
         .select('stripe_account_id')
         .eq('user_id', product.user_id)
-        .single();
+        .not('stripe_account_id', 'is', null);
         
-      if (!sellerError && sellerAccount?.stripe_account_id) {
-        sellerStripeAccountId = sellerAccount.stripe_account_id;
+      if (!sellerError && sellerAccounts && sellerAccounts.length > 0) {
+        sellerStripeAccountId = sellerAccounts[0].stripe_account_id;
+        console.log('Found seller account with ID:', sellerStripeAccountId);
       } else if (sellerError) {
         console.error('Error fetching seller account:', sellerError);
+      } else {
+        console.log('No seller accounts with stripe_account_id found for user:', product.user_id);
       }
     }
     

@@ -40,40 +40,10 @@ async function getProductsByCategory(category: string): Promise<Product[]> {
   const supabase = await createServerComponentClient();
   
   try {
-    // Map from URL slug to database enum value
-    // This mapping should match your database enum values
-    const categoryMapping: Record<string, string> = {
-      'business': 'business',
-      'entertainment': 'entertainment',
-      'developer-tools': 'developer_tools',
-      'finance': 'finance',
-      'education': 'education',
-      'games': 'games',
-      'graphics-design': 'graphics_design',
-      'health-fitness': 'health_fitness',
-      'lifestyle': 'lifestyle',
-      'medical': 'medical',
-      'news': 'news',
-      'photo-video': 'photo_video',
-      'productivity': 'productivity',
-      'social-networking': 'social_networking',
-      'sports': 'sports',
-      'travel': 'travel',
-      'utilities': 'utilities',
-      'frontend-templates': 'frontend_templates',
-      'weather': 'weather',
-      'other': 'other'
-    };
+    // Convert hyphenated slug to underscore format for Supabase enum
+    const dbCategory = category.replace(/-/g, '_');
     
-    // Get the database enum value for the category
-    const dbCategory = categoryMapping[category] || category;
-    
-    // Check if we're dealing with a category that might not exist in the database
-    const potentiallyInvalidCategories = ['weather']; // Add any other categories that might not exist in DB
-    
-    if (potentiallyInvalidCategories.includes(dbCategory)) {
-      return [];
-    }
+    console.log('Querying category:', dbCategory);
     
     const { data: products, error } = await supabase
       .from('products')

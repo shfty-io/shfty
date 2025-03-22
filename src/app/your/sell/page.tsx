@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductForm, type ProductFormData } from "@/components/seller/ProductForm";
 import { toast } from "@/components/ui/use-toast";
@@ -10,11 +9,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-
-const steps = [
-  { id: 1, name: "Create Product" },
-  { id: 2, name: "Submit Product" },
-];
 
 function SellerDashboardContent() {
   const router = useRouter();
@@ -246,23 +240,6 @@ function SellerDashboardContent() {
         </AlertDescription>
       </Alert>
       
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <Progress value={(currentStep / steps.length) * 100} className="h-2" />
-        <div className="flex justify-between mt-2">
-          {steps.map((step) => (
-            <div
-              key={step.id}
-              className={`text-sm ${
-                step.id <= currentStep ? "text-primary font-medium" : "text-muted-foreground"
-              }`}
-            >
-              {step.name}
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Main content area */}
       <div className="border rounded-lg p-6 md:p-8 mb-6 bg-card shadow-sm">
         <div className="space-y-6">
