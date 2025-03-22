@@ -38,10 +38,9 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
       .from('products')
       .select(`
         *,
-        profiles!inner (
+        profiles!products_user_id_fkey (
           id,
-          github_username,
-          is_seller
+          github_username
         )
       `)
       .eq(byline.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ? 'id' : 'byline', byline)
@@ -84,14 +83,7 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
           status: 'completed',
           github_username: buyerGithubUsername,
           payment_intent: session.payment_intent?.toString(),
-          amount_total: session.amount_total,
-          source: session.metadata?.source || 'direct',
-          payment_details: {
-            payment_method_types: session.payment_method_types,
-            currency: session.currency || undefined,
-            customer_email: session.customer_details?.email || undefined,
-            customer_name: session.customer_details?.name || undefined
-          }
+          source: session.metadata?.source || 'direct'
         });
 
       if (createError) {

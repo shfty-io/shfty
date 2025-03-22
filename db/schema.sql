@@ -181,6 +181,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   github_username TEXT NOT NULL,
   status TEXT NOT NULL,
+  payment_intent TEXT,
+  source TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
