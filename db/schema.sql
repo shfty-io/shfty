@@ -49,12 +49,33 @@ DROP TYPE IF EXISTS product_license CASCADE;
 
 -- Product related enums
 CREATE TYPE product_category AS ENUM (
-  'photo_video', 'productivity', 'utilities', 'entertainment',
-  'developer_tools', 'business', 'creativity', 'security',
-  'lifestyle', 'education', 'communication_social', 'games',
-  'finance', 'other', 'hosting', 'analytics', 'automation', 
-  'cms', 'publishing', 'ecommerce', 'backend', 'database',
-  'frontend_templates'
+  'ai_notetakers', 'app_switcher', 'compliance_software', 'e_signature_apps', 
+  'knowledge_base_software', 'meeting_software', 'pdf_editor', 'presentation_software', 
+  'project_management_software', 'scheduling_software', 'search', 'spreadsheets', 
+  'ad_blockers', 'customer_support_tools', 'email_clients', 'note_and_writing_apps', 
+  'password_managers', 'screenshots_and_screen_recording_apps', 'security_software', 
+  'team_collaboration_software', 'ab_testing_tools', 'authentication_identity_tools', 
+  'content_management_systems', 'code_review_tools', 'command_line_tools', 'data_visualization_tools', 
+  'git_clients', 'issue_tracking_software', 'no_code_platforms', 'standup_bots', 
+  'testing_qa_software', 'vpn_client', 'ai_coding_assistants', 'automation_tools', 
+  'code_editors', 'data_analysis_tools', 'databases_backend_frameworks', 'headless_cms_software', 
+  'observability_tools', 'static_site_generators', 'unified_api', 'website_analytics', 
+  'design_mockups', 'digital_whiteboards', 'icon_sets', 'ui_frameworks', 'wireframing', 
+  'background_removal_tools', 'design_resources', 'graphic_design_tools', 'interface_design_tools', 
+  'photo_editing', 'user_research', 'blogging_platforms', 'dating_apps', 'microblogging_platforms', 
+  'safety_privacy_platforms', 'community_management', 'link_in_bio_tools', 'messaging_apps', 
+  'newsletter_platforms', 'advertising_tools', 'seo_tools', 'crm_software', 'email_marketing', 
+  'keyword_research_tools', 'lead_generation_software', 'sales_enablement', 
+  'social_media_management_tools', 'survey_form_builders', 'business_intelligence_software', 
+  'marketing_automation_platforms', 'social_media_scheduling_tools', 'ai_characters', 
+  'ai_content_detection', 'ai_generative_art', 'ai_infrastructure_tools', 'ai_voice_agents', 
+  'chatgpt_prompts', 'predictive_ai', 'ai_chatbots', 'ai_databases', 'ai_metrics_evaluation', 
+  'llms', 'text_to_speech', 'action_games', 'adventure_games', 'puzzle_games', 'strategy_games', 
+  'role_playing_games', 'simulation_games', 'sports_games', 'board_games', 'card_games', 
+  'educational_games', 'chrome_extensions', 'figma_templates', 'slack_apps', 'wordpress_plugins', 
+  'figma_plugins', 'notion_templates', 'twitter_apps', 'wordpress_themes', 'crypto_wallets', 
+  'defi', 'nft_creation_tools', 'blog', 'portfolio', 'personal', 'dashboard', 'landing_page', 
+  'business', 'documentation', 'ecommerce', 'boilerplates', 'ui_kits_components', 'templates_themes'
 );
 
 CREATE TYPE product_status AS ENUM ('draft', 'in_review', 'approved', 'rejected');
@@ -101,7 +122,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   full_name TEXT,
   avatar_url TEXT,
   github_username TEXT,
-  is_seller BOOLEAN DEFAULT false,
   is_admin BOOLEAN DEFAULT false,
   stripe_customer_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -119,6 +139,8 @@ CREATE TABLE IF NOT EXISTS seller_accounts (
   account_status TEXT DEFAULT 'pending',
   last_webhook_update TIMESTAMPTZ,
   account_details JSONB,
+  token_status TEXT,
+  token_last_verified TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -131,7 +153,7 @@ CREATE TABLE IF NOT EXISTS products (
   byline TEXT NOT NULL,
   short_description TEXT NOT NULL,
   description TEXT,
-  price INTEGER DEFAULT 0,
+  price NUMERIC(10,2) DEFAULT 0,
   image_urls TEXT[],
   video_url TEXT,
   demo_url TEXT,
@@ -332,10 +354,10 @@ BEGIN
     BEGIN
         INSERT INTO public.profiles (
             id, user_id, email, full_name, avatar_url, github_username, 
-            is_seller, is_admin, stripe_customer_id, email_notifications_enabled
+            is_admin, stripe_customer_id, email_notifications_enabled
         ) VALUES (
             NEW.id, NEW.id, email_val, full_name, avatar_url, user_name,
-            false, false, NULL, true
+            false, NULL, true
         );
     EXCEPTION WHEN unique_violation THEN
         RAISE LOG 'Profile already exists for user %', NEW.id;
@@ -1084,140 +1106,157 @@ $$;
 -- STORAGE BUCKET CONFIGURATION
 -- ============================================================
 
--- Check if buckets already exist before creating them
+-- First check if storage schema exists
 DO $$
 BEGIN
-  -- Create product_images bucket
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.buckets WHERE name = 'product_images'
+  IF EXISTS (
+    SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage'
   ) THEN
-    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-    VALUES ('product_images', 'product_images', false, 5242880, 
-      ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
-  END IF;
+    -- Check if buckets already exist before creating them
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_schema = 'storage' AND table_name = 'buckets'
+    ) THEN
+      -- Create product_images bucket
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.buckets WHERE name = 'product_images'
+      ) THEN
+        INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+        VALUES ('product_images', 'product_images', false, 5242880, 
+          ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
+      END IF;
 
-  -- Create avatars bucket
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.buckets WHERE name = 'avatars'
-  ) THEN
-    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-    VALUES ('avatars', 'avatars', false, 2097152, 
-      ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
-  END IF;
+      -- Create avatars bucket
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.buckets WHERE name = 'avatars'
+      ) THEN
+        INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+        VALUES ('avatars', 'avatars', false, 2097152, 
+          ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']::text[]);
+      END IF;
 
-  -- Create temp_uploads bucket for temporary file uploads
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.buckets WHERE name = 'temp_uploads'
-  ) THEN
-    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-    VALUES ('temp_uploads', 'temp_uploads', false, 10485760, 
-      ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml', 
-        'application/pdf', 'application/zip']::text[]);
-  END IF;
-END
-$$;
+      -- Create temp_uploads bucket for temporary file uploads
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.buckets WHERE name = 'temp_uploads'
+      ) THEN
+        INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+        VALUES ('temp_uploads', 'temp_uploads', false, 10485760, 
+          ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml', 
+            'application/pdf', 'application/zip']::text[]);
+      END IF;
+    ELSE
+      RAISE NOTICE 'Storage buckets table does not exist. Skipping bucket creation.';
+    END IF;
 
--- Storage bucket policies
-DO $$
-BEGIN
-  -- Product images policies
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Product images - Public select'
-  ) THEN
-    CREATE POLICY "Product images - Public select"
-      ON storage.objects FOR SELECT
-      USING (bucket_id = 'product_images');
-  END IF;
+    -- Storage bucket policies
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_schema = 'storage' AND table_name = 'policies'
+    ) THEN
+      -- Product images policies
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Product images - Public select'
+      ) THEN
+        CREATE POLICY "Product images - Public select"
+          ON storage.objects FOR SELECT
+          USING (bucket_id = 'product_images');
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Product images - Auth insert'
-  ) THEN
-    CREATE POLICY "Product images - Auth insert"
-      ON storage.objects FOR INSERT
-      TO authenticated
-      WITH CHECK (bucket_id = 'product_images' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Product images - Auth insert'
+      ) THEN
+        CREATE POLICY "Product images - Auth insert"
+          ON storage.objects FOR INSERT
+          TO authenticated
+          WITH CHECK (bucket_id = 'product_images' AND auth.uid() = owner);
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Product images - Owner update'
-  ) THEN
-    CREATE POLICY "Product images - Owner update"
-      ON storage.objects FOR UPDATE
-      TO authenticated
-      USING (bucket_id = 'product_images' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Product images - Owner update'
+      ) THEN
+        CREATE POLICY "Product images - Owner update"
+          ON storage.objects FOR UPDATE
+          TO authenticated
+          USING (bucket_id = 'product_images' AND auth.uid() = owner);
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Product images - Owner delete'
-  ) THEN
-    CREATE POLICY "Product images - Owner delete"
-      ON storage.objects FOR DELETE
-      TO authenticated
-      USING (bucket_id = 'product_images' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Product images - Owner delete'
+      ) THEN
+        CREATE POLICY "Product images - Owner delete"
+          ON storage.objects FOR DELETE
+          TO authenticated
+          USING (bucket_id = 'product_images' AND auth.uid() = owner);
+      END IF;
 
-  -- Avatar policies
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Public select'
-  ) THEN
-    CREATE POLICY "Avatars - Public select"
-      ON storage.objects FOR SELECT
-      USING (bucket_id = 'avatars');
-  END IF;
+      -- Avatar policies
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Public select'
+      ) THEN
+        CREATE POLICY "Avatars - Public select"
+          ON storage.objects FOR SELECT
+          USING (bucket_id = 'avatars');
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Auth insert'
-  ) THEN
-    CREATE POLICY "Avatars - Auth insert"
-      ON storage.objects FOR INSERT
-      TO authenticated
-      WITH CHECK (bucket_id = 'avatars' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Auth insert'
+      ) THEN
+        CREATE POLICY "Avatars - Auth insert"
+          ON storage.objects FOR INSERT
+          TO authenticated
+          WITH CHECK (bucket_id = 'avatars' AND auth.uid() = owner);
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner update'
-  ) THEN
-    CREATE POLICY "Avatars - Owner update"
-      ON storage.objects FOR UPDATE
-      TO authenticated
-      USING (bucket_id = 'avatars' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner update'
+      ) THEN
+        CREATE POLICY "Avatars - Owner update"
+          ON storage.objects FOR UPDATE
+          TO authenticated
+          USING (bucket_id = 'avatars' AND auth.uid() = owner);
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner delete'
-  ) THEN
-    CREATE POLICY "Avatars - Owner delete"
-      ON storage.objects FOR DELETE
-      TO authenticated
-      USING (bucket_id = 'avatars' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Avatars - Owner delete'
+      ) THEN
+        CREATE POLICY "Avatars - Owner delete"
+          ON storage.objects FOR DELETE
+          TO authenticated
+          USING (bucket_id = 'avatars' AND auth.uid() = owner);
+      END IF;
 
-  -- Temp uploads policies
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Auth access'
-  ) THEN
-    CREATE POLICY "Temp uploads - Auth access"
-      ON storage.objects FOR SELECT
-      TO authenticated
-      USING (bucket_id = 'temp_uploads' AND auth.uid() = owner);
-  END IF;
+      -- Temp uploads policies
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Auth access'
+      ) THEN
+        CREATE POLICY "Temp uploads - Auth access"
+          ON storage.objects FOR SELECT
+          TO authenticated
+          USING (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Auth insert'
-  ) THEN
-    CREATE POLICY "Temp uploads - Auth insert"
-      ON storage.objects FOR INSERT
-      TO authenticated
-      WITH CHECK (bucket_id = 'temp_uploads' AND auth.uid() = owner);
-  END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Auth insert'
+      ) THEN
+        CREATE POLICY "Temp uploads - Auth insert"
+          ON storage.objects FOR INSERT
+          TO authenticated
+          WITH CHECK (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+      END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Owner delete'
-  ) THEN
-    CREATE POLICY "Temp uploads - Owner delete"
-      ON storage.objects FOR DELETE
-      TO authenticated
-      USING (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+      IF NOT EXISTS (
+        SELECT 1 FROM storage.policies WHERE name = 'Temp uploads - Owner delete'
+      ) THEN
+        CREATE POLICY "Temp uploads - Owner delete"
+          ON storage.objects FOR DELETE
+          TO authenticated
+          USING (bucket_id = 'temp_uploads' AND auth.uid() = owner);
+      END IF;
+    ELSE
+      RAISE NOTICE 'Storage policies table does not exist. Skipping policy creation.';
+    END IF;
+  ELSE
+    RAISE NOTICE 'Storage schema does not exist. Skipping storage setup.';
   END IF;
 END
 $$; 
