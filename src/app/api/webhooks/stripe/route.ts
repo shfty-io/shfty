@@ -1,7 +1,7 @@
-import { headers, cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { createExternalServiceError, handleApiError } from '@/lib/error-handler';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -29,7 +29,8 @@ export async function POST(request: Request) {
       webhookSecret
     );
 
-    const supabase = createClient(await cookies());
+    // Use the service client instead, which bypasses RLS policies
+    const supabase = createServiceClient();
 
     switch (event.type) {
       // ACCOUNT EVENTS
@@ -187,6 +188,13 @@ export async function POST(request: Request) {
           payment_intent?: string;
           amount_total?: number;
           source?: string;
+          payment_details?: {
+            payment_method_types?: string[];
+            currency?: string;
+            customer_email?: string;
+            customer_name?: string;
+            [key: string]: unknown;
+          };
         }
         
         const purchaseRecord: PurchaseRecord = {
@@ -207,6 +215,16 @@ export async function POST(request: Request) {
         
         if (source) {
           purchaseRecord.source = source;
+        }
+        
+        // Add payment details
+        if (session.payment_method_types) {
+          purchaseRecord.payment_details = {
+            payment_method_types: session.payment_method_types,
+            currency: session.currency || undefined,
+            customer_email: session.customer_details?.email || undefined,
+            customer_name: session.customer_details?.name || undefined
+          };
         }
         
         // Record the purchase with proper error logging

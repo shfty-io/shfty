@@ -1,4 +1,4 @@
-import { createServerComponentClient } from '@/lib/server'
+import { createServerComponentClient, createServiceClient } from '@/lib/server'
 import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
 import { SuccessPageContent } from './page.client'
@@ -10,6 +10,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 async function getSessionAndProduct(sessionId: string, byline: string) {
   try {
     const supabase = await createServerComponentClient()
+    // Create service client for operations that need to bypass RLS
+    const serviceClient = createServiceClient()
 
     // 1. Verify the Stripe session with better error handling
     let session;
@@ -74,14 +76,22 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
     // If no purchase exists yet, but the session exists, create one
     if (!existingPurchase && !purchaseError && session) {
       console.log('Creating purchase record from success page for session:', sessionId);
-      const { error: createError } = await supabase
+      const { error: createError } = await serviceClient
         .from('purchases')
         .insert({
           user_id: user.id,
           product_id: product.id,
           status: 'completed',
           github_username: buyerGithubUsername,
-          payment_intent: session.payment_intent?.toString()
+          payment_intent: session.payment_intent?.toString(),
+          amount_total: session.amount_total,
+          source: session.metadata?.source || 'direct',
+          payment_details: {
+            payment_method_types: session.payment_method_types,
+            currency: session.currency || undefined,
+            customer_email: session.customer_details?.email || undefined,
+            customer_name: session.customer_details?.name || undefined
+          }
         });
 
       if (createError) {
@@ -150,7 +160,7 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
         }
 
         // Record successful access
-        await supabase
+        await serviceClient
           .from('repository_access')
           .insert({
             user_id: user.id,
