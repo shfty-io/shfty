@@ -238,11 +238,14 @@ export async function POST(
     console.log('Profile lookup by user_id field:', { profilesByUserId, errorByUserId });
 
     // Get user's profile for customer details - try both fields
-    let { data: profile, error: profileError } = await serviceClient
+    const profileResult = await serviceClient
       .from('profiles')
       .select('*')
       .or(`id.eq.${user.id},user_id.eq.${user.id}`)
       .single();
+      
+    let profile = profileResult.data;
+    const profileError = profileResult.error;
 
     console.log('Combined profile lookup result:', { profile, profileError });
 
