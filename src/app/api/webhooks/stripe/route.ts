@@ -140,6 +140,15 @@ export async function POST(request: Request) {
           );
         }
 
+        // Log session details for debugging
+        console.log('Processing checkout session:', {
+          id: session.id,
+          payment_status: session.payment_status,
+          customer: customerId,
+          payment_intent: session.payment_intent,
+          amount_total: session.amount_total
+        });
+
         const { data: profiles, error: profileError } = await supabase
           .from('profiles')
           .select('user_id, github_username')
@@ -154,23 +163,78 @@ export async function POST(request: Request) {
         const userId = profiles[0].user_id;
         const githubUsername = profiles[0].github_username || 'unknown';
         
-        // Record the purchase
+        // Check if purchase already exists
+        const { data: existingPurchase, error: checkError } = await supabase
+          .from('purchases')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('product_id', productId)
+          .limit(1);
+          
+        if (checkError) {
+          console.error('Error checking for existing purchase:', checkError);
+        } else if (existingPurchase && existingPurchase.length > 0) {
+          console.log('Purchase already exists, skipping insertion');
+          break; // Skip to next case without error
+        }
+        
+        // Prepare purchase record with proper typing
+        interface PurchaseRecord {
+          user_id: string;
+          product_id: string;
+          github_username: string;
+          status: string;
+          payment_intent?: string;
+          amount_total?: number;
+          source?: string;
+        }
+        
+        const purchaseRecord: PurchaseRecord = {
+          user_id: userId,
+          product_id: productId,
+          github_username: githubUsername,
+          status: 'completed'
+        };
+        
+        // Add optional fields if available
+        if (session.payment_intent) {
+          purchaseRecord.payment_intent = session.payment_intent.toString();
+        }
+        
+        if (session.amount_total) {
+          purchaseRecord.amount_total = session.amount_total;
+        }
+        
+        if (source) {
+          purchaseRecord.source = source;
+        }
+        
+        // Record the purchase with proper error logging
         const { error: purchaseError } = await supabase
           .from('purchases')
-          .insert({
-            user_id: userId,
-            product_id: productId,
-            github_username: githubUsername,
-            status: 'completed',
-            payment_intent: session.payment_intent as string,
-            amount_total: session.amount_total,
-            source: source
-          });
+          .insert(purchaseRecord);
           
         if (purchaseError) {
-          console.error('Error recording purchase:', purchaseError);
-          return createExternalServiceError('Supabase', 'Failed to record purchase');
+          console.error('Error recording purchase:', {
+            error: purchaseError,
+            code: purchaseError.code,
+            details: purchaseError.details,
+            hint: purchaseError.hint,
+            message: purchaseError.message,
+            record: purchaseRecord
+          });
+          return createExternalServiceError('Supabase', 'Failed to record purchase', {
+            error_code: purchaseError.code,
+            error_message: purchaseError.message
+          });
         }
+        
+        // Log successful purchase
+        console.log('Successfully recorded purchase:', {
+          user_id: userId,
+          product_id: productId,
+          payment_intent: session.payment_intent
+        });
         
         // Update product purchase count
         const { error: updateError } = await supabase.rpc('increment_purchase_count', {

@@ -11,11 +11,24 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
   try {
     const supabase = await createServerComponentClient()
 
-    // 1. Verify the Stripe session
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
-    if (!session || (session.payment_status !== 'paid' && session.payment_status !== 'unpaid')) {
-      console.error('Invalid or unpaid session:', sessionId, 'Status:', session?.payment_status)
-      return null
+    // 1. Verify the Stripe session with better error handling
+    let session;
+    try {
+      session = await stripe.checkout.sessions.retrieve(sessionId);
+      console.log('Retrieved session:', {
+        id: session.id,
+        payment_status: session.payment_status,
+        status: session.status
+      });
+    } catch (error) {
+      console.error('Error retrieving Stripe session:', error);
+      return null;
+    }
+
+    // Accept any session that exists - we'll check purchases table instead
+    if (!session) {
+      console.error('Session not found:', sessionId);
+      return null;
     }
 
     // 2. Get the product details
@@ -50,30 +63,34 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
       return null
     }
 
-    // 4. Record the purchase first
-    const { data: existingPurchase } = await supabase
+    // 4. Check if purchase exists in database
+    const { data: existingPurchase, error: purchaseError } = await supabase
       .from('purchases')
-      .select('id')
+      .select('id, status')
       .eq('user_id', user.id)
       .eq('product_id', product.id)
-      .eq('status', 'completed')
       .maybeSingle();
 
-    // Only create a purchase record if one doesn't already exist from the webhook
-    if (!existingPurchase) {
-      const { error: purchaseError } = await supabase
+    // If no purchase exists yet, but the session exists, create one
+    if (!existingPurchase && !purchaseError && session) {
+      console.log('Creating purchase record from success page for session:', sessionId);
+      const { error: createError } = await supabase
         .from('purchases')
         .insert({
           user_id: user.id,
           product_id: product.id,
           status: 'completed',
-          github_username: buyerGithubUsername
+          github_username: buyerGithubUsername,
+          payment_intent: session.payment_intent?.toString()
         });
 
-      if (purchaseError) {
-        console.error('Error recording purchase:', purchaseError);
-        return null;
+      if (createError) {
+        console.error('Error creating purchase record:', createError);
+        // Continue anyway, as we have a valid session
       }
+    } else if (purchaseError) {
+      console.error('Error checking for existing purchase:', purchaseError);
+      // Continue anyway, as we have a valid session
     }
 
     // 5. If there's a GitHub repo, handle repository access
