@@ -6,8 +6,7 @@ import {
   createExternalServiceError,
   handleApiError
 } from '@/lib/error-handler'
-import { createClient, createServiceClient } from '@/lib/server'
-import { cookies } from 'next/headers'
+import { createServiceClient } from '@/lib/server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia'
@@ -31,18 +30,15 @@ export async function POST(
     const id = pathParts[pathParts.length - 1];
     const productPath = `/product/${id}`;
 
-    // Create regular supabase client for user auth
-    const supabase = createClient(await cookies());
-    
-    // Create service client for database access that requires bypassing RLS
-    const serviceClient = createServiceClient();
+    // Use the service client
+    const supabase = createServiceClient();
     
     // Get request body for source information
     const requestBody = await request.json().catch(() => ({}))
     const source = requestBody.source || 'direct'
     
     // Get product details using service client to bypass RLS
-    const { data: product, error: productError } = await serviceClient
+    const { data: product, error: productError } = await supabase
       .from('products')
       .select(`
         *,
@@ -84,7 +80,7 @@ export async function POST(
       
       // First try to get seller accounts directly from the seller's profile id
       if (product.seller?.id) {
-        const { data: sellerAccountsByProfile, error: profileSellerError } = await serviceClient
+        const { data: sellerAccountsByProfile, error: profileSellerError } = await supabase
           .from('seller_accounts')
           .select('*')
           .eq('user_id', product.seller.id);
@@ -104,7 +100,7 @@ export async function POST(
       
       // If still not found, try with the product user_id
       if (!sellerStripeAccountId) {
-        const { data: sellerAccounts, error: sellerError } = await serviceClient
+        const { data: sellerAccounts, error: sellerError } = await supabase
           .from('seller_accounts')
           .select('*')
           .eq('user_id', product.user_id);
@@ -123,7 +119,7 @@ export async function POST(
       // Last resort - direct lookup using the known ID from the database
       if (!sellerStripeAccountId) {
         console.log('Attempting direct lookup of seller accounts with valid stripe_account_id');
-        const { data: allSellerAccounts } = await serviceClient
+        const { data: allSellerAccounts } = await supabase
           .from('seller_accounts')
           .select('*')
           .not('stripe_account_id', 'is', null);
@@ -197,7 +193,7 @@ export async function POST(
       const githubUsername = 'user-' + user.id.substring(0, 8);
       
       // Record the free purchase
-      const { error: purchaseError } = await serviceClient
+      const { error: purchaseError } = await supabase
         .from('purchases')
         .insert({
           product_id: product.id,
@@ -222,7 +218,7 @@ export async function POST(
     console.log('DEBUG: Trying profile lookup with different fields...');
     
     // Check profile by user_id
-    const { data: profilesById, error: errorById } = await serviceClient
+    const { data: profilesById, error: errorById } = await supabase
       .from('profiles')
       .select('id, user_id, email')
       .eq('id', user.id);
@@ -230,7 +226,7 @@ export async function POST(
     console.log('Profile lookup by ID field:', { profilesById, errorById });
     
     // Check profile by user_id
-    const { data: profilesByUserId, error: errorByUserId } = await serviceClient
+    const { data: profilesByUserId, error: errorByUserId } = await supabase
       .from('profiles')
       .select('id, user_id, email')
       .eq('user_id', user.id);
@@ -238,7 +234,7 @@ export async function POST(
     console.log('Profile lookup by user_id field:', { profilesByUserId, errorByUserId });
 
     // Get user's profile for customer details - try both fields
-    const profileResult = await serviceClient
+    const profileResult = await supabase
       .from('profiles')
       .select('*')
       .or(`id.eq.${user.id},user_id.eq.${user.id}`)
@@ -254,7 +250,7 @@ export async function POST(
       console.log('No profile found for user, creating new profile');
       
       // Create a new profile
-      const { data: newProfile, error: createProfileError } = await serviceClient
+      const { data: newProfile, error: createProfileError } = await supabase
         .from('profiles')
         .insert({
           id: user.id,
@@ -288,7 +284,7 @@ export async function POST(
         customerId = customer.id
 
         // Update profile with Stripe customer ID
-        const { error: updateError } = await serviceClient
+        const { error: updateError } = await supabase
           .from('profiles')
           .update({ stripe_customer_id: customerId })
           .eq('user_id', user.id)

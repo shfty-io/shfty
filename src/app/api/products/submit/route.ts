@@ -1,13 +1,12 @@
-import { createClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
     const productData = await request.json();
     console.log('Received product data:', JSON.stringify(productData));
 
-    const supabase = createClient(await cookies());
+    const supabase = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

@@ -333,6 +333,14 @@ export type Database = {
           source: string | null
           status: string
           user_id: string
+          amount_total: number | null
+          payment_details: Json | null
+          dispute_status: string | null
+          review_status: string | null
+          refund_status: string | null
+          currency: string | null
+          payment_method: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -343,6 +351,14 @@ export type Database = {
           source?: string | null
           status: string
           user_id: string
+          amount_total?: number | null
+          payment_details?: Json | null
+          dispute_status?: string | null
+          review_status?: string | null
+          refund_status?: string | null
+          currency?: string | null
+          payment_method?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -353,6 +369,14 @@ export type Database = {
           source?: string | null
           status?: string
           user_id?: string
+          amount_total?: number | null
+          payment_details?: Json | null
+          dispute_status?: string | null
+          review_status?: string | null
+          refund_status?: string | null
+          currency?: string | null
+          payment_method?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

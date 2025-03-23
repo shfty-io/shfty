@@ -1,4 +1,4 @@
-import { createServiceClient, createServerComponentClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
 // Define proper types
@@ -21,9 +21,8 @@ interface Seller {
 
 export async function GET() {
   try {
-    // Create clients
-    const supabase = await createServerComponentClient();
-    const serviceClient = createServiceClient();
+    // Use service client for elevated permissions
+    const supabase = createServiceClient();
     
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -36,7 +35,7 @@ export async function GET() {
     }
     
     // First, get the user's profile to ensure we have both IDs
-    const { data: profileData, error: profileError } = await serviceClient
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('id, user_id')
       .or(`id.eq.${user.id},user_id.eq.${user.id}`)
@@ -50,7 +49,7 @@ export async function GET() {
     const profileId = profileData?.id;
     
     // Fetch purchases
-    const { data: purchasesData, error: purchasesError } = await serviceClient
+    const { data: purchasesData, error: purchasesError } = await supabase
       .from('purchases')
       .select(`
         id,
@@ -78,7 +77,7 @@ export async function GET() {
     const productIds = purchasesData.map(purchase => purchase.product_id);
     
     // Fetch all products in a single query
-    const { data: productsData, error: productsError } = await serviceClient
+    const { data: productsData, error: productsError } = await supabase
       .from('products')
       .select(`
         id,
@@ -110,7 +109,7 @@ export async function GET() {
       .filter(Boolean);
     
     // Fetch all seller profiles in a single query
-    const { data: sellersData, error: sellersError } = await serviceClient
+    const { data: sellersData, error: sellersError } = await supabase
       .from('profiles')
       .select('id, email, full_name')
       .in('id', sellerIds);

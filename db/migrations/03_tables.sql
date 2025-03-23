@@ -70,7 +70,15 @@ CREATE TABLE IF NOT EXISTS purchases (
   status TEXT NOT NULL,
   payment_intent TEXT,
   source TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  amount_total BIGINT,
+  payment_details JSONB,
+  dispute_status TEXT,
+  review_status TEXT,
+  refund_status TEXT,
+  currency TEXT,
+  payment_method TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create likes table
