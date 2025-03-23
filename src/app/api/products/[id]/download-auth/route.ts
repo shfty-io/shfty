@@ -1,7 +1,6 @@
-import { createClient } from "@/lib/server";
+import { createServiceClient } from "@/lib/server";
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfToken } from '@/lib/csrf';
-import { cookies } from 'next/headers';
 
 interface DownloadAuthResponse {
   githubRepoUrl: string | null;
@@ -38,7 +37,8 @@ export async function GET(
     // Continue for GET requests even without a valid CSRF token
     // This is safe since GET requests are idempotent
     
-    const supabase = createClient(await cookies());
+    // Use the service client for elevated permissions to access GitHub tokens and create records
+    const supabase = createServiceClient();
 
     // Get the session - required for all downloads (free or paid)
     const { data: { session } } = await supabase.auth.getSession();

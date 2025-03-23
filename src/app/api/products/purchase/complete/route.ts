@@ -1,6 +1,5 @@
-import { createClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 interface Seller {
   github_token: string;
@@ -16,7 +15,7 @@ interface Product {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient(await cookies());
+    const supabase = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {

@@ -139,6 +139,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to increment product purchase count (alias for increment_product_purchase)
+CREATE OR REPLACE FUNCTION increment_purchase_count(product_id UUID)
+RETURNS VOID AS $$
+BEGIN
+    -- Call the existing function to avoid duplicating logic
+    PERFORM increment_product_purchase(product_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Function to delete a user and related data
 CREATE OR REPLACE FUNCTION delete_user(input_profile_id UUID)
 RETURNS VOID AS $$

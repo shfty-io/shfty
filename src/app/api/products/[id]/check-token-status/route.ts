@@ -1,6 +1,5 @@
-import { createClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { NextResponse, NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
     }
 
-    const supabase = createClient(await cookies());
+    const supabase = createServiceClient();
 
     // First, get the product and check if it uses GitHub
     const { data: product } = await supabase
