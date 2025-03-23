@@ -1,10 +1,13 @@
-import { createServerComponentClient } from '@/lib/server'
+import { createServerComponentClient, createServiceClient } from '@/lib/server'
 import { notFound } from 'next/navigation'
 import { incrementViewCount } from '@/app/actions'
 import { ProductPageContent } from './page.client'
 
 async function getProduct(byline: string) {
-  const supabase = await createServerComponentClient();
+  const supabase = createServiceClient();
+  
+  // Also create a regular client for auth operations
+  const authClient = await createServerComponentClient();
   
   // Validate byline format first
   if (!byline || typeof byline !== 'string') {
@@ -40,26 +43,34 @@ async function getProduct(byline: string) {
   }
 
   // Get the current user
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Check if the user has purchased the product
-  let hasPurchased = false
-  if (user) {
-    const { data: purchase } = await supabase
-      .from('purchases')
-      .select('id')
-      .eq('product_id', product.id)
-      .eq('user_id', user.id)
-      .single()
+  let hasPurchased = false;
+  
+  try {
+    // Get user from auth client
+    const { data: { user } } = await authClient.auth.getUser();
     
-    hasPurchased = !!purchase
+    // Check if the user has purchased the product
+    if (user) {
+      const { data: purchase } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('product_id', product.id)
+        .eq('user_id', user.id)
+        .single();
+      
+      hasPurchased = !!purchase;
+    }
+  } catch (error) {
+    console.error('Error checking purchase status:', error);
+    // If there's an error, we'll just assume the user hasn't purchased
+    hasPurchased = false;
   }
 
   // Then get the seller info
   const { data: sellerData } = await supabase
     .from('profiles')
     .select('email, full_name, avatar_url')
-    .eq('user_id', product.user_id)
+    .eq('id', product.user_id)
     .single()
 
   return {

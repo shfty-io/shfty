@@ -1,6 +1,6 @@
 import { categoryMetadata } from '@/types/categories';
 import { notFound } from 'next/navigation';
-import { createServerComponentClient } from '@/lib/server';
+import { createServiceClient } from '@/lib/server';
 import { CategoryPageContent } from './page.client';
 import { Navbar } from '@/components/global/Navbar';
 
@@ -37,7 +37,7 @@ interface PageProps {
 }
 
 async function getProductsByCategory(category: string): Promise<Product[]> {
-  const supabase = await createServerComponentClient();
+  const supabase = createServiceClient();
   
   try {
     // Convert hyphenated slug to underscore format for Supabase enum
