@@ -1,9 +1,8 @@
 import { MetadataRoute } from 'next'
-import { createClient } from '@/lib/server'
-import { cookies } from 'next/headers'
+import { createServiceClient } from '@/lib/server'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = createClient(await cookies())
+  const supabase = createServiceClient()
   
   // Fetch products
   const { data: products } = await supabase

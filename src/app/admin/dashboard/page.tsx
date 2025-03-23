@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@/lib/server';
+import { createServerComponentClient, createServiceClient } from '@/lib/server';
 
 // Import components
 import ClientTabs from '../../../components/admin/ClientTabs';
@@ -81,6 +81,7 @@ export default async function AdminDashboardPage() {
   try {
     // Create a Supabase client using the server component client function
     const supabase = await createServerComponentClient();
+    const serviceClient = createServiceClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -93,10 +94,10 @@ export default async function AdminDashboardPage() {
     let isUserAdmin = false;
     
     try {
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await serviceClient
         .from('profiles')
         .select('is_admin')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single();
       
       if (profileError) {
@@ -127,7 +128,7 @@ export default async function AdminDashboardPage() {
     // Get data for dashboard
     
     // Get payments
-    const { data: paymentsData, error: paymentsError } = await supabase
+    const { data: paymentsData, error: paymentsError } = await serviceClient
       .from('payments')
       .select(`
         id, amount, status, created_at, payment_intent_id,
@@ -142,7 +143,7 @@ export default async function AdminDashboardPage() {
     }
     
     // Get connected accounts
-    const { data: accountsData, error: accountsError } = await supabase
+    const { data: accountsData, error: accountsError } = await serviceClient
       .from('seller_accounts')
       .select(`
         id, created_at, account_status, is_onboarded, stripe_account_id,
@@ -156,7 +157,7 @@ export default async function AdminDashboardPage() {
     }
     
     // Get disputes
-    const { data: disputesData, error: disputesError } = await supabase
+    const { data: disputesData, error: disputesError } = await serviceClient
       .from('disputes')
       .select(`
         id, created_at, status, amount, payment_intent_id,
@@ -170,7 +171,7 @@ export default async function AdminDashboardPage() {
     }
     
     // Get payouts
-    const { data: payoutsData, error: payoutsError } = await supabase
+    const { data: payoutsData, error: payoutsError } = await serviceClient
       .from('payouts')
       .select(`
         id, created_at, status, amount, arrival_date,
@@ -184,7 +185,7 @@ export default async function AdminDashboardPage() {
     }
     
     // Get feedback
-    const { data: feedbackData, error: feedbackError } = await supabase
+    const { data: feedbackData, error: feedbackError } = await serviceClient
       .from('feedback')
       .select(`
         id, created_at, type, message, resolved,
@@ -198,7 +199,7 @@ export default async function AdminDashboardPage() {
     }
     
     // Get recently added products
-    const { data: productsData, error: productsError } = await supabase
+    const { data: productsData, error: productsError } = await serviceClient
       .from('products')
       .select(`
         id, created_at, name, price, status, views,
