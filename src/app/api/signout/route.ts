@@ -1,3 +1,6 @@
+// This file is already correct as it only uses auth operations
+// No database operations are being performed, so it doesn't need the service client
+
 import { createClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import { cookies } from 'next/headers';

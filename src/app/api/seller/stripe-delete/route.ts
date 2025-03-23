@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/server";
+import { createClient, createServiceClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
@@ -10,6 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function DELETE() {
   try {
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -17,7 +18,7 @@ export async function DELETE() {
     }
 
     // Get the seller account
-    const { data: sellerAccount } = await supabase
+    const { data: sellerAccount } = await serviceClient
       .from('seller_accounts')
       .select('stripe_account_id')
       .eq('user_id', user.id)
@@ -47,7 +48,7 @@ export async function DELETE() {
     }
 
     // Update the database
-    await supabase
+    await serviceClient
       .from('seller_accounts')
       .update({
         stripe_account_id: null,

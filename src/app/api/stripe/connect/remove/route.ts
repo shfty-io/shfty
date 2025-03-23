@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/server";
+import { createClient, createServiceClient } from "@/lib/server";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
 
@@ -19,8 +19,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create Supabase client
+    // Create Supabase client for auth and service client for database
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     
     // Verify the user is authenticated and is an admin
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user is an admin
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await serviceClient
       .from('profiles')
       .select('is_admin')
       .eq('user_id', user.id)

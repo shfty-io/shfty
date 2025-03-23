@@ -1,10 +1,11 @@
-import { createClient } from "@/lib/server";
+import { createClient, createServiceClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+  const serviceClient = createServiceClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const emailNotifications = formData.get("emailNotifications") === "on";
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from('profiles')
     .update({
       email_notifications_enabled: emailNotifications,

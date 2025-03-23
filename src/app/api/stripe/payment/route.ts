@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/server";
+import { createClient, createServiceClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
@@ -12,6 +12,7 @@ const PLATFORM_FEE_PERCENTAGE = Number(process.env.TRANSACTION_FEE_PERCENTAGE) |
 export async function POST(request: Request) {
   try {
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     const { productId, paymentMethodId, source } = await request.json();
 
     // Get product details
-    const { data: product } = await supabase
+    const { data: product } = await serviceClient
       .from('products')
       .select(`
         *,
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     
     // Second try: If we still don't have a seller account ID, try looking it up directly
     if (!sellerStripeAccountId) {
-      const { data: sellerAccount } = await supabase
+      const { data: sellerAccount } = await serviceClient
         .from('seller_accounts')
         .select('stripe_account_id')
         .eq('user_id', product.user_id)
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
     });
 
     // Create order record
-    await supabase
+    await serviceClient
       .from('orders')
       .insert({
         user_id: user.id,

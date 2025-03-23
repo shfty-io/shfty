@@ -5,8 +5,9 @@ import Stripe from 'stripe';
 
 export async function POST(request: Request) {
   try {
-    // Create Supabase client
+    // Create Supabase client for auth and service client for database operations
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     // Get the user's profile ID first
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await serviceClient
       .from('profiles')
       .select('id, stripe_customer_id')
       .eq('user_id', user.id)
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
       }
       
       // Create a profile if it doesn't exist
-      const { data: ensuredProfile, error: createError } = await supabase
+      const { data: ensuredProfile, error: createError } = await serviceClient
         .from('profiles')
         .insert({
           user_id: user.id,
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     // Check if the user has a Stripe Connected Account and delete it
     try {
       // Get the user's seller account
-      const { data: sellerAccount } = await supabase
+      const { data: sellerAccount } = await serviceClient
         .from('seller_accounts')
         .select('stripe_account_id')
         .eq('user_id', user.id)
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     // Only call delete_user function if we found a profile
     if (profileId) {
       // Call the database function to delete the user with the profile ID
-      const { error } = await supabase.rpc('delete_user', {
+      const { error } = await serviceClient.rpc('delete_user', {
         input_profile_id: profileId
       });
 
@@ -112,10 +113,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create a service role client to delete the auth user BEFORE signing out
-    const serviceClient = createServiceClient();
-
-    // Delete the auth user
+    // Delete the auth user using the already created serviceClient
     const { error: authError } = await serviceClient.auth.admin.deleteUser(user.id);
     
     if (authError) {

@@ -1,6 +1,5 @@
-import { createClient } from '@/lib/server'
+import { createServiceClient } from '@/lib/server'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -10,9 +9,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: [] })
   }
 
-  const supabase = createClient(await cookies())
+  const serviceClient = createServiceClient()
 
-  const { data: products, error } = await supabase
+  const { data: products, error } = await serviceClient
     .from('products')
     .select('id, title, description, price, images')
     .textSearch('title', query)

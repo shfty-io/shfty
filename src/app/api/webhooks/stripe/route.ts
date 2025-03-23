@@ -11,6 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+// Use serviceClient for all database operations instead of supabase
+const serviceClient = createServiceClient();
+
 // Helper function to process checkout purchases
 async function processCheckoutPurchase(
   supabase: SupabaseClient,
@@ -196,9 +199,6 @@ export async function POST(request: Request) {
       webhookSecret
     );
 
-    // Use the service client instead, which bypasses RLS policies
-    const supabase = createServiceClient();
-
     switch (event.type) {
       // ACCOUNT EVENTS
       case 'account.updated': {
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
         });
         
         // Check if seller account exists
-        const { data: existingAccount, error: lookupError } = await supabase
+        const { data: existingAccount, error: lookupError } = await serviceClient
           .from('seller_accounts')
           .select('id, user_id')
           .eq('stripe_account_id', account.id)
@@ -231,7 +231,7 @@ export async function POST(request: Request) {
         // Update seller account status
         const isComplete = account.details_submitted && account.charges_enabled;
         
-        const { error } = await supabase
+        const { error } = await serviceClient
           .from('seller_accounts')
           .update({
             is_onboarded: isComplete,
@@ -252,7 +252,7 @@ export async function POST(request: Request) {
         const account = event.data.object as unknown as Stripe.Account;
         
         // Update seller account status to disconnected
-        const { error } = await supabase
+        const { error } = await serviceClient
           .from('seller_accounts')
           .update({
             is_onboarded: false,
@@ -277,7 +277,7 @@ export async function POST(request: Request) {
         const accountId = externalAccount.account as string;
         
         // Store bank account change in database
-        const { error } = await supabase
+        const { error } = await serviceClient
           .from('seller_external_accounts')
           .insert({
             seller_account_id: accountId,
@@ -330,7 +330,7 @@ export async function POST(request: Request) {
         console.log('Customer email from session:', session.customer_details?.email);
         
         // First check if this customer ID exists in profiles
-        const { count, error: countError } = await supabase
+        const { count, error: countError } = await serviceClient
           .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('stripe_customer_id', customerId);
@@ -346,7 +346,7 @@ export async function POST(request: Request) {
           amount_total: session.amount_total
         });
 
-        const { data: profiles, error: profileError } = await supabase
+        const { data: profiles, error: profileError } = await serviceClient
           .from('profiles')
           .select('user_id, github_username')
           .eq('stripe_customer_id', customerId)
@@ -365,7 +365,7 @@ export async function POST(request: Request) {
           if (session.customer_details?.email) {
             console.log('Searching profiles by email:', session.customer_details.email);
             
-            const { data: emailProfiles, error: emailError } = await supabase
+            const { data: emailProfiles, error: emailError } = await serviceClient
               .from('profiles')
               .select('user_id, github_username')
               .eq('email', session.customer_details.email)
@@ -377,7 +377,7 @@ export async function POST(request: Request) {
               console.log('Found profile by email, updating with customer ID');
               
               // Update the profile with the Stripe customer ID
-              const { error: updateError } = await supabase
+              const { error: updateError } = await serviceClient
                 .from('profiles')
                 .update({ stripe_customer_id: customerId })
                 .eq('user_id', emailProfiles[0].user_id);
@@ -392,7 +392,7 @@ export async function POST(request: Request) {
                 
                 // Now proceed with the purchase using the found profile
                 try {
-                  await processCheckoutPurchase(supabase, {
+                  await processCheckoutPurchase(serviceClient, {
                     userId,
                     githubUsername,
                     productId,
@@ -423,7 +423,7 @@ export async function POST(request: Request) {
         
         // Process the checkout purchase
         try {
-          await processCheckoutPurchase(supabase, {
+          await processCheckoutPurchase(serviceClient, {
             userId,
             githubUsername,
             productId,
@@ -444,7 +444,7 @@ export async function POST(request: Request) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
         // Update purchase status if it exists
-        const { error } = await supabase
+        const { error } = await serviceClient
           .from('purchases')
           .update({
             status: 'succeeded',
@@ -470,7 +470,7 @@ export async function POST(request: Request) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
         // Update purchase status if it exists
-        const { error } = await supabase
+        const { error } = await serviceClient
           .from('purchases')
           .update({
             status: 'failed',
@@ -503,7 +503,7 @@ export async function POST(request: Request) {
         
         // Create dispute record
         try {
-          const { error } = await supabase
+          const { error } = await serviceClient
             .from('disputes')
             .insert({
               dispute_id: dispute.id,
@@ -523,7 +523,7 @@ export async function POST(request: Request) {
           }
           
           // Update purchase status
-          const { error: updateError } = await supabase
+          const { error: updateError } = await serviceClient
             .from('purchases')
             .update({
               dispute_status: 'open',
@@ -552,7 +552,7 @@ export async function POST(request: Request) {
         
         // Update purchase status
         try {
-          const { error } = await supabase
+          const { error } = await serviceClient
             .from('purchases')
             .update({
               status: charge.refunded ? 'refunded' : 'partially_refunded',
@@ -586,7 +586,7 @@ export async function POST(request: Request) {
         
         // Update refund status
         try {
-          const { error } = await supabase
+          const { error } = await serviceClient
             .from('purchases')
             .update({
               refund_status: refund.status,
@@ -620,7 +620,7 @@ export async function POST(request: Request) {
                       event.type === 'payout.failed' ? 'failed' : 'pending';
         
         // Get seller account from connected account
-        const { data: sellerData, error: sellerError } = await supabase
+        const { data: sellerData, error: sellerError } = await serviceClient
           .from('seller_accounts')
           .select('user_id')
           .eq('stripe_account_id', payout.destination)
@@ -631,7 +631,7 @@ export async function POST(request: Request) {
         }
         
         // Upsert payout record
-        const { error } = await supabase
+        const { error } = await serviceClient
           .from('seller_payouts')
           .upsert({
             payout_id: payout.id,
@@ -668,7 +668,7 @@ export async function POST(request: Request) {
         
         // Record fraud warning
         try {
-          const { error } = await supabase
+          const { error } = await serviceClient
             .from('fraud_warnings')
             .insert({
               warning_id: fraudWarning.id,
@@ -684,7 +684,7 @@ export async function POST(request: Request) {
           }
           
           // Update purchase status
-          const { error: updateError } = await supabase
+          const { error: updateError } = await serviceClient
             .from('purchases')
             .update({
               fraud_warning: true,
@@ -716,7 +716,7 @@ export async function POST(request: Request) {
         
         // Upsert review record
         try {
-          const { error } = await supabase
+          const { error } = await serviceClient
             .from('payment_reviews')
             .upsert({
               review_id: review.id,
@@ -734,7 +734,7 @@ export async function POST(request: Request) {
           }
           
           // Update purchase status
-          const { error: updateError } = await supabase
+          const { error: updateError } = await serviceClient
             .from('purchases')
             .update({
               review_status: isClosed ? 'closed' : 'open',

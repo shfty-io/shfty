@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/server';
+import { createClient, createServiceClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
+    // Regular client for authentication
     const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -50,8 +51,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Use service client for database operations
+    const serviceClient = createServiceClient();
+    
     // First, check if a seller account already exists for this user
-    const { data: existingAccount } = await supabase
+    const { data: existingAccount } = await serviceClient
       .from('seller_accounts')
       .select('id')
       .eq('user_id', user.id)
@@ -61,7 +65,7 @@ export async function POST(request: Request) {
 
     if (existingAccount) {
       // If account exists, update it
-      const { error: updateError } = await supabase
+      const { error: updateError } = await serviceClient
         .from('seller_accounts')
         .update({
           github_token: token,
@@ -72,7 +76,7 @@ export async function POST(request: Request) {
       error = updateError;
     } else {
       // If no account exists, create one
-      const { error: insertError } = await supabase
+      const { error: insertError } = await serviceClient
         .from('seller_accounts')
         .insert({
           user_id: user.id,
@@ -105,6 +109,7 @@ export async function POST(request: Request) {
 
 export async function DELETE() {
   try {
+    // Regular client for authentication
     const supabase = createClient(await cookies());
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -115,8 +120,11 @@ export async function DELETE() {
       );
     }
 
+    // Use service client for database operations
+    const serviceClient = createServiceClient();
+    
     // Clear the GitHub token
-    const { error } = await supabase
+    const { error } = await serviceClient
       .from('seller_accounts')
       .update({
         github_token: null,
