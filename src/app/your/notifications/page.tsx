@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,14 +34,14 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
       setIsLoading(true);
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setNotifications(data || []);
+        // Use API endpoint instead of direct Supabase query
+        const response = await fetch('/api/user/notifications');
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setNotifications(data.notifications || []);
       } catch (error) {
         console.error('Error fetching notifications:', error);
         toast({
@@ -61,17 +60,18 @@ export default function NotificationsPage() {
   // Mark notification as read
   const markAsRead = async (id: string) => {
     try {
-      const supabase = createClient();
+      // Use API endpoint instead of direct Supabase query
+      const response = await fetch('/api/user/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, status: 'read' }),
+      });
       
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          status: 'read',
-          read_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`API returned status: ${response.status}`);
+      }
       
       // Update local state
       setNotifications(notifications.map(n => 
@@ -95,17 +95,14 @@ export default function NotificationsPage() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      const supabase = createClient();
+      // Use API endpoint instead of direct Supabase query
+      const response = await fetch('/api/user/notifications', {
+        method: 'PUT',
+      });
       
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          status: 'read',
-          read_at: new Date().toISOString()
-        })
-        .eq('status', 'unread');
-
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`API returned status: ${response.status}`);
+      }
       
       // Update local state
       setNotifications(notifications.map(n => ({ ...n, status: 'read' })));

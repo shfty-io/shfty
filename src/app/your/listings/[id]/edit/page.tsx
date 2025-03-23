@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@/lib/server';
+import { createServerComponentClient, createServiceClient } from '@/lib/server';
 import { ProductFormData } from '@/components/seller/ProductEditForm';
 import { revalidatePath } from 'next/cache';
 import { EditPageContent } from './page.client';
@@ -20,14 +20,15 @@ export default async function EditProductPage(props: PageProps) {
   const id = params.id;
   
   const supabase = await createServerComponentClient();
+  const serviceClient = createServiceClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
     return redirect(`/auth/login?redirect=/your/listings/${id}/edit`);
   }
 
-  // Fetch product details
-  const { data: product, error: productError } = await supabase
+  // Fetch product details using service role client
+  const { data: product, error: productError } = await serviceClient
     .from('products')
     .select('*, demo_url, image_positions')
     .eq('id', id)
@@ -42,6 +43,7 @@ export default async function EditProductPage(props: PageProps) {
     'use server';
     
     const supabase = await createServerComponentClient();
+    const serviceClient = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
@@ -53,7 +55,8 @@ export default async function EditProductPage(props: PageProps) {
       return { error: 'Minimum price for paid products is $4.99' };
     }
 
-    const { error } = await supabase
+    // Use service role client for database operations
+    const { error } = await serviceClient
       .from('products')
       .update({
         name: formData.name,
