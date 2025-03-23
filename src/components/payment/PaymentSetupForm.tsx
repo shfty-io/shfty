@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { createClient } from "@/lib/client";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -25,22 +24,24 @@ export function PaymentSetupForm({ onSubmit }: PaymentSetupFormProps) {
     // Check existing Stripe account status
     const checkAccountStatus = async () => {
       try {
-        const supabase = createClient();
-        const { data: sellerAccount } = await supabase
-          .from('seller_accounts')
-          .select('stripe_account_id, is_onboarded, account_status')
-          .single();
-
-        if (sellerAccount) {
+        // Use API endpoint instead of direct Supabase query
+        const response = await fetch('/api/user/seller/stripe-account');
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.stripeAccountId || data.isOnboarded) {
           setAccountData({
-            stripeAccountId: sellerAccount.stripe_account_id,
-            isOnboarded: sellerAccount.is_onboarded,
-            accountStatus: sellerAccount.account_status
+            stripeAccountId: data.stripeAccountId,
+            isOnboarded: data.isOnboarded,
+            accountStatus: data.accountStatus
           });
           
-          if (sellerAccount.is_onboarded) {
+          if (data.isOnboarded) {
             onSubmit({
-              stripeAccountId: sellerAccount.stripe_account_id,
+              stripeAccountId: data.stripeAccountId,
               isOnboarded: true,
               accountStatus: 'complete'
             });

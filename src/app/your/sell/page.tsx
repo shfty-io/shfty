@@ -6,7 +6,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductForm, type ProductFormData } from "@/components/seller/ProductForm";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/client";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
@@ -25,15 +24,17 @@ function SellerDashboardContent() {
     const checkPaymentStatus = async () => {
       setIsLoading(true);
       try {
-        const supabase = createClient();
-        const { data: sellerAccount } = await supabase
-          .from('seller_accounts')
-          .select('stripe_account_id, is_onboarded, account_status')
-          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-
+        // Use API endpoint instead of direct Supabase query
+        const response = await fetch('/api/user/seller/payment-status');
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const sellerAccount = data.sellerAccount;
+        
         // Set payment setup status
-        setIsPaymentSetup(!!sellerAccount?.is_onboarded);
+        setIsPaymentSetup(data.paymentSetup);
         
         // If we're coming back from Stripe Connect onboarding
         if (setupParam === 'complete' && sellerAccount?.stripe_account_id && !sellerAccount?.is_onboarded) {

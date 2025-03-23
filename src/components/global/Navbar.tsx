@@ -19,7 +19,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { createBrowserClient } from '@supabase/ssr'
 import { cn } from '@/lib/utils'
 
 // Full categories data for sidebar
@@ -257,41 +256,15 @@ export function Navbar() {
     async function fetchCategoryCounts() {
       setIsLoadingCounts(true)
       
-      // Use direct client initialization
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      
       try {
-        // Fetch all approved products and their categories
-        const { data: products, error } = await supabase
-          .from('products')
-          .select('categories')
-          .eq('status', 'approved');
-        
-        if (error) {
-          console.error('Supabase query error:', error);
-          return;
+        // Use server-side API endpoint instead of direct Supabase query
+        const response = await fetch('/api/categories/counts');
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
         }
         
-        // Calculate counts for each category
-        const counts: Record<string, number> = {};
-        
-        // Process all products and count by category
-        products?.forEach((product) => {
-          if (product.categories && Array.isArray(product.categories)) {
-            product.categories.forEach((category: string) => {
-              // Convert slugs to database format if needed
-              const normalizedCategory = category.includes('-') ? 
-                category.replace(/-/g, '_') : category;
-              
-              counts[normalizedCategory] = (counts[normalizedCategory] || 0) + 1;
-            });
-          }
-        });
-        
-        setCategoryCounts(counts);
+        const data = await response.json();
+        setCategoryCounts(data.counts || {});
       } catch (error) {
         console.error('Error fetching category counts:', error);
       } finally {

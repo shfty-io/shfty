@@ -53,64 +53,15 @@ export default function ListingsPage() {
         
         setUser(user);
         
-        // Fetch seller account status
-        const { data: sellerData } = await supabase
-          .from('seller_accounts')
-          .select('is_onboarded, stripe_account_id, github_token, token_status')
-          .eq('user_id', user.id)
-          .single();
-          
-        setSellerAccount(sellerData || null);
+        // Use the API endpoint instead of direct Supabase queries
+        const response = await fetch('/api/user/listings');
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
+        }
         
-        // Fetch user's products
-        const { data: products } = await supabase
-          .from('products')
-          .select(`
-            id,
-            name,
-            description,
-            price,
-            categories,
-            created_at,
-            updated_at,
-            status,
-            short_description
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
-        // Process product visibility
-        const processedProducts = (products || []).map(product => {
-          // Check if the product should be visible to customers
-          let isVisible = true;
-          let visibilityReason = '';
-          
-          // Free products are always visible
-          if (product.price > 0 && sellerData) {
-            // Paid products need valid Stripe account and GitHub token
-            const hasValidStripeAccount = sellerData.is_onboarded && sellerData.stripe_account_id;
-            const hasValidGitHubToken = sellerData.github_token && sellerData.token_status !== 'expired';
-            
-            if (!hasValidStripeAccount && !hasValidGitHubToken) {
-              isVisible = false;
-              visibilityReason = 'Missing both Stripe account and GitHub token';
-            } else if (!hasValidStripeAccount) {
-              isVisible = false;
-              visibilityReason = 'Missing Stripe account';
-            } else if (!hasValidGitHubToken) {
-              isVisible = false;
-              visibilityReason = 'Missing or expired GitHub token';
-            }
-          }
-          
-          return {
-            ...product,
-            is_visible: isVisible,
-            visibility_reason: visibilityReason
-          };
-        });
-          
-        setProducts(processedProducts);
+        const data = await response.json();
+        setProducts(data.products || []);
+        setSellerAccount(data.sellerAccount);
       } catch (error) {
         console.error('Error loading listings data:', error);
       } finally {

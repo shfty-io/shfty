@@ -1,33 +1,37 @@
 import { redirect } from "next/navigation";
-import { createServerComponentClient } from "@/lib/server";
+import { createServerComponentClient, createServiceClient } from "@/lib/server";
 import AccountSettingsClient from "@/components/account/AccountSettingsClient";
 
 export default async function AccountPage() {
   try {
-    // Then create the Supabase client with the cookie store
+    // Create the Supabase client with the cookie store for auth
     const supabase = await createServerComponentClient();
     
     // Check session
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (userError || !user) {
       redirect("/auth/login");
     }
     
-    // Fetch profile data server-side with authenticated session
-    const { data: profile } = await supabase
+    // Use service client for database operations
+    const serviceClient = createServiceClient();
+    
+    // Fetch profile data using service role client
+    const { data: profile, error } = await serviceClient
       .from('profiles')
-      .select('email_notifications_enabled, created_at, full_name, avatar_url, id')
-      .eq('id', session.user.id)
+      .select('email_notifications_enabled, created_at, full_name, avatar_url, id, user_id')
+      .or(`id.eq.${user.id},user_id.eq.${user.id}`)
       .single();
     
-    if (!profile) {
+    if (error || !profile) {
       // If no profile found, something is wrong with the user's account
-      console.error('No profile found for user:', session.user.id);
+      console.error('No profile found for user:', user.id);
+      console.error('Error details:', error);
       return <div>Error loading your profile. Please contact support.</div>
     }
     
-    return <AccountSettingsClient user={session.user} profile={profile} />;
+    return <AccountSettingsClient user={user} profile={profile} />;
   } catch (error) {
     console.error('Error in account page:', error);
     return <div>Error loading your account. Please try again later.</div>

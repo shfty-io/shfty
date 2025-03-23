@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/client';
 import { EarningsSummary, EarningsSummaryData } from './EarningsSummary';
 import { PayoutHistory, PayoutData } from './PayoutHistory';
 import { PayoutSettings } from './PayoutSettings';
@@ -20,42 +19,19 @@ export function EarningsPanel() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const supabase = createClient();
-        
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          throw new Error('User not authenticated');
+        // Use API endpoint instead of direct Supabase query
+        const response = await fetch('/api/user/payouts');
+        if (!response.ok) {
+          throw new Error(`API returned status: ${response.status}`);
         }
         
-        // Fetch payouts for this seller
-        const { data: payoutsData, error: payoutsError } = await supabase
-          .from('seller_payouts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
-        if (payoutsError) throw payoutsError;
-        setPayouts(payoutsData || []);
-        
-        // Calculate earnings summary
-        let totalPending = 0;
-        let totalPaid = 0;
-        
-        (payoutsData || []).forEach(payout => {
-          if (payout.status === 'paid') {
-            totalPaid += payout.amount;
-          } else if (payout.status === 'pending') {
-            totalPending += payout.amount;
-          }
-        });
-        
-        setSummary({
-          totalPending,
-          totalPaid,
-          totalLifetime: totalPending + totalPaid,
-          currency: 'usd', // Default currency
+        const data = await response.json();
+        setPayouts(data.payouts || []);
+        setSummary(data.summary || {
+          totalPending: 0,
+          totalPaid: 0,
+          totalLifetime: 0,
+          currency: 'usd',
         });
       } catch (error) {
         console.error('Error fetching payout data:', error);
