@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/server";
+import { createClient, createServiceClient } from "@/lib/server";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
@@ -10,6 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST() {
   try {
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -20,7 +21,7 @@ export async function POST() {
     }
 
     // Check if user already has a Stripe Connect account
-    const { data: sellerAccount } = await supabase
+    const { data: sellerAccount } = await serviceClient
       .from('seller_accounts')
       .select('stripe_account_id, is_onboarded')
       .eq('user_id', user.id)
@@ -32,7 +33,7 @@ export async function POST() {
       
       // If account is already complete, just return the dashboard URL
       if (account.details_submitted && account.charges_enabled) {
-        await supabase
+        await serviceClient
           .from('seller_accounts')
           .update({
             is_onboarded: true,
@@ -74,7 +75,7 @@ export async function POST() {
     console.log('Created Stripe account:', account.id, 'for user:', user.id);
 
     // Check for existing seller account first
-    const { data: existingAccount, error: checkError } = await supabase
+    const { data: existingAccount, error: checkError } = await serviceClient
       .from('seller_accounts')
       .select('id')
       .eq('user_id', user.id)
@@ -90,7 +91,7 @@ export async function POST() {
     // Update existing account or insert new one
     if (existingAccount) {
       // Update existing account
-      const { error } = await supabase
+      const { error } = await serviceClient
         .from('seller_accounts')
         .update({
           stripe_account_id: account.id,
@@ -102,7 +103,7 @@ export async function POST() {
       updateError = error;
     } else {
       // Insert new account
-      const { error } = await supabase
+      const { error } = await serviceClient
         .from('seller_accounts')
         .insert({
           user_id: user.id,
@@ -144,6 +145,7 @@ export async function PUT(request: Request) {
   try {
     const { accountId } = await request.json();
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
 
     // Check if account ID is provided
     if (!accountId) {
@@ -164,7 +166,7 @@ export async function PUT(request: Request) {
     }
 
     // Verify this account belongs to the user
-    const { data: sellerAccount, error: sellerError } = await supabase
+    const { data: sellerAccount, error: sellerError } = await serviceClient
       .from('seller_accounts')
       .select('stripe_account_id')
       .eq('user_id', user.id)
@@ -186,7 +188,7 @@ export async function PUT(request: Request) {
     const isComplete = account.details_submitted && account.charges_enabled;
     
     // Update onboarding status
-    const { error } = await supabase
+    const { error } = await serviceClient
       .from('seller_accounts')
       .update({
         is_onboarded: isComplete,

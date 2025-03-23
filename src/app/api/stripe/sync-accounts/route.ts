@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/server";
+import { createClient, createServiceClient } from "@/lib/server";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
 
@@ -9,8 +9,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST() {
   try {
-    // Create Supabase client
+    // Create Supabase client for auth and service client for database
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     
     // Verify the user is authenticated and is an admin
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -23,7 +24,7 @@ export async function POST() {
     }
 
     // Check if user is an admin
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await serviceClient
       .from('profiles')
       .select('is_admin')
       .eq('user_id', user.id)
@@ -53,7 +54,7 @@ export async function POST() {
     }
     
     // Get existing accounts from database
-    const { data: existingAccounts, error: fetchError } = await supabase
+    const { data: existingAccounts, error: fetchError } = await serviceClient
       .from('seller_accounts')
       .select('stripe_account_id, user_id');
 
@@ -80,7 +81,7 @@ export async function POST() {
 
       // If no user ID in metadata, try to get it from the account email
       if (!userId && account.email) {
-        const { data: users } = await supabase
+        const { data: users } = await serviceClient
           .from('profiles')
           .select('id')
           .eq('email', account.email)
@@ -106,7 +107,7 @@ export async function POST() {
       }
 
       // Insert the account into our database
-      const { error: insertError } = await supabase
+      const { error: insertError } = await serviceClient
         .from('seller_accounts')
         .insert({
           user_id: userId,

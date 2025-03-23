@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server';
+import { createClient, createServiceClient } from '@/lib/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -8,9 +8,10 @@ export async function POST(request: NextRequest) {
     const fullName = formData.get('fullName') as string;
     const avatarUrl = formData.get('avatarUrl') as string;
 
-    // Create Supabase server client
+    // Create Supabase client for auth and service client for database operations
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
+    const serviceClient = createServiceClient();
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     
     // Only update if there are changes
     if (Object.keys(updates).length > 0) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await serviceClient
         .from('profiles')
         .update(updates)
         .eq('id', user.id);

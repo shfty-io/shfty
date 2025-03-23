@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@/lib/server';
+import { createClient, createServiceClient } from '@/lib/server';
 import { handleApiError } from '@/lib/error-handler';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     
     // Authenticate user and check permissions
     const supabase = createClient(await cookies());
+    const serviceClient = createServiceClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     }
     
     // Check if user has admin role
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await serviceClient
       .from('profiles')
       .select('role')
       .eq('user_id', user.id)
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     }
     
     // Get dispute from database to verify it exists
-    const { data: dispute, error: disputeError } = await supabase
+    const { data: dispute, error: disputeError } = await serviceClient
       .from('disputes')
       .select('*')
       .eq('dispute_id', disputeId)

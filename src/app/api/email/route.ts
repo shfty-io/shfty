@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { sendEmail, sendWelcomeEmail } from '@/lib/email'
+import { createServiceClient } from '@/lib/server'
 
 // Only allow POST requests to this endpoint
 export async function POST(request: NextRequest) {
   try {
-    // Create Supabase server client
+    // Create Supabase server client for auth
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
         },
       }
     )
+    
+    // Create service client for database operations
+    const serviceClient = createServiceClient();
 
     // Verify authentication
     const { data: { session } } = await supabase.auth.getSession()
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
       case 'welcome':
         // Verify user has admin role or is sending to themselves
         if (data.email !== session.user.email) {
-          const { data: userRole } = await supabase
+          const { data: userRole } = await serviceClient
             .from('profiles')
             .select('role')
             .eq('user_id', session.user.id)
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
       
       case 'custom':
         // Verify user has admin role
-        const { data: userRole } = await supabase
+        const { data: userRole } = await serviceClient
           .from('profiles')
           .select('role')
           .eq('user_id', session.user.id)
