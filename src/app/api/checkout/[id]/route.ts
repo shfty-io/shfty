@@ -6,7 +6,8 @@ import {
   createExternalServiceError,
   handleApiError
 } from '@/lib/error-handler'
-import { createServiceClient } from '@/lib/server'
+import { createServiceClient, createClient } from '@/lib/server'
+import { cookies } from 'next/headers'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia'
@@ -30,8 +31,12 @@ export async function POST(
     const id = pathParts[pathParts.length - 1];
     const productPath = `/product/${id}`;
 
-    // Use the service client
+    // Use the service client for database operations
     const supabase = createServiceClient();
+    
+    // Use regular client for authentication
+    const cookieStore = await cookies();
+    const authClient = createClient(cookieStore);
     
     // Get request body for source information
     const requestBody = await request.json().catch(() => ({}))
@@ -166,8 +171,8 @@ export async function POST(
       );
     }
 
-    // Use regular supabase client for user authentication
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    // Use regular client for user authentication
+    const { data: { user }, error: userError } = await authClient.auth.getUser();
     if (userError || !user) {
       // Return a more helpful error for easier redirect after login
       return new NextResponse(
