@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/server';
+import { createServiceClient, createServerComponentClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 
 // Define proper types
@@ -21,11 +21,9 @@ interface Seller {
 
 export async function GET() {
   try {
-    // Use service client for elevated permissions
-    const supabase = createServiceClient();
-    
-    // Get authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // First get the authenticated user using the serverComponentClient to access cookies
+    const authClient = await createServerComponentClient();
+    const { data: { user }, error: userError } = await authClient.auth.getUser();
     
     if (userError || !user) {
       return NextResponse.json(
@@ -33,6 +31,9 @@ export async function GET() {
         { status: 401 }
       );
     }
+    
+    // Now use service client for elevated permissions on database operations
+    const supabase = createServiceClient();
     
     // First, get the user's profile to ensure we have both IDs
     const { data: profileData, error: profileError } = await supabase
