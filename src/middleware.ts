@@ -37,7 +37,9 @@ export async function middleware(request: NextRequest) {
             path: options?.path || '/',
             sameSite: options?.sameSite || 'lax',
             secure: process.env.NODE_ENV === 'production',
-            httpOnly: true
+            httpOnly: true,
+            // Set a longer expiration time for better persistence
+            maxAge: options?.maxAge || 60 * 60 * 24 * 30 // 30 days default
           });
         },
         remove(name, options) {
@@ -60,18 +62,42 @@ export async function middleware(request: NextRequest) {
     
     if (error) {
       console.error("Error refreshing session in middleware:", error);
+      // Clear expired cookies if session error occurs
+      response.cookies.set({
+        name: 'sb-access-token',
+        value: '',
+        path: '/',
+        maxAge: 0,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      response.cookies.set({
+        name: 'sb-refresh-token',
+        value: '',
+        path: '/',
+        maxAge: 0,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
     } else if (!data.session) {
       // No session found - this is normal for unauthenticated users
       // Redirect to login if trying to access protected routes
       if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
-        return NextResponse.redirect(new URL('/auth/login', request.url));
+        const redirectUrl = new URL('/auth/login', request.url);
+        // Add a message parameter to inform the user about session expiration
+        redirectUrl.searchParams.set('message', 'Your session has expired. Please sign in again.');
+        return NextResponse.redirect(redirectUrl);
       }
     } 
   } catch (err) {
     console.error("Failed to refresh session in middleware:", err);
     // If there's an error checking authentication, redirect to login for protected routes
     if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+      const redirectUrl = new URL('/auth/login', request.url);
+      redirectUrl.searchParams.set('message', 'Your session has expired. Please sign in again.');
+      return NextResponse.redirect(redirectUrl);
     }
   }
 
