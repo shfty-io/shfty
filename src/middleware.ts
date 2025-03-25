@@ -4,19 +4,6 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url);
   
-  // Handle GitHub OAuth callback code in URL when landing on home page
-  // This happens when the callback URL doesn't properly redirect
-  if (requestUrl.pathname === '/' && requestUrl.searchParams.has('code')) {
-    const code = requestUrl.searchParams.get('code');
-    if (code) {
-      // Redirect to the callback URL to properly process the code
-      const callbackUrl = new URL('/auth/callback', requestUrl.origin);
-      callbackUrl.searchParams.set('code', code);
-      callbackUrl.searchParams.set('_t', Date.now().toString());
-      return NextResponse.redirect(callbackUrl);
-    }
-  }
-  
   // Create a response object that we can modify
   const response = NextResponse.next({
     request: {
@@ -70,52 +57,37 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if it exists with improved error handling
   try {
-    // Check if we already have auth cookies
-    const accessToken = request.cookies.get('sb-access-token')?.value;
-    const refreshToken = request.cookies.get('sb-refresh-token')?.value;
+    // Try to access and refresh the session
+    const { data, error } = await supabase.auth.getSession();
     
-    // If we have tokens but are trying to access auth routes, check if session is valid
-    if ((accessToken || refreshToken) && 
-        (requestUrl.pathname.startsWith('/your') || 
-         requestUrl.pathname.startsWith('/admin'))) {
-      
-      // Try to access and refresh the session
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error || !data.session) {
-        // Session is invalid, clear cookies and redirect to login
-        console.error("Error refreshing session in middleware:", error);
-        // Clear expired cookies if session error occurs
-        response.cookies.set({
-          name: 'sb-access-token',
-          value: '',
-          path: '/',
-          maxAge: 0,
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax'
-        });
-        response.cookies.set({
-          name: 'sb-refresh-token',
-          value: '',
-          path: '/',
-          maxAge: 0,
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax'
-        });
-        
-        const redirectUrl = new URL('/auth/login', request.url);
-        redirectUrl.searchParams.set('message', 'Your session has expired. Please sign in again.');
-        return NextResponse.redirect(redirectUrl);
-      }
-    } else if (!accessToken && !refreshToken) {
+    if (error) {
+      console.error("Error refreshing session in middleware:", error);
+      // Clear expired cookies if session error occurs
+      response.cookies.set({
+        name: 'sb-access-token',
+        value: '',
+        path: '/',
+        maxAge: 0,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      response.cookies.set({
+        name: 'sb-refresh-token',
+        value: '',
+        path: '/',
+        maxAge: 0,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+    } else if (!data.session) {
       // No session found - this is normal for unauthenticated users
       // Redirect to login if trying to access protected routes
       if (requestUrl.pathname.startsWith('/your') || requestUrl.pathname.startsWith('/admin')) {
         const redirectUrl = new URL('/auth/login', request.url);
-        // Add the current URL as a redirect parameter
-        redirectUrl.searchParams.set('redirect', requestUrl.pathname);
+        // Add a message parameter to inform the user about session expiration
+        redirectUrl.searchParams.set('message', 'Your session has expired. Please sign in again.');
         return NextResponse.redirect(redirectUrl);
       }
     } 

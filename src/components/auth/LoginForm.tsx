@@ -6,7 +6,6 @@ import { createClient } from '@/lib/client'
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useSearchParams } from 'next/navigation'
-import { useRouter } from 'next/navigation'
 
 export function LoginForm({
   className,
@@ -15,7 +14,6 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const router = useRouter()
   const supabase = createClient()
   
   // Get redirect path
@@ -23,16 +21,6 @@ export function LoginForm({
 
   // Handle errors and messages from URL parameters
   useEffect(() => {
-    // Check for code parameter - if it's present but we're on the login page,
-    // something went wrong with the GitHub OAuth redirect
-    const codeParam = searchParams.get('code')
-    if (codeParam) {
-      setError('Your sign-in was not completed. Please try again.')
-      // Clear the URL to prevent repeated errors
-      router.replace('/auth/login')
-      return
-    }
-    
     const errorParam = searchParams.get('error')
     const messageParam = searchParams.get('message')
     
@@ -41,24 +29,20 @@ export function LoginForm({
     } else if (messageParam) {
       setError(decodeURIComponent(messageParam))
     }
-  }, [searchParams, router])
+  }, [searchParams])
 
   // Handle GitHub login
   const handleGitHubLogin = async () => {
     try {
       setIsLoading(true)
       
-      // Clear any existing auth state before starting a new login
-      await supabase.auth.signOut()
-      
       // Get the site URL for redirection
       // Note: Always use window.location.origin as a reliable source for the current domain
       const origin = window.location.origin
       
-      // Create the callback URL with a timestamp to prevent caching
+      // Create the callback URL
       const callbackUrl = new URL('/auth/callback', origin)
       callbackUrl.searchParams.set('returnTo', redirectPath)
-      callbackUrl.searchParams.set('_t', Date.now().toString())
       
       // Start OAuth flow with explicit origin
       const { error } = await supabase.auth.signInWithOAuth({
@@ -72,9 +56,6 @@ export function LoginForm({
       if (error) {
         throw error
       }
-      
-      // The user will be redirected to GitHub at this point
-      // We don't need to manually reset isLoading as the page will reload
     } catch (err) {
       console.error('GitHub login error:', err)
       setError(err instanceof Error ? err.message : 'Failed to sign in with GitHub')
