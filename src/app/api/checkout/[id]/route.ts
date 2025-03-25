@@ -171,6 +171,25 @@ export async function POST(
       );
     }
 
+    // Check if product has a GitHub repository and validate GitHub token
+    if (product.github_repo_url) {
+      const { data: sellerAccount } = await supabase
+        .from('seller_accounts')
+        .select('github_token, token_status')
+        .eq('user_id', product.user_id)
+        .single();
+
+      if (!sellerAccount?.github_token || sellerAccount.token_status === 'expired') {
+        return NextResponse.json(
+          { 
+            error: "This seller hasn't completed their GitHub setup yet", 
+            details: "The seller needs to set up their GitHub integration before you can purchase this product."
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Use regular client for user authentication
     const { data: { user }, error: userError } = await authClient.auth.getUser();
     if (userError || !user) {
@@ -314,8 +333,8 @@ export async function POST(
               currency: 'usd',
               product_data: {
                 name: product.name,
-                description: product.description && product.description.length > 0 
-                  ? `${product.name}: ${product.description.slice(0, 80)}${product.description.length > 80 ? '...' : ''}`
+                description: product.short_description && product.short_description.length > 0 
+                  ? `${product.name}: ${product.short_description}`
                   : product.name,
                 images: product.image_urls && product.image_urls.length > 0 
                   ? [product.image_urls[0]] 
@@ -332,13 +351,14 @@ export async function POST(
         metadata: {
           product_id: product.id,
           seller_id: product.user_id,
+          user_id: user.id,
           source: source,
+          amount_total: Math.round(product.price * 100),
+          platform_fee: Math.round(product.price * 100 * (Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10) / 100),
         },
         // Add payment_intent_data with application fee
         payment_intent_data: {
-          application_fee_amount: source === 'category' 
-            ? 0 
-            : Math.round(product.price * 100 * (Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10) / 100),
+          application_fee_amount: Math.round(product.price * 100 * (Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10) / 100),
           transfer_data: {
             destination: sellerStripeAccountId,
           },

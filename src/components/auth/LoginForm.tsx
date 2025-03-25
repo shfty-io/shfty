@@ -19,11 +19,15 @@ export function LoginForm({
   // Get redirect path
   const redirectPath = searchParams.get('redirect') || '/'
 
-  // Handle errors from URL parameters
+  // Handle errors and messages from URL parameters
   useEffect(() => {
     const errorParam = searchParams.get('error')
+    const messageParam = searchParams.get('message')
+    
     if (errorParam) {
       setError(decodeURIComponent(errorParam))
+    } else if (messageParam) {
+      setError(decodeURIComponent(messageParam))
     }
   }, [searchParams])
 

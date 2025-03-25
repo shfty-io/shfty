@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
             // Don't set SameSite=strict as it can break OAuth redirects
             sameSite: 'lax',
             secure: requestUrl.protocol === 'https:',
+            // Set a longer expiration time for better persistence
+            maxAge: 60 * 60 * 24 * 30, // 30 days
             // Add this to ensure cookies work in iframe contexts (if needed)
             // partitioned: false, // Only include if needed and supported
           })
