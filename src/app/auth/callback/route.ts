@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   
   if (!code) {
     console.error('No code parameter found in auth callback')
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(new URL('/auth/login?error=Missing+authentication+code', request.url))
   }
 
   const redirectTo = requestUrl.searchParams.get('returnTo') || '/'
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
             secure: requestUrl.protocol === 'https:',
             // Set a longer expiration time for better persistence
             maxAge: 60 * 60 * 24 * 30, // 30 days
-            // Add this to ensure cookies work in iframe contexts (if needed)
-            // partitioned: false, // Only include if needed and supported
+            // Make sure cookies are HTTP-only for security
+            httpOnly: true
           })
         },
         remove(name, options) {
@@ -62,17 +62,34 @@ export async function GET(request: NextRequest) {
   )
 
   try {
+    // Clear any potentially stale cookies first to avoid conflicts
+    response.cookies.set({
+      name: 'sb-access-token',
+      value: '',
+      path: '/',
+      maxAge: 0,
+    })
+    
+    response.cookies.set({
+      name: 'sb-refresh-token',
+      value: '',
+      path: '/',
+      maxAge: 0,
+    })
+
     // Try to exchange code for session multiple times if needed (up to 2 retries)
     let sessionSuccess = false
     let retries = 0
     let error;
     
     while (!sessionSuccess && retries < 3) {
+      console.log(`Attempting to exchange code for session (attempt ${retries + 1})`)
       const result = await supabase.auth.exchangeCodeForSession(code)
       error = result.error
       
       if (!error) {
         sessionSuccess = true
+        console.log('Successfully exchanged code for session')
         break
       }
       
@@ -87,6 +104,15 @@ export async function GET(request: NextRequest) {
     
     if (error) {
       console.error('All attempts to exchange code for session failed:', error.message)
+      // If we're getting a specific known error, try a different approach
+      if (error.message.includes('expired') || error.message.includes('invalid')) {
+        // This suggests the code was already used or expired
+        // Redirect back to login with a more helpful message
+        return NextResponse.redirect(
+          new URL(`/auth/login?error=${encodeURIComponent('Your login session expired. Please try again.')}`, request.url)
+        )
+      }
+      
       return NextResponse.redirect(
         new URL(`/auth/login?error=${encodeURIComponent(error.message)}`, request.url)
       )
@@ -184,6 +210,10 @@ export async function GET(request: NextRequest) {
         new URL('/auth/login?error=Failed+to+create+session', request.url)
       )
     }
+    
+    // Add a timestamp to ensure the browser doesn't use a cached version of the destination
+    targetUrl.searchParams.set('_t', Date.now().toString())
+    response.headers.set('Location', targetUrl.toString())
     
     return response
   } catch (error) {
