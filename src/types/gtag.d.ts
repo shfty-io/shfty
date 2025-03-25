@@ -5,8 +5,8 @@ interface Window {
     targetId: string,
     config?: {
       page_path?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     }
   ) => void;
-  dataLayer: any[];
+  dataLayer: Record<string, unknown>[];
 } 
