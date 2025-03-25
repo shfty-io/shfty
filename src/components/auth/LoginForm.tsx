@@ -36,30 +36,37 @@ export function LoginForm({
     try {
       setIsLoading(true)
       
-      // Get the site URL for redirection
-      // Note: Always use window.location.origin as a reliable source for the current domain
-      const origin = window.location.origin
+      // Create the callback URL with the origin from env var if available
+      const origin = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_SITE_URL;
       
-      // Create the callback URL
-      const callbackUrl = new URL('/auth/callback', origin)
-      callbackUrl.searchParams.set('returnTo', redirectPath)
+      const callbackUrl = new URL('/auth/callback', origin);
       
-      // Start OAuth flow with explicit origin
+      // Add the redirect path as a query parameter
+      if (redirectPath && redirectPath !== '/') {
+        callbackUrl.searchParams.set('returnTo', redirectPath);
+      }
+      
+      // Start OAuth flow
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: callbackUrl.toString(),
-          scopes: 'repo',
+          scopes: 'repo read:user user:email',
         }
-      })
+      });
 
       if (error) {
-        throw error
+        throw error;
       }
+      
+      // Note: We don't need to manually redirect as Supabase handles it
+      
     } catch (err) {
-      console.error('GitHub login error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to sign in with GitHub')
-      setIsLoading(false)
+      console.error('GitHub login error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to sign in with GitHub');
+      setIsLoading(false);
     }
   }
 
