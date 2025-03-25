@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 interface Product {
   id: string;
   name: string;
-  description: string;
+  short_description: string;
   price: number;
   github_repo_url: string;
   user_id: string;
@@ -83,7 +83,7 @@ export async function GET() {
       .select(`
         id,
         name,
-        description,
+        short_description,
         price,
         github_repo_url,
         user_id

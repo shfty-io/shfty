@@ -81,9 +81,14 @@ async function getSessionAndProduct(sessionId: string, byline: string) {
           user_id: user.id,
           product_id: product.id,
           status: 'completed',
-          github_username: buyerGithubUsername,
-          payment_intent: session.payment_intent?.toString(),
-          source: session.metadata?.source || 'direct'
+          payment_intent_id: session.payment_intent?.toString(),
+          amount_total: session.amount_total || 0,
+          platform_fee: Math.round((session.amount_total || 0) * (Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10) / 100),
+          seller_amount: (session.amount_total || 0) - Math.round((session.amount_total || 0) * (Number(process.env.TRANSACTION_FEE_PERCENTAGE) || 10) / 100),
+          currency: session.currency || 'usd',
+          metadata: {
+            source: session.metadata?.source || 'direct'
+          }
         });
 
       if (createError) {

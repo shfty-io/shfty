@@ -11,7 +11,7 @@ import { User } from '@supabase/supabase-js';
 interface Product {
   id: string;
   name: string;
-  description: string;
+  short_description: string;
   price: number;
   github_repo_url: string | null;
   downloadUrl?: string | null;
@@ -112,11 +112,8 @@ export default function PurchasesPage() {
                     <p className="text-sm text-muted-foreground mb-2">
                       Purchased on {new Date(purchase.created_at).toLocaleDateString()}
                     </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Price: ${product.price}
-                    </p>
                     <p className="text-sm text-muted-foreground">
-                      {product.description}
+                      Price: ${product.price}
                     </p>
                   </div>
                   

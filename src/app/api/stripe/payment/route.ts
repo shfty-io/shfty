@@ -80,9 +80,8 @@ export async function POST(request: Request) {
 
     // Calculate amounts
     const amount = Math.round(product.price * 100); // Convert to cents
-    
-    // Skip platform fee if purchase is from a category page
-    const platformFee = source === 'category' ? 0 : Math.round(amount * (PLATFORM_FEE_PERCENTAGE / 100));
+    const platformFee = Math.round(amount * (PLATFORM_FEE_PERCENTAGE / 100));
+    const sellerAmount = amount - platformFee;
 
     // Create a payment intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -94,11 +93,6 @@ export async function POST(request: Request) {
       application_fee_amount: platformFee,
       transfer_data: {
         destination: sellerStripeAccountId,
-        transfer_group: `ORDER_${productId}`,
-        transfer_schedule: {
-          delay_days: 7,
-          interval: 'daily'
-        }
       } as Stripe.PaymentIntentCreateParams.TransferData,
       automatic_payment_methods: {
         enabled: true,
@@ -108,20 +102,36 @@ export async function POST(request: Request) {
         productId,
         buyerId: user.id,
         source: source || 'direct',
+        platformFee,
+        sellerAmount
       },
     });
 
-    // Create order record
-    await serviceClient
-      .from('orders')
+    // Create purchase record with comprehensive tracking
+    const { error: purchaseError } = await serviceClient
+      .from('purchases')
       .insert({
         user_id: user.id,
         product_id: productId,
-        amount,
-        platform_fee: platformFee,
         payment_intent_id: paymentIntent.id,
-        status: paymentIntent.status,
+        amount_total: amount,
+        platform_fee: platformFee,
+        seller_amount: sellerAmount,
+        currency: 'usd',
+        status: 'pending',
+        payment_status: paymentIntent.status,
+        metadata: {
+          source: source || 'direct',
+          payment_method: paymentIntent.payment_method,
+          customer_email: user.email,
+          seller_stripe_account: sellerStripeAccountId
+        }
       });
+
+    if (purchaseError) {
+      console.error('Error creating purchase record:', purchaseError);
+      // Continue anyway as the payment is already processed
+    }
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
