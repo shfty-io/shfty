@@ -170,7 +170,7 @@ export default function ListingsPage() {
                 </Link>
                 <form action={`/api/products/${product.id}/delete`} method="POST">
                   <input type="hidden" name="redirect" value="/your/listings" />
-                  <Button variant="destructive" size="sm">
+                  <Button variant="destructive" size="sm" type="submit">
                     <Trash className="w-4 h-4 mr-2" />
                     Delete
                   </Button>
