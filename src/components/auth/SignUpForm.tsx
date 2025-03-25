@@ -18,28 +18,34 @@ export function SignUpForm() {
   const handleGitHubSignIn = async () => {
     setIsLoading(true);
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      // Get origin consistently
+      const origin = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_SITE_URL;
       
-      // Construct the redirect URL with the final destination
-      const callbackUrl = new URL('/auth/callback', siteUrl)
-      callbackUrl.searchParams.set('returnTo', redirectPath)
+      // Construct the callback URL
+      const callbackUrl = new URL('/auth/callback', origin);
       
+      // Add the redirect path
+      if (redirectPath && redirectPath !== '/') {
+        callbackUrl.searchParams.set('returnTo', redirectPath);
+      }
+      
+      // Use a simpler, more reliable OAuth flow
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          scopes: 'repo repo:status repo_deployment public_repo read:user user:email',
+          scopes: 'repo read:user user:email',
           redirectTo: callbackUrl.toString(),
-          skipBrowserRedirect: false,
         }
-      })
+      });
       
       if (error) {
         throw error;
       }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in with GitHub')
-    } finally {
+      setError(err instanceof Error ? err.message : 'Failed to sign in with GitHub');
       setIsLoading(false);
     }
   }
