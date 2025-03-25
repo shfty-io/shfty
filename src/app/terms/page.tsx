@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   description: 'Terms of Service for our marketplace',
 };
 
+// Make this page dynamic to allow client components to use hooks
+export const dynamic = 'force-dynamic';
+
 export default function TermsPage() {
   return (
     <div className="container mx-auto py-10 px-4 md:px-6">

@@ -1,9 +1,13 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { redirect } from 'next/navigation';
 import { createServerComponentClient, createServiceClient } from '@/lib/server';
+import { Suspense } from 'react';
 
 // Import components
 import ClientTabs from '../../../components/admin/ClientTabs';
+
+// Configure the page to be dynamically rendered to handle cookies
+export const dynamic = 'force-dynamic';
 
 // Define type definitions to match the ClientTabs component
 interface PaymentData {
@@ -303,14 +307,16 @@ export default async function AdminDashboardPage() {
             Monitor and manage all payment activities across the platform.
           </p>
           
-          <ClientTabs 
-            payments={payments} 
-            disputes={disputes}
-            payouts={payouts}
-            accounts={accounts}
-            products={products}
-            feedback={feedback}
-          />
+          <Suspense fallback={<div>Loading dashboard data...</div>}>
+            <ClientTabs 
+              payments={payments} 
+              disputes={disputes}
+              payouts={payouts}
+              accounts={accounts}
+              products={products}
+              feedback={feedback}
+            />
+          </Suspense>
         </div>
       </div>
     );
