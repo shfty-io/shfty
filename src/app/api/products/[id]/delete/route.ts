@@ -1,14 +1,13 @@
 import { createClient, createServiceClient } from '@/lib/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await context.params;
     const supabase = createClient(await cookies());
     const serviceClient = createServiceClient();
     
@@ -57,8 +56,8 @@ export async function POST(
       );
     }
 
-    // Redirect after successful deletion
-    return redirect(redirectUrl);
+    // Return redirect response instead of using the redirect function
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json(
