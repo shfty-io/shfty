@@ -10,12 +10,12 @@ export function HomeHero() {
       
       <div className="relative px-6 text-center max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-          Your Marketplace for Digital Products
+          Buy, Sell, and Share GitHub Repositories
         </h1>
         
         <p className="mt-4 text-lg leading-7 text-gray-600">
-          Discover and purchase amazing digital products from creators around the world.
-          From templates to tools, find everything you need to build your next project.
+          Monetize your projects, buy ready-to-use software solutions, or find templates to accelerate your development.
+          The ultimate developer marketplace for GitHub repositories.
         </p>
         
         <div className="mt-8 flex justify-center space-x-6">
