@@ -46,7 +46,7 @@ type SortOption = 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low'
 async function getProducts(
   page: number = 1, 
   search: string = '', 
-  sortBy: SortOption = 'downloaded'
+  sortBy: SortOption = 'liked'
 ): Promise<{
   products: Product[],
   pagination: PaginationMetadata
@@ -114,17 +114,17 @@ export default async function Home({
   
   // Get search and sorting parameters
   const search = resolvedParams.search as string || '';
-  const sortByParam = resolvedParams.sortBy as string || 'downloaded';
+  const sortByParam = resolvedParams.sortBy as string || 'liked';
   
   // Define the type for sort options to match the ProductList component
   type SortOption = 'downloaded' | 'liked' | 'newest' | 'price_high' | 'price_low' | 'oldest';
   
-  // Validate that sortBy is a valid option, default to 'downloaded' if not
+  // Validate that sortBy is a valid option, default to 'liked' if not
   const isValidSortOption = (option: string): option is SortOption => {
     return ['downloaded', 'liked', 'newest', 'price_high', 'price_low', 'oldest'].includes(option);
   };
   
-  const sortBy: SortOption = isValidSortOption(sortByParam) ? sortByParam : 'downloaded';
+  const sortBy: SortOption = isValidSortOption(sortByParam) ? sortByParam : 'liked';
 
   const { products, pagination } = await getProducts(page, search, sortBy);
   
