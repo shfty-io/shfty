@@ -19,6 +19,7 @@ export default function ProductReviewPage() {
     'Proper licensing information is included',
     'Sample data or demo is available (if applicable)',
     'Documentation is clear and comprehensive',
+    'Product demo includes a backlink to your product page on our marketplace',
   ]
 
   const handleCheckChange = (index: number) => {
